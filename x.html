@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Ninebot BLE Tester</title>
+</head>
+<body>
+
+<h2>Ninebot BLE Tester</h2>
+<button onclick="connect()">Connect</button>
+
+<pre id="log"></pre>
+
+<script>
+let device, server;
+
+function log(msg) {
+  document.getElementById("log").textContent += msg + "\n";
+}
+
+async function connect() {
+  try {
+    log("Scanning...");
+
+    device = await navigator.bluetooth.requestDevice({
+      acceptAllDevices: true,
+      optionalServices: [
+        "6e400001-b5a3-f393-e0a9-e50e24dcca9e",
+        "6e400001-0000-0000-006e-696e65626f74"
+      ]
+    });
+
+    log("Connecting...");
+    server = await device.gatt.connect();
+
+    const services = await server.getPrimaryServices();
+
+    for (const service of services) {
+      log("Service: " + service.uuid);
+
+      const chars = await service.getCharacteristics();
+
+      for (const char of chars) {
+        log("  Char: " + char.uuid);
+
+        // Notifications
+        if (char.properties.notify) {
+          await char.startNotifications();
+          char.addEventListener('characteristicvaluechanged', e => {
+            const val = new Uint8Array(e.target.value.buffer);
+            log("RX: " + toHex(val));
+          });
+        }
+
+        // Try sending if writable
+        if (char.properties.write || char.properties.writeWithoutResponse) {
+          await tryCommands(char);
+        }
+      }
+    }
+
+  } catch (e) {
+    log("ERROR: " + e);
+  }
+}
+
+async function tryCommands(char) {
+  const commands = [
+    [0x3E, 0x21, 0x01, 0x00],
+    [0x3E, 0x21, 0x5B, 0x00],
+    [0x55, 0xAA],
+    [0x5A, 0xA5, 0x00, 0x3E, 0x21, 0x5B, 0x00]
+  ];
+
+  for (const cmd of commands) {
+    try {
+      log("TX: " + toHex(cmd));
+      await char.writeValueWithoutResponse(new Uint8Array(cmd));
+      await sleep(300);
+    } catch (e) {
+      try {
+        await char.writeValue(new Uint8Array(cmd));
+      } catch {}
+    }
+  }
+}
+
+function toHex(arr) {
+  return Array.from(arr).map(b => b.toString(16).padStart(2, '0')).join(' ');
+}
+
+function sleep(ms) {
+  return new Promise(r => setTimeout(r, ms));
+}
+</script>
+
+</body>
+</html>
