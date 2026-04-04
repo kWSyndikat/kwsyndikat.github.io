@@ -1,98 +1,585 @@
-<!DOCTYPE html>
-<html>
+<!doctype html>
+<html lang="de">
 <head>
-  <meta charset="UTF-8">
-  <title>Ninebot BLE Tester</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Ninebot Fixed Auth Debugger</title>
+  <style>
+    :root {
+      --bg: #0a0f1d;
+      --panel: #131a2e;
+      --panel-2: #1a2440;
+      --line: #2e3a63;
+      --text: #eaf0ff;
+      --muted: #9dacd3;
+      --ok: #38d27a;
+      --warn: #ffc95c;
+      --err: #ff6c6c;
+      --accent: #71a7ff;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: linear-gradient(180deg, #080d18, #0e1730); color: var(--text); font-family: Inter, system-ui, Arial, sans-serif; }
+    .wrap { max-width: 1220px; margin: 0 auto; padding: 24px; }
+    .card { background: rgba(19,26,46,.97); border: 1px solid var(--line); border-radius: 18px; padding: 18px; box-shadow: 0 18px 50px rgba(0,0,0,.28); }
+    h1 { margin: 0 0 10px; font-size: 28px; }
+    p { margin: 0; color: var(--muted); line-height: 1.45; }
+    .toolbar, .row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+    .toolbar { margin-top: 18px; }
+    button { border: 1px solid var(--line); background: var(--panel-2); color: var(--text); border-radius: 12px; padding: 12px 16px; font-weight: 700; cursor: pointer; }
+    button:hover { border-color: var(--accent); }
+    button:disabled { opacity: .5; cursor: not-allowed; }
+    .pill { display: inline-flex; align-items: center; gap: 10px; border: 1px solid var(--line); background: #0d1528; border-radius: 999px; padding: 10px 14px; font-weight: 700; }
+    .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--warn); }
+    .dot.ok { background: var(--ok); }
+    .dot.err { background: var(--err); }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 18px; }
+    .info-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 14px; margin-top: 18px; }
+    .label { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+    .value { font-weight: 700; word-break: break-word; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; line-height: 1.55; }
+    .log { background: #07101d; border: 1px solid var(--line); border-radius: 14px; padding: 14px; min-height: 620px; max-height: 76vh; overflow: auto; white-space: pre-wrap; word-break: break-word; }
+    .oktxt { color: var(--ok); }
+    .warntxt { color: var(--warn); }
+    .errtxt { color: var(--err); }
+    .muted { color: var(--muted); }
+    .banner { margin-top: 14px; border: 1px solid var(--line); background: #0d1529; border-radius: 14px; padding: 14px; }
+    .big { font-size: 18px; font-weight: 800; }
+    .small { font-size: 12px; color: var(--muted); }
+    @media (max-width: 980px) { .grid, .info-grid { grid-template-columns: 1fr; } }
+  </style>
 </head>
 <body>
+<div class="wrap">
+  <div class="card">
+    <h1>Ninebot Fixed Browser Auth</h1>
+    <p>Feste NUS-UUIDs, fester Crypto-Name <b>1EFDE2508C1391</b>, Connect direkt im Browser, Auto-Auth mit Debug-Logs für send/receive raw + decrypted.</p>
 
-<h2>Ninebot BLE Tester</h2>
-<button onclick="connect()">Connect</button>
+    <div class="toolbar">
+      <button id="connectBtn">Connect</button>
+      <button id="disconnectBtn" disabled>Disconnect</button>
+      <button id="clearBtn">Logs leeren</button>
+      <div class="pill"><span id="statusDot" class="dot"></span><span id="statusText">Idle</span></div>
+    </div>
 
-<pre id="log"></pre>
+    <div class="banner">
+      <div class="big" id="bannerText">Bereit</div>
+      <div class="small" id="bannerSub">Drück Connect und wähle den Scooter im Bluetooth-Picker.</div>
+    </div>
+
+    <div class="info-grid">
+      <div class="card"><div class="label">Crypto Name</div><div class="value">1EFDE2508C1391</div></div>
+      <div class="card"><div class="label">Service</div><div class="value mono">6E400001-B5A3-F393-E0A9-E50E24DCCA9E</div></div>
+      <div class="card"><div class="label">Write Characteristic</div><div class="value mono">6E400002-B5A3-F393-E0A9-E50E24DCCA9E</div></div>
+      <div class="card"><div class="label">Notify Characteristic</div><div class="value mono">6E400003-B5A3-F393-E0A9-E50E24DCCA9E</div></div>
+      <div class="card"><div class="label">Verbundenes Gerät</div><div class="value" id="deviceName">-</div></div>
+      <div class="card"><div class="label">Auth State</div><div class="value" id="authState">Nicht gestartet</div></div>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <div class="label">Letzte Frames</div>
+      <div class="mono">
+        <div><b>RX raw:</b> <span id="lastRxRaw">-</span></div><br>
+        <div><b>RX dec:</b> <span id="lastRxDec">-</span></div><br>
+        <div><b>TX raw:</b> <span id="lastTxRaw">-</span></div><br>
+        <div><b>TX plain:</b> <span id="lastTxPlain">-</span></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="row" style="justify-content:space-between; margin-bottom:8px;">
+        <div>
+          <div class="label">Debug Log</div>
+          <div class="small">Komplette Logs für receive/send und Status</div>
+        </div>
+      </div>
+      <div id="log" class="log mono"></div>
+    </div>
+  </div>
+</div>
 
 <script>
-let device, server;
+(() => {
+  "use strict";
 
-function log(msg) {
-  document.getElementById("log").textContent += msg + "\n";
-}
+  const FIXED_CRYPTO_NAME = "1EFDE2508C1391";
+  const NUS_SERVICE_UUID  = "6e400001-b5a3-f393-e0a9-e50e24dcca9e";
+  const NUS_WRITE_UUID    = "6e400002-b5a3-f393-e0a9-e50e24dcca9e";
+  const NUS_NOTIFY_UUID   = "6e400003-b5a3-f393-e0a9-e50e24dcca9e";
 
-async function connect() {
-  try {
-    log("Scanning...");
+  const $ = (id) => document.getElementById(id);
+  const el = {
+    connectBtn: $("connectBtn"),
+    disconnectBtn: $("disconnectBtn"),
+    clearBtn: $("clearBtn"),
+    statusDot: $("statusDot"),
+    statusText: $("statusText"),
+    bannerText: $("bannerText"),
+    bannerSub: $("bannerSub"),
+    deviceName: $("deviceName"),
+    authState: $("authState"),
+    lastRxRaw: $("lastRxRaw"),
+    lastRxDec: $("lastRxDec"),
+    lastTxRaw: $("lastTxRaw"),
+    lastTxPlain: $("lastTxPlain"),
+    log: $("log"),
+  };
 
-    device = await navigator.bluetooth.requestDevice({
-      acceptAllDevices: true,
-      optionalServices: [
-        "6e400001-b5a3-f393-e0a9-e50e24dcca9e",
-        "6e400001-0000-0000-006e-696e65626f74"
-      ]
-    });
+  const state = {
+    device: null,
+    server: null,
+    service: null,
+    writeChar: null,
+    notifyChar: null,
+    crypto: null,
+    authenticated: false,
+    authStepSent: false,
+    authSuccessSeen: false
+  };
 
-    log("Connecting...");
-    server = await device.gatt.connect();
+  function ts() {
+    return new Date().toLocaleTimeString("de-DE", { hour12: false });
+  }
 
-    const services = await server.getPrimaryServices();
+  function addLog(msg, cls = "") {
+    const d = document.createElement("div");
+    d.textContent = `[${ts()}] ${msg}`;
+    if (cls) d.className = cls;
+    el.log.appendChild(d);
+    el.log.scrollTop = el.log.scrollHeight;
+  }
 
-    for (const service of services) {
-      log("Service: " + service.uuid);
+  function setStatus(text, mode = "warn", sub = "") {
+    el.statusText.textContent = text;
+    el.bannerText.textContent = text;
+    if (sub) el.bannerSub.textContent = sub;
+    el.statusDot.className = "dot" + (mode === "ok" ? " ok" : mode === "err" ? " err" : "");
+  }
 
-      const chars = await service.getCharacteristics();
+  function setAuthState(text) {
+    el.authState.textContent = text;
+  }
 
-      for (const char of chars) {
-        log("  Char: " + char.uuid);
+  function toHex(data) {
+    return Array.from(data, b => b.toString(16).padStart(2, "0")).join(" ").toUpperCase();
+  }
 
-        // Notifications
-        if (char.properties.notify) {
-          await char.startNotifications();
-          char.addEventListener('characteristicvaluechanged', e => {
-            const val = new Uint8Array(e.target.value.buffer);
-            log("RX: " + toHex(val));
-          });
+  function blockCopy(src, srcOffset, dst, dstOffset, length) {
+    for (let i = 0; i < length; i++) dst[dstOffset + i] = src[srcOffset + i];
+  }
+
+  function xor16(a, b) {
+    const out = new Uint8Array(16);
+    for (let i = 0; i < 16; i++) out[i] = a[i] ^ b[i];
+    return out;
+  }
+
+  function concatBytes(...arrays) {
+    const total = arrays.reduce((n, a) => n + a.length, 0);
+    const out = new Uint8Array(total);
+    let o = 0;
+    for (const a of arrays) {
+      out.set(a, o);
+      o += a.length;
+    }
+    return out;
+  }
+
+  function ascii16(name) {
+    const out = new Uint8Array(16);
+    const enc = new TextEncoder().encode(name);
+    out.set(enc.slice(0, 16), 0);
+    return out;
+  }
+
+  function random16() {
+    const out = new Uint8Array(16);
+    crypto.getRandomValues(out);
+    return out;
+  }
+
+  function startsWithBytes(data, prefix) {
+    if (data.length < prefix.length) return false;
+    for (let i = 0; i < prefix.length; i++) if (data[i] !== prefix[i]) return false;
+    return true;
+  }
+
+  async function sha1(data32) {
+    const digest = await crypto.subtle.digest("SHA-1", data32);
+    return new Uint8Array(digest);
+  }
+
+  async function aesEcbEncryptSingleBlock(data16, key16) {
+    const key = await crypto.subtle.importKey("raw", key16, { name: "AES-CBC" }, false, ["encrypt"]);
+    const result = await crypto.subtle.encrypt({ name: "AES-CBC", iv: new Uint8Array(16) }, key, data16);
+    return new Uint8Array(result).slice(0, 16);
+  }
+
+  class NinebotCrypto {
+    constructor(name) {
+      this._fw_data = Uint8Array.from([0x97,0xCF,0xB8,0x02,0x84,0x41,0x43,0xDE,0x56,0x00,0x2B,0x3B,0x34,0x78,0x0A,0x5D]);
+      this._random_ble_data = new Uint8Array(16);
+      this._random_app_data = new Uint8Array(16);
+      this._sha1_key = new Uint8Array(16);
+      this._name = ascii16(name);
+      this._msg_it = 0;
+      this.ready = this.calcSha1Key(this._name, this._fw_data);
+    }
+
+    async calcSha1Key(data1, data2) {
+      const data = new Uint8Array(32);
+      blockCopy(data1, 0, data, 0, 16);
+      blockCopy(data2, 0, data, 16, 16);
+      const hash = await sha1(data);
+      blockCopy(hash, 0, this._sha1_key, 0, 16);
+    }
+
+    async cryptoFirst(data) {
+      const result = new Uint8Array(data.length);
+      let payloadLen = data.length;
+      let byteIdx = 0;
+      while (payloadLen > 0) {
+        const tmpLen = payloadLen <= 16 ? payloadLen : 16;
+        const xorData1 = new Uint8Array(16);
+        blockCopy(data, byteIdx, xorData1, 0, tmpLen);
+        const aesKey = await aesEcbEncryptSingleBlock(this._fw_data, this._sha1_key);
+        const xorData = xor16(xorData1, aesKey);
+        blockCopy(xorData, 0, result, byteIdx, tmpLen);
+        payloadLen -= tmpLen;
+        byteIdx += tmpLen;
+      }
+      return result;
+    }
+
+    async cryptoNext(data, msgIt) {
+      const result = new Uint8Array(data.length);
+      const aesEncData = new Uint8Array(16);
+      aesEncData[0] = 1;
+      aesEncData[1] = (msgIt >>> 24) & 0xFF;
+      aesEncData[2] = (msgIt >>> 16) & 0xFF;
+      aesEncData[3] = (msgIt >>> 8) & 0xFF;
+      aesEncData[4] = (msgIt >>> 0) & 0xFF;
+      blockCopy(this._random_ble_data, 0, aesEncData, 5, 8);
+      aesEncData[15] = 0;
+
+      let payloadLen = data.length;
+      let byteIdx = 0;
+      while (payloadLen > 0) {
+        ++aesEncData[15];
+        const tmpLen = payloadLen <= 16 ? payloadLen : 16;
+        const xorData1 = new Uint8Array(16);
+        blockCopy(data, byteIdx, xorData1, 0, tmpLen);
+        const aesKey = await aesEcbEncryptSingleBlock(aesEncData, this._sha1_key);
+        const xorData = xor16(xorData1, aesKey);
+        blockCopy(xorData, 0, result, byteIdx, tmpLen);
+        payloadLen -= tmpLen;
+        byteIdx += tmpLen;
+      }
+      return result;
+    }
+
+    calcCrcFirstMsg(data) {
+      let crc = 0;
+      for (const v of data) crc = (crc + v) & 0xFFFF;
+      crc = (~crc) & 0xFFFF;
+      return Uint8Array.from([crc & 0xFF, (crc >>> 8) & 0xFF]);
+    }
+
+    async calcCrcNextMsg(data, msgIt) {
+      const aesEncData = new Uint8Array(16);
+      let payloadLen = data.length - 3;
+      let byteIdx = 3;
+
+      aesEncData[0] = 89;
+      aesEncData[1] = (msgIt >>> 24) & 0xFF;
+      aesEncData[2] = (msgIt >>> 16) & 0xFF;
+      aesEncData[3] = (msgIt >>> 8) & 0xFF;
+      aesEncData[4] = (msgIt >>> 0) & 0xFF;
+      blockCopy(this._random_ble_data, 0, aesEncData, 5, 8);
+      aesEncData[15] = payloadLen & 0xFF;
+
+      let aesKey = await aesEcbEncryptSingleBlock(aesEncData, this._sha1_key);
+      let xorData2 = new Uint8Array(16);
+      blockCopy(aesKey, 0, xorData2, 0, 16);
+
+      const xorData1 = new Uint8Array(16);
+      blockCopy(data, 0, xorData1, 0, 3);
+
+      let xorData = xor16(xorData1, xorData2);
+      aesKey = await aesEcbEncryptSingleBlock(xorData, this._sha1_key);
+      blockCopy(aesKey, 0, xorData2, 0, 16);
+
+      while (payloadLen > 0) {
+        const tmpLen = payloadLen <= 16 ? payloadLen : 16;
+        const chunk = new Uint8Array(16);
+        blockCopy(data, byteIdx, chunk, 0, tmpLen);
+        xorData = xor16(chunk, xorData2);
+        aesKey = await aesEcbEncryptSingleBlock(xorData, this._sha1_key);
+        blockCopy(aesKey, 0, xorData2, 0, 16);
+        payloadLen -= tmpLen;
+        byteIdx += tmpLen;
+      }
+
+      aesEncData[0] = 1;
+      aesEncData[15] = 0;
+      aesKey = await aesEcbEncryptSingleBlock(aesEncData, this._sha1_key);
+      const out = xor16(aesKey, xorData2);
+      return Uint8Array.from([out[0], out[1], out[2], out[3]]);
+    }
+
+    async decrypt(data) {
+      const decrypted = new Uint8Array(data.length - 6);
+      blockCopy(data, 0, decrypted, 0, 3);
+
+      let newMsgIt = this._msg_it;
+      if ((newMsgIt & 0x0008000) > 0 && (data[data.length - 2] >> 7) === 0) {
+        newMsgIt += 0x0010000;
+      }
+
+      newMsgIt = (newMsgIt & 0xFFFF0000) + ((data[data.length - 2] << 8) >>> 0) + (data[data.length - 1] >>> 0);
+
+      let payload = new Uint8Array(data.length - 9);
+      blockCopy(data, 3, payload, 0, data.length - 9);
+
+      if (newMsgIt === 0) {
+        payload = await this.cryptoFirst(payload);
+        blockCopy(payload, 0, decrypted, 3, payload.length);
+
+        if (decrypted[0] === 0x5A && decrypted[1] === 0xA5 && decrypted[2] === 0x1E && decrypted[3] === 0x21 && decrypted[4] === 0x3E && decrypted[5] === 0x5B) {
+          blockCopy(decrypted, 7, this._random_ble_data, 0, 16);
+          await this.calcSha1Key(this._name, this._random_ble_data);
+        }
+      } else if (newMsgIt > 0 && newMsgIt > this._msg_it) {
+        payload = await this.cryptoNext(payload, newMsgIt);
+        blockCopy(payload, 0, decrypted, 3, payload.length);
+
+        if (decrypted[0] === 0x5A && decrypted[1] === 0xA5 && decrypted[2] === 0x00 && decrypted[3] === 0x21 && decrypted[4] === 0x3E && decrypted[5] === 0x5C && decrypted[6] === 0x01) {
+          await this.calcSha1Key(this._random_app_data, this._random_ble_data);
         }
 
-        // Try sending if writable
-        if (char.properties.write || char.properties.writeWithoutResponse) {
-          await tryCommands(char);
+        this._msg_it = newMsgIt >>> 0;
+      }
+
+      return decrypted;
+    }
+
+    async encrypt(data) {
+      const encrypted = new Uint8Array(152);
+      blockCopy(data, 0, encrypted, 0, 3);
+
+      const payloadLen = data.length - 3;
+      let payload = new Uint8Array(payloadLen);
+      blockCopy(data, 3, payload, 0, payloadLen);
+
+      if (this._msg_it === 0) {
+        const crc = this.calcCrcFirstMsg(payload);
+        payload = await this.cryptoFirst(payload);
+        blockCopy(payload, 0, encrypted, 3, payload.length);
+        encrypted[payloadLen + 3] = 0;
+        encrypted[payloadLen + 4] = 0;
+        encrypted[payloadLen + 5] = crc[0];
+        encrypted[payloadLen + 6] = crc[1];
+        encrypted[payloadLen + 7] = 0;
+        encrypted[payloadLen + 8] = 0;
+        this._msg_it++;
+        return encrypted.slice(0, payloadLen + 9);
+      } else {
+        this._msg_it++;
+        const crc = await this.calcCrcNextMsg(data, this._msg_it);
+        payload = await this.cryptoNext(payload, this._msg_it);
+        blockCopy(payload, 0, encrypted, 3, payload.length);
+        encrypted[payloadLen + 3] = crc[0];
+        encrypted[payloadLen + 4] = crc[1];
+        encrypted[payloadLen + 5] = crc[2];
+        encrypted[payloadLen + 6] = crc[3];
+        encrypted[payloadLen + 7] = (this._msg_it >>> 8) & 0xFF;
+        encrypted[payloadLen + 8] = (this._msg_it >>> 0) & 0xFF;
+
+        if (data[0] === 0x5A && data[1] === 0xA5 && data[2] === 0x10 && data[3] === 0x3E && data[4] === 0x21 && data[5] === 0x5C && data[6] === 0x00) {
+          blockCopy(data, 7, this._random_app_data, 0, 16);
         }
+
+        return encrypted.slice(0, payloadLen + 9);
       }
     }
-
-  } catch (e) {
-    log("ERROR: " + e);
   }
-}
 
-async function tryCommands(char) {
-  const commands = [
-    [0x3E, 0x21, 0x01, 0x00],
-    [0x3E, 0x21, 0x5B, 0x00],
-    [0x55, 0xAA],
-    [0x5A, 0xA5, 0x00, 0x3E, 0x21, 0x5B, 0x00]
-  ];
+  function updateLast(kind, value) {
+    if (kind === "rxRaw") el.lastRxRaw.textContent = value;
+    if (kind === "rxDec") el.lastRxDec.textContent = value;
+    if (kind === "txRaw") el.lastTxRaw.textContent = value;
+    if (kind === "txPlain") el.lastTxPlain.textContent = value;
+  }
 
-  for (const cmd of commands) {
+  async function writeValue(characteristic, data) {
+    if (characteristic.properties.writeWithoutResponse && characteristic.writeValueWithoutResponse) {
+      await characteristic.writeValueWithoutResponse(data);
+      return;
+    }
+    await characteristic.writeValue(data);
+  }
+
+  async function sendPlainFrame(plain) {
+    const enc = await state.crypto.encrypt(plain);
+    await writeValue(state.writeChar, enc);
+    addLog(`TX plain: ${toHex(plain)}`);
+    addLog(`TX enc  : ${toHex(enc)}`, "muted");
+    updateLast("txPlain", toHex(plain));
+    updateLast("txRaw", toHex(enc));
+  }
+
+  async function sendHelloFrame() {
+    const plain = Uint8Array.from([0x5A, 0xA5, 0x00]);
+    addLog("Sende ersten Trigger-Frame...", "warntxt");
+    await sendPlainFrame(plain);
+  }
+
+  async function sendAuthFrame() {
+    const appRandom = random16();
+    const plain = concatBytes(Uint8Array.from([0x5A, 0xA5, 0x10, 0x3E, 0x21, 0x5C, 0x00]), appRandom);
+    await sendPlainFrame(plain);
+    state.authStepSent = true;
+    setAuthState("Please press power button now");
+    setStatus("Please press power button now", "warn", "Auth-Frame gesendet. Jetzt Power-Button am Scooter drücken.");
+    addLog("Auth-Frame gesendet. Bitte jetzt den Power-Button drücken.", "warntxt");
+  }
+
+  async function onNotify(event) {
     try {
-      log("TX: " + toHex(cmd));
-      await char.writeValueWithoutResponse(new Uint8Array(cmd));
-      await sleep(300);
-    } catch (e) {
-      try {
-        await char.writeValue(new Uint8Array(cmd));
-      } catch {}
+      const raw = new Uint8Array(event.target.value.buffer.slice(0));
+      addLog(`RX enc  : ${toHex(raw)}`);
+      updateLast("rxRaw", toHex(raw));
+
+      const dec = await state.crypto.decrypt(raw);
+      addLog(`RX plain: ${toHex(dec)}`, "muted");
+      updateLast("rxDec", toHex(dec));
+
+      if (startsWithBytes(dec, Uint8Array.from([0x5A, 0xA5, 0x1E, 0x21, 0x3E, 0x5B]))) {
+        addLog("Challenge erkannt.", "warntxt");
+        setAuthState("Challenge empfangen");
+        setStatus("Challenge received", "warn", "Sende jetzt App-Random für Auth.");
+        await sendAuthFrame();
+        return;
+      }
+
+      if (startsWithBytes(dec, Uint8Array.from([0x5A, 0xA5, 0x00, 0x21, 0x3E, 0x5C, 0x01]))) {
+        state.authenticated = true;
+        state.authSuccessSeen = true;
+        setAuthState("Authenticated!");
+        setStatus("Authenticated!", "ok", "Scooter hat die Auth bestätigt.");
+        addLog("Authentication erfolgreich.", "oktxt");
+        return;
+      }
+
+      addLog("RX verarbeitet.", "muted");
+    } catch (err) {
+      setStatus("RX Error", "err", err.message);
+      addLog(`RX Fehler: ${err.message}`, "errtxt");
+      console.error(err);
     }
   }
-}
 
-function toHex(arr) {
-  return Array.from(arr).map(b => b.toString(16).padStart(2, '0')).join(' ');
-}
+  async function connect() {
+    if (!navigator.bluetooth) throw new Error("Web Bluetooth wird in diesem Browser nicht unterstützt.");
 
-function sleep(ms) {
-  return new Promise(r => setTimeout(r, ms));
-}
+    setStatus("Opening picker...", "warn", "Wähle den Scooter aus.");
+    setAuthState("Warte auf Gerät");
+    addLog("Öffne Bluetooth-Picker...");
+
+    state.device = await navigator.bluetooth.requestDevice({
+      acceptAllDevices: true,
+      optionalServices: [NUS_SERVICE_UUID]
+    });
+
+    el.deviceName.textContent = state.device.name || "(ohne Namen)";
+    addLog(`Gerät gewählt: ${state.device.name || "(ohne Namen)"} / ${state.device.id}`);
+
+    state.device.addEventListener("gattserverdisconnected", () => {
+      addLog("GATT disconnected.", "warntxt");
+      cleanupDisconnectedUi();
+    });
+
+    state.crypto = new NinebotCrypto(FIXED_CRYPTO_NAME);
+    await state.crypto.ready;
+
+    setStatus("Connecting...", "warn", "Verbinde mit GATT...");
+    state.server = await state.device.gatt.connect();
+    state.service = await state.server.getPrimaryService(NUS_SERVICE_UUID);
+    state.writeChar = await state.service.getCharacteristic(NUS_WRITE_UUID);
+    state.notifyChar = await state.service.getCharacteristic(NUS_NOTIFY_UUID);
+
+    await state.notifyChar.startNotifications();
+    state.notifyChar.addEventListener("characteristicvaluechanged", onNotify);
+
+    addLog(`Service gefunden: ${NUS_SERVICE_UUID}`);
+    addLog(`Write Char    : ${NUS_WRITE_UUID}`);
+    addLog(`Notify Char   : ${NUS_NOTIFY_UUID}`);
+    addLog("Notifications aktiviert.", "warntxt");
+
+    el.connectBtn.disabled = true;
+    el.disconnectBtn.disabled = false;
+
+    setAuthState("Verbunden");
+    setStatus("Connected", "warn", "Sende initialen Trigger-Frame.");
+    await sendHelloFrame();
+  }
+
+  function cleanupDisconnectedUi() {
+    el.connectBtn.disabled = false;
+    el.disconnectBtn.disabled = true;
+    setStatus("Disconnected", "warn", "Verbindung getrennt.");
+    setAuthState("Getrennt");
+  }
+
+  async function disconnect() {
+    try {
+      if (state.notifyChar) state.notifyChar.removeEventListener("characteristicvaluechanged", onNotify);
+      if (state.device && state.device.gatt && state.device.gatt.connected) state.device.gatt.disconnect();
+    } finally {
+      state.device = null;
+      state.server = null;
+      state.service = null;
+      state.writeChar = null;
+      state.notifyChar = null;
+      state.crypto = null;
+      state.authenticated = false;
+      state.authStepSent = false;
+      state.authSuccessSeen = false;
+      cleanupDisconnectedUi();
+      addLog("Disconnect ausgeführt.", "warntxt");
+    }
+  }
+
+  el.connectBtn.addEventListener("click", async () => {
+    try {
+      el.connectBtn.disabled = true;
+      await connect();
+    } catch (err) {
+      el.connectBtn.disabled = false;
+      el.disconnectBtn.disabled = true;
+      setStatus("Connection error", "err", err.message);
+      setAuthState("Fehler");
+      addLog(`Connect Fehler: ${err.message}`, "errtxt");
+      console.error(err);
+    }
+  });
+
+  el.disconnectBtn.addEventListener("click", async () => { await disconnect(); });
+
+  el.clearBtn.addEventListener("click", () => {
+    el.log.textContent = "";
+    el.lastRxRaw.textContent = "-";
+    el.lastRxDec.textContent = "-";
+    el.lastTxRaw.textContent = "-";
+    el.lastTxPlain.textContent = "-";
+    addLog("Logs geleert.");
+  });
+
+  addLog("Fixed HTML bereit.");
+  addLog(`Crypto Name: ${FIXED_CRYPTO_NAME}`);
+  addLog(`NUS Service: ${NUS_SERVICE_UUID}`);
+})();
 </script>
-
 </body>
 </html>
