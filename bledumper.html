@@ -1,0 +1,614 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>Scooter BLE Explorer</title>
+  <style>
+    :root {
+      --bg: #0b1020;
+      --panel: #141b34;
+      --panel2: #1c2547;
+      --text: #eef2ff;
+      --muted: #a8b0d3;
+      --good: #7ef0b8;
+      --warn: #ffd166;
+      --bad: #ff7b7b;
+      --accent: #8ab4ff;
+      --border: #2b3769;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background: linear-gradient(180deg, #09101d, #10172b 30%, #0b1020);
+      color: var(--text);
+    }
+    .wrap {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 18px;
+    }
+    h1 {
+      margin: 0 0 8px;
+      font-size: 1.5rem;
+    }
+    .sub {
+      color: var(--muted);
+      margin-bottom: 16px;
+      line-height: 1.4;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 1.3fr .9fr;
+      gap: 16px;
+    }
+    .panel {
+      background: rgba(20,27,52,.9);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 16px;
+      box-shadow: 0 10px 30px rgba(0,0,0,.2);
+    }
+    .row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    button, input, select, textarea {
+      font: inherit;
+    }
+    button {
+      border: 1px solid var(--border);
+      background: var(--panel2);
+      color: var(--text);
+      padding: 10px 14px;
+      border-radius: 12px;
+      cursor: pointer;
+    }
+    button:hover { filter: brightness(1.08); }
+    button:disabled {
+      opacity: .55;
+      cursor: not-allowed;
+    }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      background: #101933;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      color: var(--muted);
+      font-size: .92rem;
+    }
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      background: var(--bad);
+    }
+    .dot.ok { background: var(--good); }
+    .dot.warn { background: var(--warn); }
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin: 14px 0 6px;
+    }
+    .card {
+      background: #111935;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 14px;
+      min-height: 92px;
+    }
+    .label {
+      color: var(--muted);
+      font-size: .9rem;
+      margin-bottom: 8px;
+    }
+    .value {
+      font-size: 1.6rem;
+      font-weight: 700;
+      letter-spacing: .02em;
+    }
+    .services {
+      display: grid;
+      gap: 10px;
+      margin-top: 12px;
+    }
+    details {
+      background: #101933;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+    }
+    summary {
+      cursor: pointer;
+      padding: 12px 14px;
+      font-weight: 600;
+      list-style: none;
+    }
+    summary::-webkit-details-marker { display: none; }
+    .char {
+      border-top: 1px solid var(--border);
+      padding: 12px 14px;
+    }
+    .charhead {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .meta {
+      color: var(--muted);
+      font-size: .9rem;
+      line-height: 1.35;
+      word-break: break-word;
+    }
+    .tiny {
+      font-size: .85rem;
+      color: var(--muted);
+    }
+    textarea, .log {
+      width: 100%;
+      min-height: 220px;
+      background: #091125;
+      color: #dfe7ff;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 12px;
+      resize: vertical;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: .9rem;
+      line-height: 1.4;
+      white-space: pre-wrap;
+      overflow: auto;
+    }
+    .muted { color: var(--muted); }
+    .section-title {
+      margin: 10px 0 10px;
+      font-size: 1.03rem;
+      font-weight: 700;
+    }
+    .footer {
+      margin-top: 16px;
+      color: var(--muted);
+      font-size: .9rem;
+      line-height: 1.45;
+    }
+    code {
+      background: #0d1430;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 2px 6px;
+    }
+    @media (max-width: 900px) {
+      .grid { grid-template-columns: 1fr; }
+      .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (max-width: 520px) {
+      .cards { grid-template-columns: 1fr 1fr; }
+      .value { font-size: 1.3rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Scooter BLE Explorer</h1>
+    <div class="sub">
+      Direkt im Browser mit einem BLE-Gerät verbinden, Services/Characteristics auflisten,
+      Notifications abonnieren und Rohdaten live ansehen. Für Reverse Engineering und ein späteres Dashboard.
+    </div>
+
+    <div class="grid">
+      <div class="panel">
+        <div class="row">
+          <button id="connectBtn">Mit BLE-Gerät verbinden</button>
+          <button id="disconnectBtn" disabled>Trennen</button>
+          <button id="clearBtn">Logs leeren</button>
+          <span class="pill"><span id="statusDot" class="dot"></span><span id="statusText">Nicht verbunden</span></span>
+        </div>
+
+        <div class="row">
+          <label class="pill">
+            <input id="acceptAllDevices" type="checkbox" checked />
+            alle Geräte zeigen
+          </label>
+          <label class="pill">
+            Name enthält:
+            <input id="nameFilter" type="text" placeholder="Segway / Ninebot / GT3 ..." style="width:180px;background:transparent;border:none;color:inherit;outline:none;" />
+          </label>
+          <label class="pill">
+            Optional Service UUID:
+            <input id="serviceFilter" type="text" placeholder="6e400001-b5a3-f393-e0a9-e50e24dcca9e" style="width:280px;background:transparent;border:none;color:inherit;outline:none;" />
+          </label>
+        </div>
+
+        <div class="cards">
+          <div class="card">
+            <div class="label">Gerät</div>
+            <div id="deviceName" class="value">—</div>
+          </div>
+          <div class="card">
+            <div class="label">Verbindung</div>
+            <div id="connState" class="value">offline</div>
+          </div>
+          <div class="card">
+            <div class="label">Bekannte Speed</div>
+            <div id="speedVal" class="value">—</div>
+          </div>
+          <div class="card">
+            <div class="label">Bekannte Voltage</div>
+            <div id="voltVal" class="value">—</div>
+          </div>
+        </div>
+
+        <div class="section-title">Services & Characteristics</div>
+        <div id="servicesBox" class="services">
+          <div class="muted">Noch nichts geladen.</div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="section-title">Rohdaten / Log</div>
+        <div id="logBox" class="log"></div>
+
+        <div class="section-title">Einfacher Parser-Output</div>
+        <textarea id="parserBox" readonly></textarea>
+
+        <div class="footer">
+          Tipp: Erst verbinden, dann auf einer Characteristic <b>Notify starten</b>. Wenn dein Scooter ein UART-artiges BLE-Profil nutzt,
+          tauchen hier oft die interessantesten Live-Daten als Hex-Frames auf.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const els = {
+      connectBtn: document.getElementById('connectBtn'),
+      disconnectBtn: document.getElementById('disconnectBtn'),
+      clearBtn: document.getElementById('clearBtn'),
+      acceptAllDevices: document.getElementById('acceptAllDevices'),
+      nameFilter: document.getElementById('nameFilter'),
+      serviceFilter: document.getElementById('serviceFilter'),
+      statusDot: document.getElementById('statusDot'),
+      statusText: document.getElementById('statusText'),
+      deviceName: document.getElementById('deviceName'),
+      connState: document.getElementById('connState'),
+      speedVal: document.getElementById('speedVal'),
+      voltVal: document.getElementById('voltVal'),
+      servicesBox: document.getElementById('servicesBox'),
+      logBox: document.getElementById('logBox'),
+      parserBox: document.getElementById('parserBox'),
+    };
+
+    let device = null;
+    let server = null;
+    let notifyHandlers = new Map();
+
+    function log(...parts) {
+      const line = `[${new Date().toLocaleTimeString()}] ${parts.join(' ')}`;
+      els.logBox.textContent += line + '\n';
+      els.logBox.scrollTop = els.logBox.scrollHeight;
+      console.log(line);
+    }
+
+    function setStatus(text, mode = 'bad') {
+      els.statusText.textContent = text;
+      els.statusDot.className = 'dot' + (mode === 'ok' ? ' ok' : mode === 'warn' ? ' warn' : '');
+    }
+
+    function hex(buffer) {
+      const arr = new Uint8Array(buffer);
+      return [...arr].map(b => b.toString(16).padStart(2, '0')).join(' ');
+    }
+
+    function ascii(buffer) {
+      const arr = new Uint8Array(buffer);
+      return [...arr].map(b => (b >= 32 && b <= 126) ? String.fromCharCode(b) : '.').join('');
+    }
+
+    function propsToText(p) {
+      return [
+        p.read && 'read',
+        p.write && 'write',
+        p.writeWithoutResponse && 'writeWithoutResponse',
+        p.notify && 'notify',
+        p.indicate && 'indicate',
+        p.broadcast && 'broadcast',
+        p.authenticatedSignedWrites && 'signed',
+        p.reliableWrite && 'reliableWrite',
+        p.writableAuxiliaries && 'writableAux',
+      ].filter(Boolean).join(', ') || '—';
+    }
+
+    function uuidText(u) {
+      return String(u).toLowerCase();
+    }
+
+    function updateKnownMetric(label, value) {
+      if (label === 'speed') els.speedVal.textContent = value;
+      if (label === 'voltage') els.voltVal.textContent = value;
+    }
+
+    function trySimpleParse(dataView, sourceLabel = '') {
+      const bytes = new Uint8Array(dataView.buffer.slice(dataView.byteOffset, dataView.byteOffset + dataView.byteLength));
+      const out = [];
+
+      // Generic little-endian guesses that are often useful during reversing.
+      if (bytes.length >= 2) {
+        for (let i = 0; i <= bytes.length - 2; i++) {
+          const u16le = bytes[i] | (bytes[i + 1] << 8);
+          const u16be = (bytes[i] << 8) | bytes[i + 1];
+
+          // crude speed guess: x10 encoding
+          if (u16le <= 1200) {
+            const maybeSpeed = (u16le / 10).toFixed(1);
+            if (u16le >= 10 && u16le <= 1000) {
+              out.push(`speed? off=${i} le=${maybeSpeed} km/h`);
+            }
+          }
+
+          // crude voltage guesses
+          if (u16le >= 200 && u16le <= 1000) {
+            out.push(`voltage? off=${i} le=${(u16le / 10).toFixed(1)} V`);
+          }
+          if (u16be >= 200 && u16be <= 1000) {
+            out.push(`voltage? off=${i} be=${(u16be / 10).toFixed(1)} V`);
+          }
+        }
+      }
+
+      const text = ascii(bytes.buffer);
+      if (/[A-Za-z0-9]{4,}/.test(text)) out.push(`ascii: ${text}`);
+
+      // Very lightweight "known metric" update heuristics.
+      if (bytes.length >= 2) {
+        const u16 = bytes[0] | (bytes[1] << 8);
+        if (u16 >= 10 && u16 <= 1000) updateKnownMetric('speed', `${(u16/10).toFixed(1)} km/h?`);
+        if (u16 >= 200 && u16 <= 1000) updateKnownMetric('voltage', `${(u16/10).toFixed(1)} V?`);
+      }
+
+      if (out.length) {
+        const msg = `# ${sourceLabel}\n${out.join('\n')}\n\n`;
+        els.parserBox.value = msg + els.parserBox.value.slice(0, 14000);
+      }
+    }
+
+    async function safeReadCharacteristic(characteristic) {
+      try {
+        const value = await characteristic.readValue();
+        const bytes = new Uint8Array(value.buffer.slice(value.byteOffset, value.byteOffset + value.byteLength));
+        log(`READ  ${characteristic.uuid}  hex=${hex(bytes.buffer)}  ascii=${ascii(bytes.buffer)}`);
+        trySimpleParse(value, `READ ${characteristic.uuid}`);
+      } catch (err) {
+        log(`READ FAIL ${characteristic.uuid}: ${err.message}`);
+      }
+    }
+
+    async function toggleNotify(characteristic, button) {
+      const key = characteristic.service.uuid + '|' + characteristic.uuid;
+      try {
+        if (notifyHandlers.has(key)) {
+          const handler = notifyHandlers.get(key);
+          characteristic.removeEventListener('characteristicvaluechanged', handler);
+          await characteristic.stopNotifications();
+          notifyHandlers.delete(key);
+          button.textContent = 'Notify starten';
+          log(`NOTIFY STOP ${characteristic.uuid}`);
+          return;
+        }
+
+        const handler = (event) => {
+          const value = event.target.value;
+          const bytes = new Uint8Array(value.buffer.slice(value.byteOffset, value.byteOffset + value.byteLength));
+          log(`NOTIFY ${characteristic.uuid}  hex=${hex(bytes.buffer)}  ascii=${ascii(bytes.buffer)}`);
+          trySimpleParse(value, `NOTIFY ${characteristic.uuid}`);
+        };
+
+        await characteristic.startNotifications();
+        characteristic.addEventListener('characteristicvaluechanged', handler);
+        notifyHandlers.set(key, handler);
+        button.textContent = 'Notify stoppen';
+        log(`NOTIFY START ${characteristic.uuid}`);
+      } catch (err) {
+        log(`NOTIFY FAIL ${characteristic.uuid}: ${err.message}`);
+      }
+    }
+
+    async function writeHex(characteristic, input) {
+      const raw = input.value.trim();
+      if (!raw) return;
+      try {
+        const bytes = raw
+          .replace(/0x/gi, '')
+          .split(/[\s,;-]+/)
+          .filter(Boolean)
+          .map(x => parseInt(x, 16));
+        if (bytes.some(Number.isNaN)) throw new Error('Ungültige Hex-Eingabe');
+        const buf = new Uint8Array(bytes);
+        if (characteristic.properties.writeWithoutResponse) {
+          await characteristic.writeValueWithoutResponse(buf);
+        } else if (characteristic.properties.write) {
+          await characteristic.writeValue(buf);
+        } else {
+          throw new Error('Characteristic ist nicht schreibbar');
+        }
+        log(`WRITE ${characteristic.uuid}  hex=${hex(buf.buffer)}`);
+      } catch (err) {
+        log(`WRITE FAIL ${characteristic.uuid}: ${err.message}`);
+      }
+    }
+
+    async function renderServices() {
+      els.servicesBox.innerHTML = '';
+      const services = await server.getPrimaryServices();
+
+      if (!services.length) {
+        els.servicesBox.innerHTML = '<div class="muted">Keine Services gefunden.</div>';
+        return;
+      }
+
+      for (const service of services) {
+        const d = document.createElement('details');
+        d.open = true;
+
+        const summary = document.createElement('summary');
+        summary.textContent = `Service ${uuidText(service.uuid)}`;
+        d.appendChild(summary);
+
+        let characteristics = [];
+        try {
+          characteristics = await service.getCharacteristics();
+        } catch (err) {
+          const div = document.createElement('div');
+          div.className = 'char';
+          div.textContent = `Characteristics konnten nicht geladen werden: ${err.message}`;
+          d.appendChild(div);
+          els.servicesBox.appendChild(d);
+          continue;
+        }
+
+        for (const characteristic of characteristics) {
+          const wrapper = document.createElement('div');
+          wrapper.className = 'char';
+
+          const head = document.createElement('div');
+          head.className = 'charhead';
+
+          const title = document.createElement('div');
+          title.innerHTML = `<b>${uuidText(characteristic.uuid)}</b><div class="meta">Properties: ${propsToText(characteristic.properties)}</div>`;
+          head.appendChild(title);
+
+          const controls = document.createElement('div');
+          controls.className = 'row';
+
+          const readBtn = document.createElement('button');
+          readBtn.textContent = 'Read';
+          readBtn.disabled = !characteristic.properties.read;
+          readBtn.onclick = () => safeReadCharacteristic(characteristic);
+          controls.appendChild(readBtn);
+
+          const notifyBtn = document.createElement('button');
+          notifyBtn.textContent = 'Notify starten';
+          notifyBtn.disabled = !(characteristic.properties.notify || characteristic.properties.indicate);
+          notifyBtn.onclick = () => toggleNotify(characteristic, notifyBtn);
+          controls.appendChild(notifyBtn);
+
+          head.appendChild(controls);
+          wrapper.appendChild(head);
+
+          const writeRow = document.createElement('div');
+          writeRow.className = 'row';
+
+          const inp = document.createElement('input');
+          inp.type = 'text';
+          inp.placeholder = 'Hex schreiben, z.B. 55 aa 04 00';
+          inp.style.cssText = 'flex:1;min-width:260px;background:#091125;color:#dfe7ff;border:1px solid var(--border);padding:10px 12px;border-radius:12px;';
+          inp.disabled = !(characteristic.properties.write || characteristic.properties.writeWithoutResponse);
+          writeRow.appendChild(inp);
+
+          const writeBtn = document.createElement('button');
+          writeBtn.textContent = 'Write Hex';
+          writeBtn.disabled = !(characteristic.properties.write || characteristic.properties.writeWithoutResponse);
+          writeBtn.onclick = () => writeHex(characteristic, inp);
+          writeRow.appendChild(writeBtn);
+
+          wrapper.appendChild(writeRow);
+
+          const info = document.createElement('div');
+          info.className = 'tiny';
+          info.textContent = `Service: ${uuidText(service.uuid)}`;
+          wrapper.appendChild(info);
+
+          d.appendChild(wrapper);
+        }
+
+        els.servicesBox.appendChild(d);
+      }
+    }
+
+    async function connect() {
+      if (!navigator.bluetooth) {
+        alert('Web Bluetooth wird in diesem Browser nicht unterstützt.');
+        return;
+      }
+
+      const serviceUuid = els.serviceFilter.value.trim();
+      const namePart = els.nameFilter.value.trim();
+      const acceptAll = els.acceptAllDevices.checked;
+
+      const options = {};
+      const optionalServices = [];
+      if (serviceUuid) optionalServices.push(serviceUuid);
+
+      if (!acceptAll && (serviceUuid || namePart)) {
+        const filter = {};
+        if (serviceUuid) filter.services = [serviceUuid];
+        if (namePart) filter.namePrefix = namePart;
+        options.filters = [filter];
+      } else {
+        options.acceptAllDevices = true;
+      }
+
+      if (optionalServices.length) options.optionalServices = optionalServices;
+
+      log('requestDevice() mit Optionen:', JSON.stringify(options));
+
+      try {
+        device = await navigator.bluetooth.requestDevice(options);
+        device.addEventListener('gattserverdisconnected', onDisconnected);
+
+        els.deviceName.textContent = device.name || '(ohne Namen)';
+        setStatus('Verbinde …', 'warn');
+        els.connState.textContent = 'verbinde';
+
+        server = await device.gatt.connect();
+        setStatus('Verbunden', 'ok');
+        els.connState.textContent = 'online';
+        els.disconnectBtn.disabled = false;
+
+        log(`CONNECTED ${device.name || '(ohne Namen)'} id=${device.id || 'n/a'}`);
+        await renderServices();
+      } catch (err) {
+        setStatus('Nicht verbunden', 'bad');
+        els.connState.textContent = 'offline';
+        log(`CONNECT FAIL: ${err.message}`);
+      }
+    }
+
+    async function disconnect() {
+      try {
+        if (device?.gatt?.connected) {
+          device.gatt.disconnect();
+        }
+      } catch (err) {
+        log(`DISCONNECT FAIL: ${err.message}`);
+      }
+    }
+
+    function onDisconnected() {
+      setStatus('Getrennt', 'bad');
+      els.connState.textContent = 'offline';
+      els.disconnectBtn.disabled = true;
+      log('DISCONNECTED');
+      notifyHandlers.clear();
+    }
+
+    els.connectBtn.addEventListener('click', connect);
+    els.disconnectBtn.addEventListener('click', disconnect);
+    els.clearBtn.addEventListener('click', () => {
+      els.logBox.textContent = '';
+      els.parserBox.value = '';
+    });
+
+    setStatus('Nicht verbunden', 'bad');
+  </script>
+</body>
+</html>
