@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Scooter Connect + Auth Test (NinebotCrypto JS)</title>
+  <title>Scooter Connect + Auth Test (AFixed)</title>
   <style>
     :root {
       --bg: #0b1020;
@@ -23,10 +23,10 @@
       background: linear-gradient(180deg, var(--bg), #0e1530);
       color: var(--text);
     }
-    .wrap { max-width: 1040px; margin: 0 auto; padding: 24px; }
+    .wrap { max-width: 1100px; margin: 0 auto; padding: 24px; }
     h1 { margin: 0 0 8px; font-size: 28px; }
     .sub { color: var(--muted); margin-bottom: 18px; line-height: 1.45; }
-    .grid { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 18px; }
+    .grid { display: grid; grid-template-columns: 1.15fr 0.85fr; gap: 18px; }
     .card {
       background: rgba(20,27,52,.95);
       border: 1px solid var(--line);
@@ -35,6 +35,7 @@
       box-shadow: 0 10px 30px rgba(0,0,0,.22);
     }
     .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+    .cols2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
     button {
       border: 1px solid var(--line);
       background: var(--panel-2);
@@ -46,7 +47,7 @@
     }
     button:hover { filter: brightness(1.06); }
     button:disabled { opacity: .55; cursor: not-allowed; }
-    input[type="text"] {
+    input[type="text"], select {
       width: 100%;
       background: #0f1731;
       color: var(--text);
@@ -55,6 +56,7 @@
       padding: 10px 12px;
       outline: none;
     }
+    label.chk { display:flex; align-items:center; gap:8px; color:var(--muted); font-size:13px; }
     .label { font-size: 13px; color: var(--muted); margin: 12px 0 6px; }
     .statusBox {
       padding: 14px;
@@ -63,7 +65,7 @@
       background: #101730;
     }
     .status { font-size: 18px; font-weight: 800; margin-bottom: 8px; }
-    .hint { color: var(--muted); min-height: 42px; line-height: 1.45; }
+    .hint { color: var(--muted); min-height: 44px; line-height: 1.45; }
     .stepList { display: grid; gap: 10px; margin-top: 12px; }
     .step {
       border: 1px solid var(--line);
@@ -85,7 +87,7 @@
       word-break: break-word;
     }
     .log {
-      max-height: 450px;
+      max-height: 470px;
       overflow: auto;
       background: #0c1227;
       border: 1px solid var(--line);
@@ -96,21 +98,34 @@
     .ok { color: var(--ok); }
     .warn { color: var(--warn); }
     .err { color: var(--err); }
+    .pill {
+      display:inline-block;
+      padding:4px 8px;
+      border-radius:999px;
+      border:1px solid var(--line);
+      font-size:12px;
+      color:var(--muted);
+      background:#101730;
+    }
     code {
       background: #0e1733;
       border: 1px solid var(--line);
       padding: 2px 6px;
       border-radius: 8px;
     }
-    @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+    @media (max-width: 920px) {
+      .grid { grid-template-columns: 1fr; }
+      .cols2 { grid-template-columns:1fr; }
+    }
   </style>
 </head>
 <body>
   <div class="wrap">
     <h1>Scooter Connect + Auth Test</h1>
     <div class="sub">
-      Diese Seite nutzt einen JavaScript-Port von <code>NinebotCrypto</code> direkt im Browser.
-      Ablauf: <code>verbinden → Notify → 0x5B → 0x5C → Powerbutton-Hinweis → 0x5D → fertig</code>.
+      Fixed-Version mit besserem Diagnosemodus. Sie probiert automatisch den Write-Modus,
+      kann mehrere Zieladressen testen und führt den Auth-Flow selbst weiter:
+      <code>connect → notify → 0x5B → 0x5C → Powerbutton-Hinweis → 0x5D</code>.
     </div>
 
     <div class="grid">
@@ -118,42 +133,93 @@
         <div class="row">
           <button id="connectBtn">Scooter verbinden</button>
           <button id="disconnectBtn" disabled>Trennen</button>
-          <button id="retryBtn" disabled>Auth neu starten</button>
+          <button id="authBtn" disabled>Auth starten</button>
+          <button id="clearBtn">Log leeren</button>
         </div>
 
-        <div class="label">Service UUID</div>
-        <input id="serviceUuid" type="text" value="6e400001-b5a3-f393-e0a9-e50e24dcca9e" />
+        <div class="cols2">
+          <div>
+            <div class="label">Service UUID</div>
+            <input id="serviceUuid" type="text" value="6e400001-b5a3-f393-e0a9-e50e24dcca9e" />
+          </div>
+          <div>
+            <div class="label">Write UUID</div>
+            <input id="writeUuid" type="text" value="6e400002-b5a3-f393-e0a9-e50e24dcca9e" />
+          </div>
+          <div>
+            <div class="label">Read / Notify UUID</div>
+            <input id="readUuid" type="text" value="6e400003-b5a3-f393-e0a9-e50e24dcca9e" />
+          </div>
+          <div>
+            <div class="label">Fallback-Name für Crypto</div>
+            <input id="fallbackName" type="text" value="N2O" />
+          </div>
+        </div>
 
-        <div class="label">Write UUID</div>
-        <input id="writeUuid" type="text" value="6e400002-b5a3-f393-e0a9-e50e24dcca9e" />
+        <div class="cols2">
+          <div>
+            <div class="label">Primäre Zieladresse (hex)</div>
+            <input id="destAddr" type="text" value="21" />
+          </div>
+          <div>
+            <div class="label">Adress-Scan-Liste (comma, hex)</div>
+            <input id="destScan" type="text" value="21,20,22" />
+          </div>
+        </div>
 
-        <div class="label">Read / Notify UUID</div>
-        <input id="readUuid" type="text" value="6e400003-b5a3-f393-e0a9-e50e24dcca9e" />
+        <div class="cols2">
+          <div>
+            <div class="label">Write-Modus</div>
+            <select id="writeMode">
+              <option value="auto" selected>auto</option>
+              <option value="withoutResponse">withoutResponse</option>
+              <option value="withResponse">withResponse</option>
+            </select>
+          </div>
+          <div>
+            <div class="label">0x5B Timeout pro Versuch</div>
+            <input id="tryTimeoutMs" type="text" value="2200" />
+          </div>
+        </div>
 
-        <div class="label">Scooter-Adresse im Frame (hex)</div>
-        <input id="destAddr" type="text" value="21" />
+        <div class="row" style="margin-top:10px;">
+          <label class="chk"><input id="diagnoseScan" type="checkbox" checked /> Adresse 20/21/22 automatisch testen</label>
+          <label class="chk"><input id="rawFallback" type="checkbox" checked /> Wenn Crypto-5B nichts bringt, auch unverschlüsseltes 5B testen</label>
+        </div>
+
+        <div class="row" style="margin-top:12px;">
+          <button id="testEncryptedBtn" disabled>Nur 5B verschlüsselt testen</button>
+          <button id="testRawBtn" disabled>Nur 5B roh testen</button>
+        </div>
 
         <div class="small" style="margin-top:12px;">
-          Die Seite nutzt den Scooter-Namen als <code>_name</code> für NinebotCrypto. Falls dein Gerät keinen Namen liefert,
-          kannst du unten einen Fallback setzen.
+          Diese Version loggt:
+          <br>• welchen Write-Modus sie wirklich benutzt
+          <br>• welche Zieladresse gerade getestet wird
+          <br>• jeden RX-Frame zuerst roh
+          <br>• danach, falls möglich, auch decryptet
         </div>
-
-        <div class="label">Fallback-Name für Crypto (max 16 Zeichen)</div>
-        <input id="fallbackName" type="text" value="N2O" />
       </div>
 
       <div class="card">
         <div class="statusBox">
           <div id="status" class="status">Bereit</div>
-          <div id="hint" class="hint">Drücke auf „Scooter verbinden“. Danach sagt die Seite dir automatisch, wann du den Powerbutton drücken sollst.</div>
+          <div id="hint" class="hint">Verbinde den Scooter. Danach kann die Seite selbst testen, ob Write-Modus oder Zieladresse das Problem ist.</div>
         </div>
+
+        <div style="margin-top:12px;" class="row">
+          <span class="pill" id="modePill">write: -</span>
+          <span class="pill" id="addrPill">addr: -</span>
+          <span class="pill" id="rxPill">rx: 0</span>
+        </div>
+
         <div class="stepList" id="steps"></div>
       </div>
 
       <div class="card" style="grid-column: 1 / -1;">
         <div class="row" style="justify-content: space-between;">
           <strong>Log</strong>
-          <span class="small">TX/RX als Hex, plus decryptete Frames</span>
+          <span class="small">TX/RX, decrypt und Diagnose</span>
         </div>
         <div id="log" class="log mono" style="margin-top:10px;"></div>
       </div>
@@ -178,14 +244,18 @@
       serial14: null,
       appRandom: null,
       sending5D: false,
+      rxCount: 0,
+      authRunId: 0,
+      scanHit: false,
+      lastWriteModeUsed: "-",
     };
 
     const steps = [
       { key: "connect", label: "BLE verbinden" },
       { key: "notify", label: "Notifications aktivieren" },
-      { key: "cmd5b", label: "0x5B senden und Antwort verarbeiten" },
-      { key: "cmd5c", label: "0x5C mit 16 Byte Random senden" },
-      { key: "power", label: "Powerbutton-Hinweis automatisch anzeigen" },
+      { key: "cmd5b", label: "0x5B erfolgreich empfangen" },
+      { key: "cmd5c", label: "0x5C senden" },
+      { key: "power", label: "Powerbutton-Hinweis anzeigen" },
       { key: "cmd5d", label: "0x5D final senden" },
       { key: "done", label: "Auth fertig" },
     ];
@@ -205,6 +275,10 @@
       }
     }
 
+    function resetSteps() {
+      renderSteps();
+    }
+
     function setStep(key, mode) {
       const el = $("step-" + key);
       if (!el) return;
@@ -214,6 +288,12 @@
     function setStatus(title, hint = "") {
       $("status").textContent = title;
       $("hint").innerHTML = hint;
+    }
+
+    function updatePills() {
+      $("modePill").textContent = "write: " + state.lastWriteModeUsed;
+      $("addrPill").textContent = "addr: " + (state.destAddr == null ? "-" : state.destAddr.toString(16).padStart(2, "0"));
+      $("rxPill").textContent = "rx: " + state.rxCount;
     }
 
     function log(line, cls = "") {
@@ -227,6 +307,10 @@
 
     function hex(bytes) {
       return Array.from(bytes || []).map(b => b.toString(16).padStart(2, "0")).join(" ");
+    }
+
+    function clearLog() {
+      logEl.innerHTML = "";
     }
 
     function clearTimers() {
@@ -259,8 +343,16 @@
 
     function fromHexByte(text) {
       const v = parseInt(String(text).trim(), 16);
-      if (Number.isNaN(v) || v < 0 || v > 255) throw new Error("Adresse ungültig. Beispiel: 21");
+      if (Number.isNaN(v) || v < 0 || v > 255) throw new Error("Hex-Byte ungültig, z. B. 21");
       return v;
+    }
+
+    function parseHexList(text) {
+      return String(text)
+        .split(",")
+        .map(s => s.trim())
+        .filter(Boolean)
+        .map(fromHexByte);
     }
 
     function xor16(a, b) {
@@ -271,12 +363,6 @@
 
     function copyBytes(src, srcOffset, dst, dstOffset, length) {
       for (let i = 0; i < length; i++) dst[dstOffset + i] = src[srcOffset + i];
-    }
-
-    function bytesEq(a, b) {
-      if (a.length !== b.length) return false;
-      for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false;
-      return true;
     }
 
     function ascii16(str) {
@@ -308,7 +394,6 @@
       };
     }
 
-    // -------- AES-128 ECB (pure JS) --------
     function xtime(a) {
       return ((a << 1) ^ (((a >> 7) & 1) * 0x1b)) & 0xff;
     }
@@ -326,9 +411,7 @@
     }
 
     function gfPow(a, n) {
-      let res = 1;
-      let base = a;
-      let exp = n;
+      let res = 1, base = a, exp = n;
       while (exp > 0) {
         if (exp & 1) res = gfMul(res, base);
         base = gfMul(base, base);
@@ -359,10 +442,8 @@
       let bytesGenerated = 16;
       let rconIter = 1;
       const temp = new Uint8Array(4);
-
       while (bytesGenerated < 176) {
         for (let i = 0; i < 4; i++) temp[i] = expanded[bytesGenerated - 4 + i];
-
         if (bytesGenerated % 16 === 0) {
           const t = temp[0];
           temp[0] = AES_SBOX[temp[1]] ^ AES_RCON[rconIter++];
@@ -370,7 +451,6 @@
           temp[2] = AES_SBOX[temp[3]];
           temp[3] = AES_SBOX[t];
         }
-
         for (let i = 0; i < 4; i++) {
           expanded[bytesGenerated] = expanded[bytesGenerated - 16] ^ temp[i];
           bytesGenerated++;
@@ -439,6 +519,17 @@
 
       async init() {
         await this.calcSha1Key(this._name, this._fwData);
+      }
+
+      clone() {
+        const c = new NinebotCryptoJS("");
+        c._fwData.set(this._fwData);
+        c._randomBleData.set(this._randomBleData);
+        c._randomAppData.set(this._randomAppData);
+        c._sha1Key.set(this._sha1Key);
+        c._name.set(this._name);
+        c._msgIt = this._msgIt;
+        return c;
       }
 
       async calcSha1Key(data1, data2) {
@@ -524,7 +615,6 @@
 
         const xorData1Header = new Uint8Array(16);
         copyBytes(data, 0, xorData1Header, 0, 3);
-
         let xorData = xor16(xorData1Header, xorData2);
         aesKey = this.aesEcbEncrypt(xorData, this._sha1Key);
         copyBytes(aesKey, 0, xorData2, 0, 16);
@@ -542,17 +632,13 @@
 
         aesEncData.fill(0);
         aesEncData[0] = 1;
-        aesEncData[15] = 0;
-
-        aesKey = this.aesEcbEncrypt(aesEncData, this._sha1Key);
-        const xorOut = xor16(aesKey, xorData2);
+        const xorOut = xor16(this.aesEcbEncrypt(aesEncData, this._sha1Key), xorData2);
         return Uint8Array.from([xorOut[0], xorOut[1], xorOut[2], xorOut[3]]);
       }
 
       async encrypt(data) {
         const encrypted = new Uint8Array(152);
         copyBytes(data, 0, encrypted, 0, 3);
-
         const payloadLen = data.length - 3;
         let payload = data.slice(3);
 
@@ -583,7 +669,7 @@
           if (
             data.length >= 23 &&
             data[0] === 0x5A && data[1] === 0xA5 && data[2] === 0x10 &&
-            data[3] === 0x3E && data[4] === 0x21 && data[5] === 0x5C && data[6] === 0x00
+            data[3] === 0x3E && data[5] === 0x5C && data[6] === 0x00
           ) {
             copyBytes(data, 7, this._randomAppData, 0, 16);
           }
@@ -632,46 +718,163 @@
           this._msgIt = newMsgIt;
           return decrypted;
         } else {
-          throw new Error("Altes oder ungültiges msg_it empfangen");
+          throw new Error("altes/ungültiges msg_it");
         }
       }
     }
 
-    async function writeFrame(frame) {
+    async function initCryptoForCurrentDevice() {
+      const cryptoName = (state.device?.name || $("fallbackName").value || "N2O").slice(0, 16);
+      state.crypto = new NinebotCryptoJS(cryptoName);
+      await state.crypto.init();
+      log("Crypto-Name: " + cryptoName);
+    }
+
+    async function writeBytes(bytes) {
+      const mode = $("writeMode").value;
       if (!state.writeChar) throw new Error("Write characteristic fehlt");
+
+      if (mode === "withoutResponse") {
+        if (!state.writeChar.properties.writeWithoutResponse) throw new Error("withoutResponse wird von der Characteristic nicht unterstützt");
+        state.lastWriteModeUsed = "withoutResponse";
+        updatePills();
+        await state.writeChar.writeValueWithoutResponse(bytes);
+        return;
+      }
+
+      if (mode === "withResponse") {
+        if (!state.writeChar.properties.write) throw new Error("withResponse wird von der Characteristic nicht unterstützt");
+        state.lastWriteModeUsed = "withResponse";
+        updatePills();
+        await state.writeChar.writeValue(bytes);
+        return;
+      }
+
+      if (state.writeChar.properties.writeWithoutResponse) {
+        state.lastWriteModeUsed = "withoutResponse(auto)";
+        updatePills();
+        await state.writeChar.writeValueWithoutResponse(bytes);
+        return;
+      }
+
+      if (state.writeChar.properties.write) {
+        state.lastWriteModeUsed = "withResponse(auto)";
+        updatePills();
+        await state.writeChar.writeValue(bytes);
+        return;
+      }
+
+      throw new Error("Characteristic ist nicht schreibbar");
+    }
+
+    async function writeFrameEncrypted(frame) {
       const encrypted = await state.crypto.encrypt(frame);
       log("TX RAW     " + hex(frame), "warn");
       log("TX ENCRYPT " + hex(encrypted), "warn");
-      await state.writeChar.writeValue(encrypted);
+      await writeBytes(encrypted);
+    }
+
+    async function writeFrameRaw(frame) {
+      log("TX RAWONLY " + hex(frame), "warn");
+      await writeBytes(frame);
+    }
+
+    async function sendOnly5BEncrypted() {
+      setStatus("Test 5B verschlüsselt", "Sende nur <code>0x5B</code> verschlüsselt.");
+      await writeFrameEncrypted(buildFrame(0x5B, 0x00));
+    }
+
+    async function sendOnly5BRaw() {
+      setStatus("Test 5B roh", "Sende nur <code>0x5B</code> roh.");
+      await writeFrameRaw(buildFrame(0x5B, 0x00));
+    }
+
+    function noteAddress(addr) {
+      state.destAddr = addr;
+      updatePills();
+      log("Teste Zieladresse 0x" + addr.toString(16).padStart(2, "0"));
+    }
+
+    async function trySingle5B(addr, encrypted) {
+      noteAddress(addr);
+      await initCryptoForCurrentDevice();
+      state.serial14 = null;
+      state.scanHit = false;
+      const thisRun = state.authRunId;
+
+      if (encrypted) {
+        await sendOnly5BEncrypted();
+      } else {
+        await sendOnly5BRaw();
+      }
+
+      const timeoutMs = parseInt($("tryTimeoutMs").value, 10) || 2200;
+
+      return await new Promise((resolve) => {
+        schedule(() => {
+          if (state.authRunId !== thisRun) return resolve(false);
+          resolve(!!state.serial14);
+        }, timeoutMs);
+      });
+    }
+
+    async function run5BDiagnose() {
+      const addrs = $("diagnoseScan").checked ? parseHexList($("destScan").value) : [fromHexByte($("destAddr").value)];
+      state.authRunId++;
+      const runId = state.authRunId;
+      state.serial14 = null;
+
+      setStep("cmd5b", "active");
+      setStatus("Diagnose läuft", "Teste <code>0x5B</code> jetzt automatisch über mehrere Adressen …");
+
+      for (const addr of addrs) {
+        if (runId !== state.authRunId) return false;
+
+        log("---- 5B Diagnose verschlüsselt auf 0x" + addr.toString(16).padStart(2, "0") + " ----");
+        const okEnc = await trySingle5B(addr, true);
+        if (okEnc) {
+          log("Treffer: verschlüsseltes 5B auf Adresse 0x" + addr.toString(16).padStart(2, "0"), "ok");
+          return true;
+        }
+
+        if ($("rawFallback").checked) {
+          log("---- 5B Diagnose roh auf 0x" + addr.toString(16).padStart(2, "0") + " ----");
+          const okRaw = await trySingle5B(addr, false);
+          if (okRaw) {
+            log("Treffer: rohes 5B auf Adresse 0x" + addr.toString(16).padStart(2, "0"), "ok");
+            return true;
+          }
+        }
+      }
+
+      setStep("cmd5b", "error");
+      setStatus(
+        "Keine 5B-Antwort",
+        "Es kam auf keine getestete Adresse eine passende <code>0x5B</code>-Antwort. Dann ist meist Write-Modus oder innere Zieladresse falsch."
+      );
+      log("Kein Treffer bei 5B-Diagnose.", "err");
+      return false;
     }
 
     async function startAuthFlow() {
       if (!state.isConnected) throw new Error("Nicht verbunden");
       clearTimers();
+      resetSteps();
       state.completed = false;
       state.waitingForPowerButton = false;
       state.sending5D = false;
       state.serial14 = null;
       state.appRandom = randomBytes(16);
+      state.authRunId++;
 
-      setStep("cmd5b", "active");
-      setStatus("Auth läuft", "Starte Handshake mit <code>0x5B</code> …");
-      await writeFrame(buildFrame(0x5B, 0x00));
+      const ok = await run5BDiagnose();
+      if (!ok || !state.serial14) return;
 
-      schedule(() => {
-        if (!state.serial14) {
-          setStep("cmd5b", "error");
-          setStatus("Keine 0x5B-Antwort erkannt", "Es kam kein passender decrypteter <code>0x5B</code>-Frame an.");
-          log("Timeout: keine passende 0x5B-Antwort.", "err");
-        }
-      }, 5000);
-    }
-
-    async function continueWith5C() {
       setStep("cmd5b", "done");
       setStep("cmd5c", "active");
-      setStatus("0x5C senden", "Sende jetzt 16 Byte App-Random …");
-      await writeFrame(buildFrame(0x5C, 0x00, state.appRandom));
+      setStatus("0x5C senden", "Passende 5B-Antwort gefunden. Sende jetzt <code>0x5C</code> …");
+      await initCryptoForCurrentDevice();
+      await writeFrameEncrypted(buildFrame(0x5C, 0x00, state.appRandom));
 
       schedule(() => {
         if (!state.waitingForPowerButton && !state.completed) {
@@ -680,7 +883,7 @@
           setStatus("Powerbutton drücken", "Bitte jetzt kurz den <b>Powerbutton drücken</b> oder das <b>Licht toggeln</b>.");
           log("Auto-Hinweis: Powerbutton drücken / Licht toggeln.", "warn");
         }
-      }, 1200);
+      }, 1400);
     }
 
     async function continueWith5D() {
@@ -690,7 +893,7 @@
       setStep("power", "done");
       setStep("cmd5d", "active");
       setStatus("0x5D senden", "Finalisiere Auth …");
-      await writeFrame(buildFrame(0x5D, 0x00, state.serial14));
+      await writeFrameEncrypted(buildFrame(0x5D, 0x00, state.serial14));
     }
 
     function finishAuth() {
@@ -699,19 +902,19 @@
       setStep("done", "done");
       setStatus("Fertig", "<span class='ok'><b>Connect + Auth erfolgreich abgeschlossen.</b></span>");
       log("Auth erfolgreich abgeschlossen.", "ok");
-      $("retryBtn").disabled = false;
     }
 
-    async function handleFrame(frame) {
+    async function handleDecryptedFrame(frame) {
       const parsed = parseFrame(frame);
       if (!parsed) return;
+
       log(`FRAME len=${parsed.len} src=${parsed.src.toString(16)} dest=${parsed.dest.toString(16)} cmd=${parsed.cmd.toString(16)} ofs=${parsed.ofs.toString(16)} payload=${hex(parsed.payload)}`);
 
       if (parsed.cmd === 0x5B) {
         if (parsed.payload.length >= 30) {
           state.serial14 = parsed.payload.slice(16, 30);
           log("0x5B erkannt. 14-Byte-Block: " + hex(state.serial14), "ok");
-          await continueWith5C();
+          setStep("cmd5b", "done");
         } else {
           log("0x5B erkannt, aber Payload zu kurz.", "err");
         }
@@ -735,42 +938,48 @@
     }
 
     async function onNotify(event) {
+      const value = event.target.value;
+      const raw = new Uint8Array(value.buffer.slice(value.byteOffset, value.byteOffset + value.byteLength));
+      state.rxCount++;
+      updatePills();
+      log("RX ENCRYPT " + hex(raw), "ok");
+
+      let decrypted = null;
+
       try {
-        const value = event.target.value;
-        const raw = new Uint8Array(value.buffer.slice(value.byteOffset, value.byteOffset + value.byteLength));
-        log("RX ENCRYPT " + hex(raw), "ok");
-        const decrypted = await state.crypto.decrypt(raw);
-        log("RX RAW     " + hex(decrypted), "ok");
-        await handleFrame(decrypted);
+        decrypted = await state.crypto.decrypt(raw);
+        log("RX DECRYPT " + hex(decrypted), "ok");
+        await handleDecryptedFrame(decrypted);
       } catch (err) {
-        showError(err);
+        log("Decrypt fehlgeschlagen: " + String(err.message || err), "err");
+        // Fallback: prüfen, ob das Gerät evtl. roh antwortet
+        try {
+          const parsedRaw = parseFrame(raw);
+          if (parsedRaw) {
+            log("RX scheint schon roh zu sein.", "warn");
+            await handleDecryptedFrame(raw);
+          }
+        } catch (_) {}
       }
     }
 
     async function connect() {
       if (!navigator.bluetooth) throw new Error("Web Bluetooth wird in diesem Browser nicht unterstützt.");
 
-      state.destAddr = fromHexByte($("destAddr").value);
+      setStep("connect", "active");
+      setStatus("Geräteauswahl", "Bitte den Scooter im Browser-Popup auswählen …");
+
       const serviceUuid = $("serviceUuid").value.trim();
       const writeUuid = $("writeUuid").value.trim().toLowerCase();
       const readUuid = $("readUuid").value.trim().toLowerCase();
 
-      setStep("connect", "active");
-      setStatus("Geräteauswahl", "Bitte den Scooter im Browser-Popup auswählen …");
-
-      const device = await navigator.bluetooth.requestDevice({
+      state.device = await navigator.bluetooth.requestDevice({
         filters: serviceUuid ? [{ services: [serviceUuid] }] : undefined,
         acceptAllDevices: !serviceUuid,
         optionalServices: serviceUuid ? [serviceUuid] : []
       });
 
-      state.device = device;
       state.device.addEventListener("gattserverdisconnected", onDisconnected);
-
-      const cryptoName = (device.name || $("fallbackName").value || "N2O").slice(0, 16);
-      state.crypto = new NinebotCryptoJS(cryptoName);
-      await state.crypto.init();
-      log("Crypto-Name: " + cryptoName, "");
 
       setStatus("Verbinde", "GATT-Verbindung wird aufgebaut …");
       state.server = await state.device.gatt.connect();
@@ -795,18 +1004,31 @@
       state.writeChar = foundWrite;
       state.readChar = foundRead;
 
+      log("Write props: " + JSON.stringify({
+        write: !!state.writeChar.properties.write,
+        writeWithoutResponse: !!state.writeChar.properties.writeWithoutResponse,
+        notify: !!state.writeChar.properties.notify,
+        indicate: !!state.writeChar.properties.indicate
+      }));
+
       setStep("notify", "active");
       setStatus("Notifications", "Aktiviere Read-Notifications …");
       await state.readChar.startNotifications();
       state.readChar.addEventListener("characteristicvaluechanged", onNotify);
-
       setStep("notify", "done");
+
+      state.rxCount = 0;
+      updatePills();
+      await initCryptoForCurrentDevice();
+
       $("connectBtn").disabled = true;
       $("disconnectBtn").disabled = false;
-      $("retryBtn").disabled = false;
-      log("Verbunden mit: " + (device.name || device.id), "ok");
+      $("authBtn").disabled = false;
+      $("testEncryptedBtn").disabled = false;
+      $("testRawBtn").disabled = false;
 
-      await startAuthFlow();
+      log("Verbunden mit: " + (state.device.name || state.device.id), "ok");
+      setStatus("Verbunden", "Du kannst jetzt direkt Auth starten oder zuerst nur <code>5B</code> testen.");
     }
 
     async function disconnect() {
@@ -828,13 +1050,16 @@
       state.readChar = null;
       state.completed = false;
       state.crypto = null;
+      state.serial14 = null;
       clearTimers();
 
       $("connectBtn").disabled = false;
       $("disconnectBtn").disabled = true;
-      $("retryBtn").disabled = true;
+      $("authBtn").disabled = true;
+      $("testEncryptedBtn").disabled = true;
+      $("testRawBtn").disabled = true;
 
-      renderSteps();
+      resetSteps();
       setStatus("Getrennt", "Die Verbindung wurde getrennt.");
       log("Verbindung getrennt.", "err");
     }
@@ -847,9 +1072,24 @@
 
     $("connectBtn").addEventListener("click", () => connect().catch(showError));
     $("disconnectBtn").addEventListener("click", () => disconnect().catch(showError));
-    $("retryBtn").addEventListener("click", () => startAuthFlow().catch(showError));
+    $("authBtn").addEventListener("click", () => startAuthFlow().catch(showError));
+    $("testEncryptedBtn").addEventListener("click", async () => {
+      try {
+        noteAddress(fromHexByte($("destAddr").value));
+        await initCryptoForCurrentDevice();
+        await sendOnly5BEncrypted();
+      } catch (e) { showError(e); }
+    });
+    $("testRawBtn").addEventListener("click", async () => {
+      try {
+        noteAddress(fromHexByte($("destAddr").value));
+        await sendOnly5BRaw();
+      } catch (e) { showError(e); }
+    });
+    $("clearBtn").addEventListener("click", clearLog);
 
-    renderSteps();
+    resetSteps();
+    updatePills();
   </script>
 </body>
 </html>
