@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Xiaodash Web · M365</title>
+    <link rel="stylesheet" href="./css/style.css" />
+  </head>
+  <body>
+    <div class="app">
+      <header class="top">
+        <div class="brand">Xiaodash <span class="muted">web</span></div>
+        <label class="basic-toggle" title="Basic: nur Fahren &amp; Daten, ohne Login/Werbung/Spenden">
+          <input type="checkbox" id="basicMode" checked />
+          <span>Basic</span>
+        </label>
+      </header>
+
+      <section class="hero" id="dashSection">
+        <canvas id="gauge" width="340" height="220" aria-label="Tachometer"></canvas>
+        <div class="speed-readout">
+          <span id="speedDisplay">0</span>
+          <span class="unit">km/h</span>
+        </div>
+        <div class="sub-stats">
+          <div><span class="lbl">Leistung</span><strong id="watts">—</strong> W</div>
+          <div><span class="lbl">Strom</span><strong id="amps">—</strong> A</div>
+          <div><span class="lbl">Spannung</span><strong id="volts">—</strong> V</div>
+          <div><span class="lbl">Akku</span><strong id="batt">—</strong> %</div>
+        </div>
+      </section>
+
+      <section class="grid">
+        <div class="card">
+          <h3>Fahrdaten</h3>
+          <dl class="kv">
+            <dt>Ø Geschw.</dt>
+            <dd id="avgSpeed">—</dd>
+            <dt>Reichweite</dt>
+            <dd id="rangeKm">—</dd>
+            <dt>Trip</dt>
+            <dd id="tripStr">—</dd>
+            <dt>Odometer</dt>
+            <dd id="odo">—</dd>
+            <dt>ESC Temp</dt>
+            <dd id="tempEsc">—</dd>
+          </dl>
+        </div>
+        <div class="card" id="controlsCard">
+          <h3>Controls</h3>
+          <div class="row">
+            <span>Modus</span>
+            <div class="seg" id="ecoSport">
+              <button type="button" data-m="eco" class="active">Eco</button>
+              <button type="button" data-m="sport">Sport</button>
+            </div>
+          </div>
+          <div class="row slider-row">
+            <label>Top speed <span id="topSpeedVal">25</span> km/h</label>
+            <input type="range" id="topSpeed" min="1" max="100" value="25" />
+          </div>
+          <div class="row slider-row">
+            <label>Start speed <span id="startSpeedVal">0</span> km/h</label>
+            <input type="range" id="startSpeed" min="0" max="40" value="0" />
+          </div>
+          <p class="hint">
+            Schreibt Register <code>0x73</code> (Serien-Firmware / Region abhängig). Cruise / Rekuperation sind
+            Stock-Befehle.
+          </p>
+          <div class="btn-row">
+            <button type="button" class="secondary" id="btnApplySpeed">Speed-Limit anwenden</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="connect">
+        <button type="button" class="primary" id="btnConnect">Scooter verbinden (BLE)</button>
+        <button type="button" class="ghost" id="btnDisconnect" disabled>Trennen</button>
+        <p class="status" id="status">Bereit · Web Bluetooth (Chrome / Edge)</p>
+      </section>
+
+      <section class="full-only" id="fullSection">
+        <div class="card">
+          <h3>Account</h3>
+          <p class="muted small">
+            Cloud-Login wie in der Android-App (Firebase) ist hier nicht eingebettet — bei Bedarf eigene Keys in
+            <code>app.js</code> eintragen.
+          </p>
+          <div class="btn-row">
+            <button type="button" class="ghost" disabled>Login</button>
+            <button type="button" class="ghost" disabled>Aktivieren</button>
+          </div>
+        </div>
+        <div class="card muted-card">
+          <h3>Soundbox · Werbung · Spenden</h3>
+          <p class="small">Platzhalter — in Basic ausgeblendet.</p>
+          <button type="button" class="ghost" disabled>Watch Ad</button>
+          <button type="button" class="ghost" disabled>Spenden</button>
+        </div>
+        <div class="card muted-card">
+          <h3>App</h3>
+          <button type="button" class="ghost" disabled>Daten löschen</button>
+          <button type="button" class="ghost" disabled>Privacy</button>
+          <button type="button" class="ghost" disabled>Changelog</button>
+          <button type="button" class="ghost" disabled>Zahlungen</button>
+        </div>
+      </section>
+
+      <footer class="foot">
+        <p class="small muted">
+          Verbindung wie ScooterHackingUtility (Plain UART): Nordic-Service
+          <code>6e400001-…</code>, Merkmale <code>6e400002/3</code> per
+          <code>g$e</code>, MTU 251 (<code>g.o</code>), Notifications/CCCD (<code>g.p</code>) — ohne Mi/0xFE95.
+          Serielle Frames: Ninebot 55 AA.
+        </p>
+      </footer>
+    </div>
+    <script type="module" src="./js/app.js"></script>
+  </body>
+</html>
