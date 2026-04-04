@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Scooter Connect + Auth Test (AFixed)</title>
+  <title>Scooter Connect + Auth Test (c6/b fixed)</title>
   <style>
     :root {
       --bg: #0b1020;
@@ -123,9 +123,9 @@
   <div class="wrap">
     <h1>Scooter Connect + Auth Test</h1>
     <div class="sub">
-      Fixed-Version mit besserem Diagnosemodus. Sie probiert automatisch den Write-Modus,
-      kann mehrere Zieladressen testen und führt den Auth-Flow selbst weiter:
-      <code>connect → notify → 0x5B → 0x5C → Powerbutton-Hinweis → 0x5D</code>.
+      Diese Version bildet jetzt den <code>c6/b</code>-Pfad korrekt nach:
+      erst inneres Paket <code>3e ..</code>, dann Wrapper <code>5a a5 len</code>, dann erst NinebotCrypto.
+      Das war der fehlende Schritt.
     </div>
 
     <div class="grid">
@@ -178,33 +178,32 @@
           </div>
           <div>
             <div class="label">0x5B Timeout pro Versuch</div>
-            <input id="tryTimeoutMs" type="text" value="2200" />
+            <input id="tryTimeoutMs" type="text" value="2500" />
           </div>
         </div>
 
         <div class="row" style="margin-top:10px;">
           <label class="chk"><input id="diagnoseScan" type="checkbox" checked /> Adresse 20/21/22 automatisch testen</label>
-          <label class="chk"><input id="rawFallback" type="checkbox" checked /> Wenn Crypto-5B nichts bringt, auch unverschlüsseltes 5B testen</label>
         </div>
 
         <div class="row" style="margin-top:12px;">
           <button id="testEncryptedBtn" disabled>Nur 5B verschlüsselt testen</button>
-          <button id="testRawBtn" disabled>Nur 5B roh testen</button>
+          <button id="testWrappedBtn" disabled>Nur 5B gewrappt testen</button>
+          <button id="testInnerBtn" disabled>Nur 5B inner testen</button>
         </div>
 
         <div class="small" style="margin-top:12px;">
-          Diese Version loggt:
-          <br>• welchen Write-Modus sie wirklich benutzt
-          <br>• welche Zieladresse gerade getestet wird
-          <br>• jeden RX-Frame zuerst roh
-          <br>• danach, falls möglich, auch decryptet
+          Logs:
+          <br>• <code>TX INNER</code> = nur <code>3e ..</code>
+          <br>• <code>TX WRAPPED</code> = <code>5a a5 len + inner</code>
+          <br>• <code>TX ENCRYPT</code> = NinebotCrypto-Ausgabe
         </div>
       </div>
 
       <div class="card">
         <div class="statusBox">
           <div id="status" class="status">Bereit</div>
-          <div id="hint" class="hint">Verbinde den Scooter. Danach kann die Seite selbst testen, ob Write-Modus oder Zieladresse das Problem ist.</div>
+          <div id="hint" class="hint">Verbinde den Scooter. Danach kannst du direkt den korrigierten Auth-Flow testen.</div>
         </div>
 
         <div style="margin-top:12px;" class="row">
@@ -219,7 +218,7 @@
       <div class="card" style="grid-column: 1 / -1;">
         <div class="row" style="justify-content: space-between;">
           <strong>Log</strong>
-          <span class="small">TX/RX, decrypt und Diagnose</span>
+          <span class="small">inner / wrapped / encrypted / decrypt</span>
         </div>
         <div id="log" class="log mono" style="margin-top:10px;"></div>
       </div>
@@ -246,7 +245,6 @@
       sending5D: false,
       rxCount: 0,
       authRunId: 0,
-      scanHit: false,
       lastWriteModeUsed: "-",
     };
 
@@ -275,14 +273,10 @@
       }
     }
 
-    function resetSteps() {
-      renderSteps();
-    }
-
+    function resetSteps() { renderSteps(); }
     function setStep(key, mode) {
       const el = $("step-" + key);
-      if (!el) return;
-      el.className = "step" + (mode ? " " + mode : "");
+      if (el) el.className = "step" + (mode ? " " + mode : "");
     }
 
     function setStatus(title, hint = "") {
@@ -305,12 +299,10 @@
       logEl.scrollTop = logEl.scrollHeight;
     }
 
+    function clearLog() { logEl.innerHTML = ""; }
+
     function hex(bytes) {
       return Array.from(bytes || []).map(b => b.toString(16).padStart(2, "0")).join(" ");
-    }
-
-    function clearLog() {
-      logEl.innerHTML = "";
     }
 
     function clearTimers() {
@@ -348,11 +340,7 @@
     }
 
     function parseHexList(text) {
-      return String(text)
-        .split(",")
-        .map(s => s.trim())
-        .filter(Boolean)
-        .map(fromHexByte);
+      return String(text).split(",").map(s => s.trim()).filter(Boolean).map(fromHexByte);
     }
 
     function xor16(a, b) {
@@ -372,11 +360,12 @@
       return out;
     }
 
-    function buildFrame(cmd, ofs, payload = new Uint8Array(0)) {
-      return concatBytes(
-        new Uint8Array([0x5A, 0xA5, payload.length & 0xff, 0x3E, state.destAddr, cmd & 0xff, ofs & 0xff]),
-        payload
-      );
+    function buildInner(cmd, ofs, payload = new Uint8Array(0)) {
+      return concatBytes(new Uint8Array([0x3E, state.destAddr, cmd & 0xff, ofs & 0xff]), payload);
+    }
+
+    function wrapNinebotCryptoInner(inner) {
+      return concatBytes(new Uint8Array([0x5A, 0xA5, (inner.length - 4) & 0xff]), inner);
     }
 
     function parseFrame(frame) {
@@ -392,10 +381,6 @@
         payload: frame.slice(7, 7 + len),
         raw: frame
       };
-    }
-
-    function xtime(a) {
-      return ((a << 1) ^ (((a >> 7) & 1) * 0x1b)) & 0xff;
     }
 
     function gfMul(a, b) {
@@ -521,17 +506,6 @@
         await this.calcSha1Key(this._name, this._fwData);
       }
 
-      clone() {
-        const c = new NinebotCryptoJS("");
-        c._fwData.set(this._fwData);
-        c._randomBleData.set(this._randomBleData);
-        c._randomAppData.set(this._randomAppData);
-        c._sha1Key.set(this._sha1Key);
-        c._name.set(this._name);
-        c._msgIt = this._msgIt;
-        return c;
-      }
-
       async calcSha1Key(data1, data2) {
         const data = new Uint8Array(32);
         copyBytes(data1, 0, data, 0, 16);
@@ -571,10 +545,8 @@
         aesEncData[4] = msgIt & 0xff;
         copyBytes(this._randomBleData, 0, aesEncData, 5, 8);
         aesEncData[15] = 0;
-
         let payloadLen = data.length;
         let byteIdx = 0;
-
         while (payloadLen > 0) {
           aesEncData[15] = (aesEncData[15] + 1) & 0xff;
           const tmpLen = payloadLen <= 16 ? payloadLen : 16;
@@ -735,7 +707,7 @@
       if (!state.writeChar) throw new Error("Write characteristic fehlt");
 
       if (mode === "withoutResponse") {
-        if (!state.writeChar.properties.writeWithoutResponse) throw new Error("withoutResponse wird von der Characteristic nicht unterstützt");
+        if (!state.writeChar.properties.writeWithoutResponse) throw new Error("withoutResponse wird nicht unterstützt");
         state.lastWriteModeUsed = "withoutResponse";
         updatePills();
         await state.writeChar.writeValueWithoutResponse(bytes);
@@ -743,7 +715,7 @@
       }
 
       if (mode === "withResponse") {
-        if (!state.writeChar.properties.write) throw new Error("withResponse wird von der Characteristic nicht unterstützt");
+        if (!state.writeChar.properties.write) throw new Error("withResponse wird nicht unterstützt");
         state.lastWriteModeUsed = "withResponse";
         updatePills();
         await state.writeChar.writeValue(bytes);
@@ -767,26 +739,40 @@
       throw new Error("Characteristic ist nicht schreibbar");
     }
 
-    async function writeFrameEncrypted(frame) {
-      const encrypted = await state.crypto.encrypt(frame);
-      log("TX RAW     " + hex(frame), "warn");
+    async function sendInnerEncrypted(inner) {
+      const wrapped = wrapNinebotCryptoInner(inner);
+      const encrypted = await state.crypto.encrypt(wrapped);
+      log("TX INNER   " + hex(inner), "warn");
+      log("TX WRAPPED " + hex(wrapped), "warn");
       log("TX ENCRYPT " + hex(encrypted), "warn");
       await writeBytes(encrypted);
     }
 
-    async function writeFrameRaw(frame) {
-      log("TX RAWONLY " + hex(frame), "warn");
-      await writeBytes(frame);
+    async function sendWrappedPlain(inner) {
+      const wrapped = wrapNinebotCryptoInner(inner);
+      log("TX INNER   " + hex(inner), "warn");
+      log("TX WRAPPED " + hex(wrapped), "warn");
+      await writeBytes(wrapped);
+    }
+
+    async function sendInnerOnly(inner) {
+      log("TX INNER   " + hex(inner), "warn");
+      await writeBytes(inner);
     }
 
     async function sendOnly5BEncrypted() {
-      setStatus("Test 5B verschlüsselt", "Sende nur <code>0x5B</code> verschlüsselt.");
-      await writeFrameEncrypted(buildFrame(0x5B, 0x00));
+      setStatus("Test 5B verschlüsselt", "Sende <code>3e .. 5b 00</code> mit <code>c6/b</code>-Wrapper und NinebotCrypto.");
+      await sendInnerEncrypted(buildInner(0x5B, 0x00));
     }
 
-    async function sendOnly5BRaw() {
-      setStatus("Test 5B roh", "Sende nur <code>0x5B</code> roh.");
-      await writeFrameRaw(buildFrame(0x5B, 0x00));
+    async function sendOnly5BWrapped() {
+      setStatus("Test 5B gewrappt", "Sende <code>5a a5 len + inner</code> ohne Crypto.");
+      await sendWrappedPlain(buildInner(0x5B, 0x00));
+    }
+
+    async function sendOnly5BInner() {
+      setStatus("Test 5B inner", "Sende nur das innere Paket <code>3e .. 5b 00</code>.");
+      await sendInnerOnly(buildInner(0x5B, 0x00));
     }
 
     function noteAddress(addr) {
@@ -795,21 +781,14 @@
       log("Teste Zieladresse 0x" + addr.toString(16).padStart(2, "0"));
     }
 
-    async function trySingle5B(addr, encrypted) {
+    async function trySingle5B(addr) {
       noteAddress(addr);
       await initCryptoForCurrentDevice();
       state.serial14 = null;
-      state.scanHit = false;
       const thisRun = state.authRunId;
+      await sendOnly5BEncrypted();
 
-      if (encrypted) {
-        await sendOnly5BEncrypted();
-      } else {
-        await sendOnly5BRaw();
-      }
-
-      const timeoutMs = parseInt($("tryTimeoutMs").value, 10) || 2200;
-
+      const timeoutMs = parseInt($("tryTimeoutMs").value, 10) || 2500;
       return await new Promise((resolve) => {
         schedule(() => {
           if (state.authRunId !== thisRun) return resolve(false);
@@ -825,33 +804,20 @@
       state.serial14 = null;
 
       setStep("cmd5b", "active");
-      setStatus("Diagnose läuft", "Teste <code>0x5B</code> jetzt automatisch über mehrere Adressen …");
+      setStatus("Diagnose läuft", "Teste jetzt den korrigierten <code>c6/b → NinebotCrypto</code>-Pfad …");
 
       for (const addr of addrs) {
         if (runId !== state.authRunId) return false;
-
-        log("---- 5B Diagnose verschlüsselt auf 0x" + addr.toString(16).padStart(2, "0") + " ----");
-        const okEnc = await trySingle5B(addr, true);
-        if (okEnc) {
+        log("---- 5B Diagnose encrypted on 0x" + addr.toString(16).padStart(2, "0") + " ----");
+        const ok = await trySingle5B(addr);
+        if (ok) {
           log("Treffer: verschlüsseltes 5B auf Adresse 0x" + addr.toString(16).padStart(2, "0"), "ok");
           return true;
-        }
-
-        if ($("rawFallback").checked) {
-          log("---- 5B Diagnose roh auf 0x" + addr.toString(16).padStart(2, "0") + " ----");
-          const okRaw = await trySingle5B(addr, false);
-          if (okRaw) {
-            log("Treffer: rohes 5B auf Adresse 0x" + addr.toString(16).padStart(2, "0"), "ok");
-            return true;
-          }
         }
       }
 
       setStep("cmd5b", "error");
-      setStatus(
-        "Keine 5B-Antwort",
-        "Es kam auf keine getestete Adresse eine passende <code>0x5B</code>-Antwort. Dann ist meist Write-Modus oder innere Zieladresse falsch."
-      );
+      setStatus("Keine 5B-Antwort", "Auch mit korrektem <code>c6/b</code>-Wrapper kam keine passende <code>0x5B</code>-Antwort.");
       log("Kein Treffer bei 5B-Diagnose.", "err");
       return false;
     }
@@ -874,7 +840,7 @@
       setStep("cmd5c", "active");
       setStatus("0x5C senden", "Passende 5B-Antwort gefunden. Sende jetzt <code>0x5C</code> …");
       await initCryptoForCurrentDevice();
-      await writeFrameEncrypted(buildFrame(0x5C, 0x00, state.appRandom));
+      await sendInnerEncrypted(buildInner(0x5C, 0x00, state.appRandom));
 
       schedule(() => {
         if (!state.waitingForPowerButton && !state.completed) {
@@ -893,7 +859,7 @@
       setStep("power", "done");
       setStep("cmd5d", "active");
       setStatus("0x5D senden", "Finalisiere Auth …");
-      await writeFrameEncrypted(buildFrame(0x5D, 0x00, state.serial14));
+      await sendInnerEncrypted(buildInner(0x5D, 0x00, state.serial14));
     }
 
     function finishAuth() {
@@ -907,7 +873,6 @@
     async function handleDecryptedFrame(frame) {
       const parsed = parseFrame(frame);
       if (!parsed) return;
-
       log(`FRAME len=${parsed.len} src=${parsed.src.toString(16)} dest=${parsed.dest.toString(16)} cmd=${parsed.cmd.toString(16)} ofs=${parsed.ofs.toString(16)} payload=${hex(parsed.payload)}`);
 
       if (parsed.cmd === 0x5B) {
@@ -944,23 +909,26 @@
       updatePills();
       log("RX ENCRYPT " + hex(raw), "ok");
 
-      let decrypted = null;
-
       try {
-        decrypted = await state.crypto.decrypt(raw);
+        const decrypted = await state.crypto.decrypt(raw);
         log("RX DECRYPT " + hex(decrypted), "ok");
         await handleDecryptedFrame(decrypted);
       } catch (err) {
         log("Decrypt fehlgeschlagen: " + String(err.message || err), "err");
-        // Fallback: prüfen, ob das Gerät evtl. roh antwortet
         try {
-          const parsedRaw = parseFrame(raw);
-          if (parsedRaw) {
-            log("RX scheint schon roh zu sein.", "warn");
+          const maybeFrame = parseFrame(raw);
+          if (maybeFrame) {
+            log("RX scheint schon gewrappt/roh zu sein.", "warn");
             await handleDecryptedFrame(raw);
           }
         } catch (_) {}
       }
+    }
+
+    async function initCryptoAndConnection() {
+      state.rxCount = 0;
+      updatePills();
+      await initCryptoForCurrentDevice();
     }
 
     async function connect() {
@@ -988,7 +956,6 @@
 
       const services = await state.server.getPrimaryServices();
       let foundWrite = null, foundRead = null, foundService = null;
-
       for (const service of services) {
         const chars = await service.getCharacteristics();
         for (const ch of chars) {
@@ -1007,8 +974,8 @@
       log("Write props: " + JSON.stringify({
         write: !!state.writeChar.properties.write,
         writeWithoutResponse: !!state.writeChar.properties.writeWithoutResponse,
-        notify: !!state.writeChar.properties.notify,
-        indicate: !!state.writeChar.properties.indicate
+        notify: !!state.readChar.properties.notify,
+        indicate: !!state.readChar.properties.indicate
       }));
 
       setStep("notify", "active");
@@ -1017,18 +984,17 @@
       state.readChar.addEventListener("characteristicvaluechanged", onNotify);
       setStep("notify", "done");
 
-      state.rxCount = 0;
-      updatePills();
-      await initCryptoForCurrentDevice();
+      await initCryptoAndConnection();
 
       $("connectBtn").disabled = true;
       $("disconnectBtn").disabled = false;
       $("authBtn").disabled = false;
       $("testEncryptedBtn").disabled = false;
-      $("testRawBtn").disabled = false;
+      $("testWrappedBtn").disabled = false;
+      $("testInnerBtn").disabled = false;
 
       log("Verbunden mit: " + (state.device.name || state.device.id), "ok");
-      setStatus("Verbunden", "Du kannst jetzt direkt Auth starten oder zuerst nur <code>5B</code> testen.");
+      setStatus("Verbunden", "Jetzt den korrigierten <code>c6/b</code>-Pfad testen.");
     }
 
     async function disconnect() {
@@ -1057,7 +1023,8 @@
       $("disconnectBtn").disabled = true;
       $("authBtn").disabled = true;
       $("testEncryptedBtn").disabled = true;
-      $("testRawBtn").disabled = true;
+      $("testWrappedBtn").disabled = true;
+      $("testInnerBtn").disabled = true;
 
       resetSteps();
       setStatus("Getrennt", "Die Verbindung wurde getrennt.");
@@ -1080,10 +1047,16 @@
         await sendOnly5BEncrypted();
       } catch (e) { showError(e); }
     });
-    $("testRawBtn").addEventListener("click", async () => {
+    $("testWrappedBtn").addEventListener("click", async () => {
       try {
         noteAddress(fromHexByte($("destAddr").value));
-        await sendOnly5BRaw();
+        await sendOnly5BWrapped();
+      } catch (e) { showError(e); }
+    });
+    $("testInnerBtn").addEventListener("click", async () => {
+      try {
+        noteAddress(fromHexByte($("destAddr").value));
+        await sendOnly5BInner();
       } catch (e) { showError(e); }
     });
     $("clearBtn").addEventListener("click", clearLog);
