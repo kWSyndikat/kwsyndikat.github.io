@@ -3,1066 +3,782 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Scooter Connect + Auth Test (c6/b fixed)</title>
+  <title>Scooter Connect + Auth</title>
   <style>
-    :root {
-      --bg: #0b1020;
-      --panel: #141b34;
-      --panel-2: #1b2444;
-      --text: #eaf0ff;
-      --muted: #aab6df;
-      --ok: #35c46a;
-      --warn: #ffb020;
-      --err: #ff5d73;
-      --line: #2a3768;
+    :root{
+      --bg:#0b1020;--panel:#141b34;--panel2:#1b2444;--line:#2a3768;
+      --text:#eaf0ff;--muted:#aab6df;--ok:#35c46a;--warn:#ffb020;--err:#ff5d73;
     }
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-      background: linear-gradient(180deg, var(--bg), #0e1530);
-      color: var(--text);
+    *{box-sizing:border-box}
+    body{
+      margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+      background:linear-gradient(180deg,var(--bg),#0e1530);color:var(--text)
     }
-    .wrap { max-width: 1100px; margin: 0 auto; padding: 24px; }
-    h1 { margin: 0 0 8px; font-size: 28px; }
-    .sub { color: var(--muted); margin-bottom: 18px; line-height: 1.45; }
-    .grid { display: grid; grid-template-columns: 1.15fr 0.85fr; gap: 18px; }
-    .card {
-      background: rgba(20,27,52,.95);
-      border: 1px solid var(--line);
-      border-radius: 18px;
-      padding: 18px;
-      box-shadow: 0 10px 30px rgba(0,0,0,.22);
+    .wrap{max-width:1050px;margin:0 auto;padding:24px}
+    h1{margin:0 0 8px;font-size:28px}
+    .sub{color:var(--muted);line-height:1.45;margin-bottom:18px}
+    .grid{display:grid;grid-template-columns:1.08fr .92fr;gap:18px}
+    .card{
+      background:rgba(20,27,52,.96);border:1px solid var(--line);border-radius:18px;
+      padding:18px;box-shadow:0 10px 30px rgba(0,0,0,.22)
     }
-    .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
-    .cols2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
-    button {
-      border: 1px solid var(--line);
-      background: var(--panel-2);
-      color: var(--text);
-      padding: 10px 14px;
-      border-radius: 12px;
-      cursor: pointer;
-      font-weight: 700;
+    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    .cols2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .label{font-size:13px;color:var(--muted);margin:12px 0 6px}
+    input,select{
+      width:100%;background:#0f1731;color:var(--text);border:1px solid var(--line);
+      border-radius:12px;padding:10px 12px;outline:none
     }
-    button:hover { filter: brightness(1.06); }
-    button:disabled { opacity: .55; cursor: not-allowed; }
-    input[type="text"], select {
-      width: 100%;
-      background: #0f1731;
-      color: var(--text);
-      border: 1px solid var(--line);
-      border-radius: 12px;
-      padding: 10px 12px;
-      outline: none;
+    button{
+      border:1px solid var(--line);background:var(--panel2);color:var(--text);
+      padding:10px 14px;border-radius:12px;cursor:pointer;font-weight:700
     }
-    label.chk { display:flex; align-items:center; gap:8px; color:var(--muted); font-size:13px; }
-    .label { font-size: 13px; color: var(--muted); margin: 12px 0 6px; }
-    .statusBox {
-      padding: 14px;
-      border-radius: 14px;
-      border: 1px solid var(--line);
-      background: #101730;
+    button:hover{filter:brightness(1.06)}
+    button:disabled{opacity:.55;cursor:not-allowed}
+    .statusBox{padding:14px;border-radius:14px;border:1px solid var(--line);background:#101730}
+    .status{font-size:18px;font-weight:800;margin-bottom:8px}
+    .hint{color:var(--muted);min-height:46px;line-height:1.45}
+    .stepList{display:grid;gap:10px;margin-top:12px}
+    .step{border:1px solid var(--line);background:#101730;border-radius:14px;padding:12px;display:flex;align-items:center;gap:10px}
+    .dot{width:12px;height:12px;border-radius:999px;background:#53608f;flex:0 0 auto}
+    .step.done .dot{background:var(--ok)}
+    .step.active .dot{background:var(--warn)}
+    .step.error .dot{background:var(--err)}
+    .log{
+      max-height:480px;overflow:auto;background:#0c1227;border:1px solid var(--line);
+      border-radius:14px;padding:12px
     }
-    .status { font-size: 18px; font-weight: 800; margin-bottom: 8px; }
-    .hint { color: var(--muted); min-height: 44px; line-height: 1.45; }
-    .stepList { display: grid; gap: 10px; margin-top: 12px; }
-    .step {
-      border: 1px solid var(--line);
-      background: #101730;
-      border-radius: 14px;
-      padding: 12px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-    .dot { width: 12px; height: 12px; border-radius: 999px; background: #53608f; flex: 0 0 auto; }
-    .step.done .dot { background: var(--ok); }
-    .step.active .dot { background: var(--warn); }
-    .step.error .dot { background: var(--err); }
-    .mono {
-      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-      font-size: 12px;
-      white-space: pre-wrap;
-      word-break: break-word;
-    }
-    .log {
-      max-height: 470px;
-      overflow: auto;
-      background: #0c1227;
-      border: 1px solid var(--line);
-      border-radius: 14px;
-      padding: 12px;
-    }
-    .small { font-size: 12px; color: var(--muted); line-height: 1.45; }
-    .ok { color: var(--ok); }
-    .warn { color: var(--warn); }
-    .err { color: var(--err); }
-    .pill {
-      display:inline-block;
-      padding:4px 8px;
-      border-radius:999px;
-      border:1px solid var(--line);
-      font-size:12px;
-      color:var(--muted);
-      background:#101730;
-    }
-    code {
-      background: #0e1733;
-      border: 1px solid var(--line);
-      padding: 2px 6px;
-      border-radius: 8px;
-    }
-    @media (max-width: 920px) {
-      .grid { grid-template-columns: 1fr; }
-      .cols2 { grid-template-columns:1fr; }
-    }
+    .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;white-space:pre-wrap;word-break:break-word}
+    .small{font-size:12px;color:var(--muted);line-height:1.45}
+    .ok{color:var(--ok)} .warn{color:var(--warn)} .err{color:var(--err)}
+    .pill{display:inline-block;padding:4px 8px;border-radius:999px;border:1px solid var(--line);font-size:12px;color:var(--muted);background:#101730}
+    code{background:#0e1733;border:1px solid var(--line);padding:2px 6px;border-radius:8px}
+    @media (max-width:900px){.grid,.cols2{grid-template-columns:1fr}}
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <h1>Scooter Connect + Auth Test</h1>
-    <div class="sub">
-      Diese Version bildet jetzt den <code>c6/b</code>-Pfad korrekt nach:
-      erst inneres Paket <code>3e ..</code>, dann Wrapper <code>5a a5 len</code>, dann erst NinebotCrypto.
-      Das war der fehlende Schritt.
-    </div>
-
-    <div class="grid">
-      <div class="card">
-        <div class="row">
-          <button id="connectBtn">Scooter verbinden</button>
-          <button id="disconnectBtn" disabled>Trennen</button>
-          <button id="authBtn" disabled>Auth starten</button>
-          <button id="clearBtn">Log leeren</button>
-        </div>
-
-        <div class="cols2">
-          <div>
-            <div class="label">Service UUID</div>
-            <input id="serviceUuid" type="text" value="6e400001-b5a3-f393-e0a9-e50e24dcca9e" />
-          </div>
-          <div>
-            <div class="label">Write UUID</div>
-            <input id="writeUuid" type="text" value="6e400002-b5a3-f393-e0a9-e50e24dcca9e" />
-          </div>
-          <div>
-            <div class="label">Read / Notify UUID</div>
-            <input id="readUuid" type="text" value="6e400003-b5a3-f393-e0a9-e50e24dcca9e" />
-          </div>
-          <div>
-            <div class="label">Fallback-Name für Crypto</div>
-            <input id="fallbackName" type="text" value="N2O" />
-          </div>
-        </div>
-
-        <div class="cols2">
-          <div>
-            <div class="label">Primäre Zieladresse (hex)</div>
-            <input id="destAddr" type="text" value="21" />
-          </div>
-          <div>
-            <div class="label">Adress-Scan-Liste (comma, hex)</div>
-            <input id="destScan" type="text" value="21,20,22" />
-          </div>
-        </div>
-
-        <div class="cols2">
-          <div>
-            <div class="label">Write-Modus</div>
-            <select id="writeMode">
-              <option value="auto" selected>auto</option>
-              <option value="withoutResponse">withoutResponse</option>
-              <option value="withResponse">withResponse</option>
-            </select>
-          </div>
-          <div>
-            <div class="label">0x5B Timeout pro Versuch</div>
-            <input id="tryTimeoutMs" type="text" value="2500" />
-          </div>
-        </div>
-
-        <div class="row" style="margin-top:10px;">
-          <label class="chk"><input id="diagnoseScan" type="checkbox" checked /> Adresse 20/21/22 automatisch testen</label>
-        </div>
-
-        <div class="row" style="margin-top:12px;">
-          <button id="testEncryptedBtn" disabled>Nur 5B verschlüsselt testen</button>
-          <button id="testWrappedBtn" disabled>Nur 5B gewrappt testen</button>
-          <button id="testInnerBtn" disabled>Nur 5B inner testen</button>
-        </div>
-
-        <div class="small" style="margin-top:12px;">
-          Logs:
-          <br>• <code>TX INNER</code> = nur <code>3e ..</code>
-          <br>• <code>TX WRAPPED</code> = <code>5a a5 len + inner</code>
-          <br>• <code>TX ENCRYPT</code> = NinebotCrypto-Ausgabe
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="statusBox">
-          <div id="status" class="status">Bereit</div>
-          <div id="hint" class="hint">Verbinde den Scooter. Danach kannst du direkt den korrigierten Auth-Flow testen.</div>
-        </div>
-
-        <div style="margin-top:12px;" class="row">
-          <span class="pill" id="modePill">write: -</span>
-          <span class="pill" id="addrPill">addr: -</span>
-          <span class="pill" id="rxPill">rx: 0</span>
-        </div>
-
-        <div class="stepList" id="steps"></div>
-      </div>
-
-      <div class="card" style="grid-column: 1 / -1;">
-        <div class="row" style="justify-content: space-between;">
-          <strong>Log</strong>
-          <span class="small">inner / wrapped / encrypted / decrypt</span>
-        </div>
-        <div id="log" class="log mono" style="margin-top:10px;"></div>
-      </div>
-    </div>
+<div class="wrap">
+  <h1>Scooter Connect + Auth</h1>
+  <div class="sub">
+    Nur Connect + Auth. Kein Dashboard, keine Live-Werte.
+    Ablauf: <code>BLE connect → notify → 5B plain → 5C encrypted → Powerbutton-Hinweis → 5D encrypted → fertig</code>.
   </div>
 
-  <script>
-    const FW_DATA = Uint8Array.from([0x97,0xCF,0xB8,0x02,0x84,0x41,0x43,0xDE,0x56,0x00,0x2B,0x3B,0x34,0x78,0x0A,0x5D]);
+  <div class="grid">
+    <div class="card">
+      <div class="row">
+        <button id="connectBtn">Verbinden</button>
+        <button id="startBtn" disabled>Connect + Auth starten</button>
+        <button id="disconnectBtn" disabled>Trennen</button>
+        <button id="clearBtn">Log leeren</button>
+      </div>
 
-    const state = {
-      device: null,
-      server: null,
-      service: null,
-      writeChar: null,
-      readChar: null,
-      isConnected: false,
-      waitingForPowerButton: false,
-      completed: false,
-      timers: [],
-      crypto: null,
-      destAddr: 0x21,
-      serial14: null,
-      appRandom: null,
-      sending5D: false,
-      rxCount: 0,
-      authRunId: 0,
-      lastWriteModeUsed: "-",
-    };
+      <div class="cols2">
+        <div>
+          <div class="label">Service UUID</div>
+          <input id="serviceUuid" value="6e400001-b5a3-f393-e0a9-e50e24dcca9e">
+        </div>
+        <div>
+          <div class="label">Write UUID</div>
+          <input id="writeUuid" value="6e400002-b5a3-f393-e0a9-e50e24dcca9e">
+        </div>
+        <div>
+          <div class="label">Read UUID</div>
+          <input id="readUuid" value="6e400003-b5a3-f393-e0a9-e50e24dcca9e">
+        </div>
+        <div>
+          <div class="label">Fallback Name für Crypto</div>
+          <input id="fallbackName" value="N2O">
+        </div>
+      </div>
 
-    const steps = [
-      { key: "connect", label: "BLE verbinden" },
-      { key: "notify", label: "Notifications aktivieren" },
-      { key: "cmd5b", label: "0x5B erfolgreich empfangen" },
-      { key: "cmd5c", label: "0x5C senden" },
-      { key: "power", label: "Powerbutton-Hinweis anzeigen" },
-      { key: "cmd5d", label: "0x5D final senden" },
-      { key: "done", label: "Auth fertig" },
-    ];
+      <div class="cols2">
+        <div>
+          <div class="label">Zieladresse (hex)</div>
+          <input id="destAddr" value="21">
+        </div>
+        <div>
+          <div class="label">Write-Modus</div>
+          <select id="writeMode">
+            <option value="auto" selected>auto</option>
+            <option value="withoutResponse">withoutResponse</option>
+            <option value="withResponse">withResponse</option>
+          </select>
+        </div>
+      </div>
 
-    const $ = (id) => document.getElementById(id);
-    const logEl = $("log");
-    const stepsEl = $("steps");
+      <div class="cols2">
+        <div>
+          <div class="label">5B Retry ms</div>
+          <input id="retry5bMs" value="900">
+        </div>
+        <div>
+          <div class="label">5C/5D Retry ms</div>
+          <input id="retry5cdMs" value="500">
+        </div>
+      </div>
 
-    function renderSteps() {
-      stepsEl.innerHTML = "";
-      for (const step of steps) {
-        const div = document.createElement("div");
-        div.className = "step";
-        div.id = "step-" + step.key;
-        div.innerHTML = `<div class="dot"></div><div>${step.label}</div>`;
-        stepsEl.appendChild(div);
+      <div class="small" style="margin-top:12px">
+        Diese Seite benutzt für NinebotCrypto den Scooter-Namen als Initial-Key-Material und bildet für NinebotCrypto den
+        <code>c6/b</code>-Wrapper nach: aus <code>3E ..</code> wird zuerst <code>5A A5 len + inner</code>, danach erst Encrypt.
+        Der erste <code>5B</code>-Schritt wird bewusst <b>plain</b> gesendet.
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="statusBox">
+        <div class="status" id="status">Bereit</div>
+        <div class="hint" id="hint">Verbinde den Scooter und starte dann den Auth-Flow.</div>
+      </div>
+
+      <div class="row" style="margin-top:12px">
+        <span class="pill" id="modePill">write: -</span>
+        <span class="pill" id="addrPill">addr: -</span>
+        <span class="pill" id="rxPill">rx: 0</span>
+      </div>
+
+      <div class="stepList" id="steps"></div>
+    </div>
+
+    <div class="card" style="grid-column:1 / -1">
+      <div class="row" style="justify-content:space-between">
+        <strong>Log</strong>
+        <span class="small">TX INNER / WRAPPED / ENCRYPT und RX ENCRYPT / DECRYPT</span>
+      </div>
+      <div id="log" class="log mono" style="margin-top:10px"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const FW_DATA = Uint8Array.from([0x97,0xCF,0xB8,0x02,0x84,0x41,0x43,0xDE,0x56,0x00,0x2B,0x3B,0x34,0x78,0x0A,0x5D]);
+
+const state = {
+  device:null, server:null, writeChar:null, readChar:null,
+  connected:false, crypto:null,
+  rxCount:0, lastWriteModeUsed:"-",
+  destAddr:0x21,
+  scooterSerial14:null,
+  appRandom:null,
+  got5B:false, got5C:false, got5D:false,
+  running:false, currentPhase:"idle"
+};
+
+const steps = [
+  {key:"connect", label:"BxLE verbinden"},
+  {key:"notify", label:"Notifications aktivieren"},
+  {key:"cmd5b", label:"5B plain erfolgreich"},
+  {key:"cmd5c", label:"5C encrypted erfolgreich"},
+  {key:"power", label:"Powerbutton-Hinweis"},
+  {key:"cmd5d", label:"5D encrypted erfolgreich"},
+  {key:"done", label:"Auth fertig"}
+];
+
+const $ = (id)=>document.getElementById(id);
+const logEl = $("log");
+const stepsEl = $("steps");
+
+function renderSteps(){
+  stepsEl.innerHTML="";
+  for(const s of steps){
+    const div=document.createElement("div");
+    div.className="step";
+    div.id="step-"+s.key;
+    div.innerHTML=`<div class="dot"></div><div>${s.label}</div>`;
+    stepsEl.appendChild(div);
+  }
+}
+function setStep(key, mode){
+  const el=$("step-"+key);
+  if(el) el.className="step"+(mode?" "+mode:"");
+}
+function resetSteps(){ renderSteps(); }
+function setStatus(title, hint=""){ $("status").textContent=title; $("hint").innerHTML=hint; }
+function updatePills(){
+  $("modePill").textContent="write: "+state.lastWriteModeUsed;
+  $("addrPill").textContent="addr: "+state.destAddr.toString(16).padStart(2,"0");
+  $("rxPill").textContent="rx: "+state.rxCount;
+}
+function log(line, cls=""){
+  const ts=new Date().toLocaleTimeString();
+  const div=document.createElement("div");
+  div.className=cls;
+  div.textContent=`[${ts}] ${line}`;
+  logEl.appendChild(div);
+  logEl.scrollTop=logEl.scrollHeight;
+}
+function hex(bytes){ return Array.from(bytes||[]).map(b=>b.toString(16).padStart(2,"0")).join(" "); }
+function sleep(ms){ return new Promise(r=>setTimeout(r, ms)); }
+function clearLog(){ logEl.innerHTML=""; }
+function fromHexByte(text){
+  const v=parseInt(String(text).trim(),16);
+  if(Number.isNaN(v)||v<0||v>255) throw new Error("Hex-Byte ungültig");
+  return v;
+}
+function copyBytes(src, srcOffset, dst, dstOffset, len){ for(let i=0;i<len;i++) dst[dstOffset+i]=src[srcOffset+i]; }
+function concatBytes(...arrays){
+  const len=arrays.reduce((n,a)=>n+a.length,0);
+  const out=new Uint8Array(len);
+  let off=0;
+  for(const a of arrays){ out.set(a,off); off+=a.length; }
+  return out;
+}
+function randomBytes(n){ const out=new Uint8Array(n); crypto.getRandomValues(out); return out; }
+function ascii16(str){
+  const out=new Uint8Array(16);
+  const s=(str||"").slice(0,16);
+  for(let i=0;i<s.length;i++) out[i]=s.charCodeAt(i)&0xff;
+  return out;
+}
+function xor16(a,b){
+  const out=new Uint8Array(16);
+  for(let i=0;i<16;i++) out[i]=a[i]^b[i];
+  return out;
+}
+
+// AES helpers
+function gfMul(a,b){
+  let p=0;
+  for(let i=0;i<8;i++){
+    if(b&1) p^=a;
+    const hi=a&0x80;
+    a=(a<<1)&0xff;
+    if(hi) a^=0x1b;
+    b>>=1;
+  }
+  return p&0xff;
+}
+function gfPow(a,n){
+  let res=1, base=a, exp=n;
+  while(exp>0){
+    if(exp&1) res=gfMul(res,base);
+    base=gfMul(base,base);
+    exp>>=1;
+  }
+  return res;
+}
+function rotl8(x,s){ return ((x<<s)|(x>>(8-s)))&0xff; }
+function buildSBox(){
+  const sbox=new Uint8Array(256);
+  for(let i=0;i<256;i++){
+    const inv=i===0?0:gfPow(i,254);
+    sbox[i]=(inv ^ rotl8(inv,1) ^ rotl8(inv,2) ^ rotl8(inv,3) ^ rotl8(inv,4) ^ 0x63)&0xff;
+  }
+  return sbox;
+}
+const AES_SBOX=buildSBox();
+const AES_RCON=Uint8Array.from([0x00,0x01,0x02,0x04,0x08,0x10,0x20,0x40,0x80,0x1B,0x36]);
+function aesKeyExpansion128(key){
+  const expanded=new Uint8Array(176);
+  expanded.set(key);
+  let bytesGenerated=16, rconIter=1;
+  const temp=new Uint8Array(4);
+  while(bytesGenerated<176){
+    for(let i=0;i<4;i++) temp[i]=expanded[bytesGenerated-4+i];
+    if(bytesGenerated%16===0){
+      const t=temp[0];
+      temp[0]=AES_SBOX[temp[1]] ^ AES_RCON[rconIter++];
+      temp[1]=AES_SBOX[temp[2]];
+      temp[2]=AES_SBOX[temp[3]];
+      temp[3]=AES_SBOX[t];
+    }
+    for(let i=0;i<4;i++){
+      expanded[bytesGenerated]=expanded[bytesGenerated-16]^temp[i];
+      bytesGenerated++;
+    }
+  }
+  return expanded;
+}
+function aesAddRoundKey(st, rk, off){ for(let i=0;i<16;i++) st[i]^=rk[off+i]; }
+function aesSubBytes(st){ for(let i=0;i<16;i++) st[i]=AES_SBOX[st[i]]; }
+function aesShiftRows(st){
+  const t=st.slice();
+  st[0]=t[0]; st[4]=t[4]; st[8]=t[8]; st[12]=t[12];
+  st[1]=t[5]; st[5]=t[9]; st[9]=t[13]; st[13]=t[1];
+  st[2]=t[10]; st[6]=t[14]; st[10]=t[2]; st[14]=t[6];
+  st[3]=t[15]; st[7]=t[3]; st[11]=t[7]; st[15]=t[11];
+}
+function aesMixColumns(st){
+  for(let c=0;c<4;c++){
+    const i=c*4, a0=st[i], a1=st[i+1], a2=st[i+2], a3=st[i+3];
+    st[i]   = (gfMul(a0,2)^gfMul(a1,3)^a2^a3)&0xff;
+    st[i+1] = (a0^gfMul(a1,2)^gfMul(a2,3)^a3)&0xff;
+    st[i+2] = (a0^a1^gfMul(a2,2)^gfMul(a3,3))&0xff;
+    st[i+3] = (gfMul(a0,3)^a1^a2^gfMul(a3,2))&0xff;
+  }
+}
+function aesEncryptBlock128(block,key){
+  const rk=aesKeyExpansion128(key);
+  const st=Uint8Array.from(block);
+  aesAddRoundKey(st,rk,0);
+  for(let round=1; round<=9; round++){
+    aesSubBytes(st); aesShiftRows(st); aesMixColumns(st); aesAddRoundKey(st,rk,round*16);
+  }
+  aesSubBytes(st); aesShiftRows(st); aesAddRoundKey(st,rk,160);
+  return st;
+}
+async function sha1Bytes(data32){
+  const buf=await crypto.subtle.digest("SHA-1", data32);
+  return new Uint8Array(buf);
+}
+
+class NinebotCryptoJS {
+  constructor(name){
+    this._fwData=Uint8Array.from(FW_DATA);
+    this._randomBleData=new Uint8Array(16);
+    this._randomAppData=new Uint8Array(16);
+    this._sha1Key=new Uint8Array(16);
+    this._name=ascii16(name);
+    this._msgIt=0;
+  }
+  async init(){
+    this._msgIt=0;
+    this._randomBleData.fill(0);
+    this._randomAppData.fill(0);
+    await this.calcSha1Key(this._name, this._fwData);
+  }
+  async calcSha1Key(data1,data2){
+    const data=new Uint8Array(32);
+    copyBytes(data1,0,data,0,16);
+    copyBytes(data2,0,data,16,16);
+    const hash=await sha1Bytes(data);
+    this._sha1Key=hash.slice(0,16);
+  }
+  aesEcbEncrypt(data16,key16){ return aesEncryptBlock128(data16,key16); }
+  cryptoFirst(data){
+    const result=new Uint8Array(data.length);
+    let payloadLen=data.length, byteIdx=0;
+    while(payloadLen>0){
+      const tmpLen=payloadLen<=16?payloadLen:16;
+      const xorData1=new Uint8Array(16);
+      copyBytes(data,byteIdx,xorData1,0,tmpLen);
+      const aesKey=this.aesEcbEncrypt(this._fwData,this._sha1Key);
+      const xorData=xor16(xorData1,aesKey);
+      copyBytes(xorData,0,result,byteIdx,tmpLen);
+      payloadLen-=tmpLen; byteIdx+=tmpLen;
+    }
+    return result;
+  }
+  cryptoNext(data,msgIt){
+    const result=new Uint8Array(data.length);
+    const aesEncData=new Uint8Array(16);
+    aesEncData[0]=1;
+    aesEncData[1]=(msgIt>>>24)&0xff;
+    aesEncData[2]=(msgIt>>>16)&0xff;
+    aesEncData[3]=(msgIt>>>8)&0xff;
+    aesEncData[4]=msgIt&0xff;
+    copyBytes(this._randomBleData,0,aesEncData,5,8);
+    aesEncData[15]=0;
+    let payloadLen=data.length, byteIdx=0;
+    while(payloadLen>0){
+      aesEncData[15]=(aesEncData[15]+1)&0xff;
+      const tmpLen=payloadLen<=16?payloadLen:16;
+      const xorData1=new Uint8Array(16);
+      copyBytes(data,byteIdx,xorData1,0,tmpLen);
+      const aesKey=this.aesEcbEncrypt(aesEncData,this._sha1Key);
+      const xorData=xor16(xorData1,aesKey);
+      copyBytes(xorData,0,result,byteIdx,tmpLen);
+      payloadLen-=tmpLen; byteIdx+=tmpLen;
+    }
+    return result;
+  }
+  calcCrcFirstMsg(data){
+    let crc=0;
+    for(const v of data) crc=(crc+v)&0xffff;
+    crc=(~crc)&0xffff;
+    return Uint8Array.from([crc&0xff,(crc>>>8)&0xff]);
+  }
+  calcCrcNextMsg(data,msgIt){
+    const aesEncData=new Uint8Array(16);
+    let payloadLen=data.length-3, byteIdx=3;
+    let xorData2=new Uint8Array(16);
+
+    aesEncData[0]=89;
+    aesEncData[1]=(msgIt>>>24)&0xff;
+    aesEncData[2]=(msgIt>>>16)&0xff;
+    aesEncData[3]=(msgIt>>>8)&0xff;
+    aesEncData[4]=msgIt&0xff;
+    copyBytes(this._randomBleData,0,aesEncData,5,8);
+    aesEncData[15]=payloadLen&0xff;
+
+    let aesKey=this.aesEcbEncrypt(aesEncData,this._sha1Key);
+    copyBytes(aesKey,0,xorData2,0,16);
+
+    const xorData1Header=new Uint8Array(16);
+    copyBytes(data,0,xorData1Header,0,3);
+    let xorData=xor16(xorData1Header,xorData2);
+    aesKey=this.aesEcbEncrypt(xorData,this._sha1Key);
+    copyBytes(aesKey,0,xorData2,0,16);
+
+    while(payloadLen>0){
+      const tmpLen=payloadLen<=16?payloadLen:16;
+      const xorData1=new Uint8Array(16);
+      copyBytes(data,byteIdx,xorData1,0,tmpLen);
+      xorData=xor16(xorData1,xorData2);
+      aesKey=this.aesEcbEncrypt(xorData,this._sha1Key);
+      copyBytes(aesKey,0,xorData2,0,16);
+      payloadLen-=tmpLen; byteIdx+=tmpLen;
+    }
+
+    aesEncData.fill(0); aesEncData[0]=1;
+    const xorOut=xor16(this.aesEcbEncrypt(aesEncData,this._sha1Key), xorData2);
+    return Uint8Array.from([xorOut[0],xorOut[1],xorOut[2],xorOut[3]]);
+  }
+  async encrypt(data){
+    const encrypted=new Uint8Array(152);
+    copyBytes(data,0,encrypted,0,3);
+    const payloadLen=data.length-3;
+    let payload=data.slice(3);
+
+    if(this._msgIt===0){
+      const crc=this.calcCrcFirstMsg(payload);
+      payload=this.cryptoFirst(payload);
+      copyBytes(payload,0,encrypted,3,payload.length);
+      encrypted[payloadLen+3]=0;
+      encrypted[payloadLen+4]=0;
+      encrypted[payloadLen+5]=crc[0];
+      encrypted[payloadLen+6]=crc[1];
+      encrypted[payloadLen+7]=0;
+      encrypted[payloadLen+8]=0;
+      this._msgIt++;
+      return encrypted.slice(0,payloadLen+9);
+    } else {
+      this._msgIt++;
+      const crc=this.calcCrcNextMsg(data,this._msgIt);
+      payload=this.cryptoNext(payload,this._msgIt);
+      copyBytes(payload,0,encrypted,3,payload.length);
+      encrypted[payloadLen+3]=crc[0];
+      encrypted[payloadLen+4]=crc[1];
+      encrypted[payloadLen+5]=crc[2];
+      encrypted[payloadLen+6]=crc[3];
+      encrypted[payloadLen+7]=(this._msgIt>>>8)&0xff;
+      encrypted[payloadLen+8]=this._msgIt&0xff;
+
+      if(data.length>=23 && data[0]===0x5A && data[1]===0xA5 && data[2]===0x10 &&
+         data[3]===0x3E && data[5]===0x5C && data[6]===0x00){
+        copyBytes(data,7,this._randomAppData,0,16);
       }
+      return encrypted.slice(0,payloadLen+9);
     }
+  }
+  async decrypt(data){
+    if(data.length<9) throw new Error("RX zu kurz");
+    const decrypted=new Uint8Array(data.length-6);
+    copyBytes(data,0,decrypted,0,3);
 
-    function resetSteps() { renderSteps(); }
-    function setStep(key, mode) {
-      const el = $("step-" + key);
-      if (el) el.className = "step" + (mode ? " " + mode : "");
-    }
+    let newMsgIt=this._msgIt;
+    if((newMsgIt & 0x0008000)>0 && (data[data.length-2]>>7)===0) newMsgIt += 0x0010000;
+    newMsgIt=(newMsgIt & 0xFFFF0000) + ((data[data.length-2]<<8)|data[data.length-1]);
 
-    function setStatus(title, hint = "") {
-      $("status").textContent = title;
-      $("hint").innerHTML = hint;
-    }
+    const payloadLen=data.length-9;
+    let payload=data.slice(3,3+payloadLen);
 
-    function updatePills() {
-      $("modePill").textContent = "write: " + state.lastWriteModeUsed;
-      $("addrPill").textContent = "addr: " + (state.destAddr == null ? "-" : state.destAddr.toString(16).padStart(2, "0"));
-      $("rxPill").textContent = "rx: " + state.rxCount;
-    }
-
-    function log(line, cls = "") {
-      const ts = new Date().toLocaleTimeString();
-      const div = document.createElement("div");
-      div.className = cls;
-      div.textContent = `[${ts}] ${line}`;
-      logEl.appendChild(div);
-      logEl.scrollTop = logEl.scrollHeight;
-    }
-
-    function clearLog() { logEl.innerHTML = ""; }
-
-    function hex(bytes) {
-      return Array.from(bytes || []).map(b => b.toString(16).padStart(2, "0")).join(" ");
-    }
-
-    function clearTimers() {
-      for (const t of state.timers) clearTimeout(t);
-      state.timers = [];
-    }
-
-    function schedule(fn, ms) {
-      const t = setTimeout(fn, ms);
-      state.timers.push(t);
-      return t;
-    }
-
-    function concatBytes(...arrays) {
-      const len = arrays.reduce((n, a) => n + a.length, 0);
-      const out = new Uint8Array(len);
-      let off = 0;
-      for (const a of arrays) {
-        out.set(a, off);
-        off += a.length;
+    if(newMsgIt===0){
+      payload=this.cryptoFirst(payload);
+      copyBytes(payload,0,decrypted,3,payload.length);
+      if(decrypted.length>=23 &&
+         decrypted[0]===0x5A && decrypted[1]===0xA5 && decrypted[2]===0x1E &&
+         decrypted[3]===0x21 && decrypted[4]===0x3E && decrypted[5]===0x5B){
+        copyBytes(decrypted,7,this._randomBleData,0,16);
+        await this.calcSha1Key(this._name,this._randomBleData);
       }
-      return out;
-    }
-
-    function randomBytes(n) {
-      const out = new Uint8Array(n);
-      crypto.getRandomValues(out);
-      return out;
-    }
-
-    function fromHexByte(text) {
-      const v = parseInt(String(text).trim(), 16);
-      if (Number.isNaN(v) || v < 0 || v > 255) throw new Error("Hex-Byte ungültig, z. B. 21");
-      return v;
-    }
-
-    function parseHexList(text) {
-      return String(text).split(",").map(s => s.trim()).filter(Boolean).map(fromHexByte);
-    }
-
-    function xor16(a, b) {
-      const out = new Uint8Array(16);
-      for (let i = 0; i < 16; i++) out[i] = a[i] ^ b[i];
-      return out;
-    }
-
-    function copyBytes(src, srcOffset, dst, dstOffset, length) {
-      for (let i = 0; i < length; i++) dst[dstOffset + i] = src[srcOffset + i];
-    }
-
-    function ascii16(str) {
-      const out = new Uint8Array(16);
-      const s = (str || "").slice(0, 16);
-      for (let i = 0; i < s.length; i++) out[i] = s.charCodeAt(i) & 0xff;
-      return out;
-    }
-
-    function buildInner(cmd, ofs, payload = new Uint8Array(0)) {
-      return concatBytes(new Uint8Array([0x3E, state.destAddr, cmd & 0xff, ofs & 0xff]), payload);
-    }
-
-    function wrapNinebotCryptoInner(inner) {
-      return concatBytes(new Uint8Array([0x5A, 0xA5, (inner.length - 4) & 0xff]), inner);
-    }
-
-    function parseFrame(frame) {
-      if (!frame || frame.length < 7) return null;
-      if (frame[0] !== 0x5A || frame[1] !== 0xA5) return null;
-      const len = frame[2];
-      return {
-        len,
-        src: frame[3],
-        dest: frame[4],
-        cmd: frame[5],
-        ofs: frame[6],
-        payload: frame.slice(7, 7 + len),
-        raw: frame
-      };
-    }
-
-    function gfMul(a, b) {
-      let p = 0;
-      for (let i = 0; i < 8; i++) {
-        if (b & 1) p ^= a;
-        const hi = a & 0x80;
-        a = (a << 1) & 0xff;
-        if (hi) a ^= 0x1b;
-        b >>= 1;
+      return decrypted;
+    } else if(newMsgIt>this._msgIt){
+      payload=this.cryptoNext(payload,newMsgIt);
+      copyBytes(payload,0,decrypted,3,payload.length);
+      if(decrypted.length>=7 &&
+         decrypted[0]===0x5A && decrypted[1]===0xA5 && decrypted[2]===0x00 &&
+         decrypted[3]===0x21 && decrypted[4]===0x3E && decrypted[5]===0x5C && decrypted[6]===0x01){
+        await this.calcSha1Key(this._randomAppData,this._randomBleData);
       }
-      return p & 0xff;
+      this._msgIt=newMsgIt;
+      return decrypted;
+    } else {
+      throw new Error("altes/ungueltiges msg_it");
     }
+  }
+}
 
-    function gfPow(a, n) {
-      let res = 1, base = a, exp = n;
-      while (exp > 0) {
-        if (exp & 1) res = gfMul(res, base);
-        base = gfMul(base, base);
-        exp >>= 1;
+function buildInner(cmd, ofs=0x00, payload=new Uint8Array(0)){
+  return concatBytes(new Uint8Array([0x3E, state.destAddr, cmd&0xff, ofs&0xff]), payload);
+}
+function wrapInnerForNinebotCrypto(inner){
+  return concatBytes(new Uint8Array([0x5A,0xA5,(inner.length-4)&0xff]), inner);
+}
+function parseFrame(frame){
+  if(!frame || frame.length<7) return null;
+  if(frame[0]!==0x5A || frame[1]!==0xA5) return null;
+  const len=frame[2];
+  return {
+    len, src:frame[3], dest:frame[4], cmd:frame[5], ofs:frame[6],
+    payload:frame.slice(7,7+len), raw:frame
+  };
+}
+async function initCryptoForCurrentDevice(){
+  const cryptoName=(state.device?.name || $("fallbackName").value || "N2O").slice(0,16);
+  state.crypto=new NinebotCryptoJS(cryptoName);
+  await state.crypto.init();
+  log("Crypto-Name: "+cryptoName);
+}
+
+async function writeBytes(bytes){
+  const mode=$("writeMode").value;
+  if(mode==="withoutResponse"){
+    if(!state.writeChar.properties.writeWithoutResponse) throw new Error("withoutResponse nicht unterstützt");
+    state.lastWriteModeUsed="withoutResponse"; updatePills();
+    await state.writeChar.writeValueWithoutResponse(bytes); return;
+  }
+  if(mode==="withResponse"){
+    if(!state.writeChar.properties.write) throw new Error("withResponse nicht unterstützt");
+    state.lastWriteModeUsed="withResponse"; updatePills();
+    await state.writeChar.writeValue(bytes); return;
+  }
+  if(state.writeChar.properties.writeWithoutResponse){
+    state.lastWriteModeUsed="withoutResponse(auto)"; updatePills();
+    await state.writeChar.writeValueWithoutResponse(bytes); return;
+  }
+  if(state.writeChar.properties.write){
+    state.lastWriteModeUsed="withResponse(auto)"; updatePills();
+    await state.writeChar.writeValue(bytes); return;
+  }
+  throw new Error("Characteristic nicht schreibbar");
+}
+async function sendPlain5B(){
+  const inner=buildInner(0x5B,0x00);
+  const wrapped=wrapInnerForNinebotCrypto(inner);
+  log("TX INNER   "+hex(inner), "warn");
+  log("TX WRAPPED "+hex(wrapped), "warn");
+  await writeBytes(wrapped);
+}
+async function sendEncryptedCmd(cmd, payload){
+  const inner=buildInner(cmd,0x00,payload);
+  const wrapped=wrapInnerForNinebotCrypto(inner);
+  const encrypted=await state.crypto.encrypt(wrapped);
+  log("TX INNER   "+hex(inner), "warn");
+  log("TX WRAPPED "+hex(wrapped), "warn");
+  log("TX ENCRYPT "+hex(encrypted), "warn");
+  await writeBytes(encrypted);
+}
+
+async function handleDecryptedFrame(frame){
+  const p=parseFrame(frame);
+  if(!p) return;
+  log(`FRAME len=${p.len} src=${p.src.toString(16)} dest=${p.dest.toString(16)} cmd=${p.cmd.toString(16)} ofs=${p.ofs.toString(16)} payload=${hex(p.payload)}`);
+
+  if(p.cmd===0x5B){
+    if(p.payload.length>=30){
+      state.scooterSerial14=p.payload.slice(16,30);
+      state.got5B=true;
+      setStep("cmd5b","done");
+      log("5B OK, 14-byte block: "+hex(state.scooterSerial14), "ok");
+    } else {
+      log("5B erkannt, aber Payload zu kurz", "err");
+    }
+    return;
+  }
+
+  if(p.cmd===0x5C && p.ofs===0x01){
+    state.got5C=true;
+    setStep("cmd5c","done");
+    setStep("power","active");
+    setStatus("Powerbutton drücken", "Bitte jetzt kurz den <b>Powerbutton drücken</b> oder das <b>Licht toggeln</b>.");
+    log("5C 01 empfangen. Powerbutton jetzt drücken.", "warn");
+    return;
+  }
+
+  if(p.cmd===0x5D && p.ofs===0x01){
+    state.got5D=true;
+    setStep("cmd5d","done");
+    setStep("done","done");
+    setStatus("Fertig", "<span class='ok'><b>Connect + Auth erfolgreich abgeschlossen.</b></span>");
+    log("AUTH DONE", "ok");
+  }
+}
+
+async function onNotify(event){
+  const value=event.target.value;
+  const raw=new Uint8Array(value.buffer.slice(value.byteOffset, value.byteOffset+value.byteLength));
+  state.rxCount++; updatePills();
+  log("RX ENCRYPT "+hex(raw), "ok");
+  try{
+    const decrypted=await state.crypto.decrypt(raw);
+    log("RX DECRYPT "+hex(decrypted), "ok");
+    await handleDecryptedFrame(decrypted);
+  }catch(err){
+    log("Decrypt fehlgeschlagen: "+String(err.message||err), "err");
+    // Falls 5B plain Antwort ohne Crypto kommt, prüfen wir auch roh
+    try{
+      const rawFrame=parseFrame(raw);
+      if(rawFrame){
+        log("RX scheint roh/gewrappt zu sein.", "warn");
+        await handleDecryptedFrame(raw);
       }
-      return res;
+    }catch(_){}
+  }
+}
+
+async function connect(){
+  if(!navigator.bluetooth) throw new Error("Web Bluetooth nicht unterstützt");
+  state.destAddr=fromHexByte($("destAddr").value);
+  updatePills();
+
+  setStep("connect","active");
+  setStatus("Geräteauswahl", "Bitte den Scooter im Browser-Popup auswählen …");
+
+  const serviceUuid=$("serviceUuid").value.trim();
+  const writeUuid=$("writeUuid").value.trim().toLowerCase();
+  const readUuid=$("readUuid").value.trim().toLowerCase();
+
+  state.device=await navigator.bluetooth.requestDevice({
+    filters: serviceUuid ? [{services:[serviceUuid]}] : undefined,
+    acceptAllDevices: !serviceUuid,
+    optionalServices: serviceUuid ? [serviceUuid] : []
+  });
+
+  state.device.addEventListener("gattserverdisconnected", onDisconnected);
+
+  setStatus("Verbinde", "GATT-Verbindung wird aufgebaut …");
+  state.server=await state.device.gatt.connect();
+  state.connected=true;
+  setStep("connect","done");
+
+  const services=await state.server.getPrimaryServices();
+  let foundWrite=null, foundRead=null;
+  for(const service of services){
+    const chars=await service.getCharacteristics();
+    for(const ch of chars){
+      const uuid=ch.uuid.toLowerCase();
+      if(uuid===writeUuid) foundWrite=ch;
+      if(uuid===readUuid) foundRead=ch;
     }
-
-    function rotl8(x, shift) {
-      return ((x << shift) | (x >> (8 - shift))) & 0xff;
-    }
-
-    function buildSBox() {
-      const sbox = new Uint8Array(256);
-      for (let i = 0; i < 256; i++) {
-        const inv = i === 0 ? 0 : gfPow(i, 254);
-        sbox[i] = (inv ^ rotl8(inv,1) ^ rotl8(inv,2) ^ rotl8(inv,3) ^ rotl8(inv,4) ^ 0x63) & 0xff;
-      }
-      return sbox;
-    }
-
-    const AES_SBOX = buildSBox();
-    const AES_RCON = Uint8Array.from([0x00,0x01,0x02,0x04,0x08,0x10,0x20,0x40,0x80,0x1B,0x36]);
-
-    function aesKeyExpansion128(key) {
-      const expanded = new Uint8Array(176);
-      expanded.set(key);
-      let bytesGenerated = 16;
-      let rconIter = 1;
-      const temp = new Uint8Array(4);
-      while (bytesGenerated < 176) {
-        for (let i = 0; i < 4; i++) temp[i] = expanded[bytesGenerated - 4 + i];
-        if (bytesGenerated % 16 === 0) {
-          const t = temp[0];
-          temp[0] = AES_SBOX[temp[1]] ^ AES_RCON[rconIter++];
-          temp[1] = AES_SBOX[temp[2]];
-          temp[2] = AES_SBOX[temp[3]];
-          temp[3] = AES_SBOX[t];
-        }
-        for (let i = 0; i < 4; i++) {
-          expanded[bytesGenerated] = expanded[bytesGenerated - 16] ^ temp[i];
-          bytesGenerated++;
-        }
-      }
-      return expanded;
-    }
-
-    function aesAddRoundKey(stateArr, roundKey, offset) {
-      for (let i = 0; i < 16; i++) stateArr[i] ^= roundKey[offset + i];
-    }
-
-    function aesSubBytes(stateArr) {
-      for (let i = 0; i < 16; i++) stateArr[i] = AES_SBOX[stateArr[i]];
-    }
-
-    function aesShiftRows(stateArr) {
-      const t = stateArr.slice();
-      stateArr[0]  = t[0];  stateArr[4]  = t[4];  stateArr[8]  = t[8];  stateArr[12] = t[12];
-      stateArr[1]  = t[5];  stateArr[5]  = t[9];  stateArr[9]  = t[13]; stateArr[13] = t[1];
-      stateArr[2]  = t[10]; stateArr[6]  = t[14]; stateArr[10] = t[2];  stateArr[14] = t[6];
-      stateArr[3]  = t[15]; stateArr[7]  = t[3];  stateArr[11] = t[7];  stateArr[15] = t[11];
-    }
-
-    function aesMixColumns(stateArr) {
-      for (let c = 0; c < 4; c++) {
-        const i = c * 4;
-        const a0 = stateArr[i], a1 = stateArr[i+1], a2 = stateArr[i+2], a3 = stateArr[i+3];
-        stateArr[i]   = (gfMul(a0,2) ^ gfMul(a1,3) ^ a2 ^ a3) & 0xff;
-        stateArr[i+1] = (a0 ^ gfMul(a1,2) ^ gfMul(a2,3) ^ a3) & 0xff;
-        stateArr[i+2] = (a0 ^ a1 ^ gfMul(a2,2) ^ gfMul(a3,3)) & 0xff;
-        stateArr[i+3] = (gfMul(a0,3) ^ a1 ^ a2 ^ gfMul(a3,2)) & 0xff;
-      }
-    }
-
-    function aesEncryptBlock128(block, key) {
-      const roundKey = aesKeyExpansion128(key);
-      const stateArr = Uint8Array.from(block);
-      aesAddRoundKey(stateArr, roundKey, 0);
-      for (let round = 1; round <= 9; round++) {
-        aesSubBytes(stateArr);
-        aesShiftRows(stateArr);
-        aesMixColumns(stateArr);
-        aesAddRoundKey(stateArr, roundKey, round * 16);
-      }
-      aesSubBytes(stateArr);
-      aesShiftRows(stateArr);
-      aesAddRoundKey(stateArr, roundKey, 160);
-      return stateArr;
-    }
-
-    async function sha1Bytes(data32) {
-      const buf = await crypto.subtle.digest("SHA-1", data32);
-      return new Uint8Array(buf);
-    }
-
-    class NinebotCryptoJS {
-      constructor(name) {
-        this._fwData = Uint8Array.from(FW_DATA);
-        this._randomBleData = new Uint8Array(16);
-        this._randomAppData = new Uint8Array(16);
-        this._sha1Key = new Uint8Array(16);
-        this._name = ascii16(name);
-        this._msgIt = 0;
-      }
-
-      async init() {
-        await this.calcSha1Key(this._name, this._fwData);
-      }
-
-      async calcSha1Key(data1, data2) {
-        const data = new Uint8Array(32);
-        copyBytes(data1, 0, data, 0, 16);
-        copyBytes(data2, 0, data, 16, 16);
-        const hash = await sha1Bytes(data);
-        this._sha1Key = hash.slice(0, 16);
-      }
-
-      aesEcbEncrypt(data16, key16) {
-        return aesEncryptBlock128(data16, key16);
-      }
-
-      cryptoFirst(data) {
-        const result = new Uint8Array(data.length);
-        let payloadLen = data.length;
-        let byteIdx = 0;
-        while (payloadLen > 0) {
-          const tmpLen = payloadLen <= 16 ? payloadLen : 16;
-          const xorData1 = new Uint8Array(16);
-          copyBytes(data, byteIdx, xorData1, 0, tmpLen);
-          const aesKey = this.aesEcbEncrypt(this._fwData, this._sha1Key);
-          const xorData = xor16(xorData1, aesKey);
-          copyBytes(xorData, 0, result, byteIdx, tmpLen);
-          payloadLen -= tmpLen;
-          byteIdx += tmpLen;
-        }
-        return result;
-      }
-
-      cryptoNext(data, msgIt) {
-        const result = new Uint8Array(data.length);
-        const aesEncData = new Uint8Array(16);
-        aesEncData[0] = 1;
-        aesEncData[1] = (msgIt >>> 24) & 0xff;
-        aesEncData[2] = (msgIt >>> 16) & 0xff;
-        aesEncData[3] = (msgIt >>> 8) & 0xff;
-        aesEncData[4] = msgIt & 0xff;
-        copyBytes(this._randomBleData, 0, aesEncData, 5, 8);
-        aesEncData[15] = 0;
-        let payloadLen = data.length;
-        let byteIdx = 0;
-        while (payloadLen > 0) {
-          aesEncData[15] = (aesEncData[15] + 1) & 0xff;
-          const tmpLen = payloadLen <= 16 ? payloadLen : 16;
-          const xorData1 = new Uint8Array(16);
-          copyBytes(data, byteIdx, xorData1, 0, tmpLen);
-          const aesKey = this.aesEcbEncrypt(aesEncData, this._sha1Key);
-          const xorData = xor16(xorData1, aesKey);
-          copyBytes(xorData, 0, result, byteIdx, tmpLen);
-          payloadLen -= tmpLen;
-          byteIdx += tmpLen;
-        }
-        return result;
-      }
-
-      calcCrcFirstMsg(data) {
-        let crc = 0;
-        for (const v of data) crc = (crc + v) & 0xffff;
-        crc = (~crc) & 0xffff;
-        return Uint8Array.from([crc & 0xff, (crc >>> 8) & 0xff]);
-      }
-
-      calcCrcNextMsg(data, msgIt) {
-        const aesEncData = new Uint8Array(16);
-        let payloadLen = data.length - 3;
-        let byteIdx = 3;
-        let xorData2 = new Uint8Array(16);
-
-        aesEncData[0] = 89;
-        aesEncData[1] = (msgIt >>> 24) & 0xff;
-        aesEncData[2] = (msgIt >>> 16) & 0xff;
-        aesEncData[3] = (msgIt >>> 8) & 0xff;
-        aesEncData[4] = msgIt & 0xff;
-        copyBytes(this._randomBleData, 0, aesEncData, 5, 8);
-        aesEncData[15] = payloadLen & 0xff;
-
-        let aesKey = this.aesEcbEncrypt(aesEncData, this._sha1Key);
-        copyBytes(aesKey, 0, xorData2, 0, 16);
-
-        const xorData1Header = new Uint8Array(16);
-        copyBytes(data, 0, xorData1Header, 0, 3);
-        let xorData = xor16(xorData1Header, xorData2);
-        aesKey = this.aesEcbEncrypt(xorData, this._sha1Key);
-        copyBytes(aesKey, 0, xorData2, 0, 16);
-
-        while (payloadLen > 0) {
-          const tmpLen = payloadLen <= 16 ? payloadLen : 16;
-          const xorData1 = new Uint8Array(16);
-          copyBytes(data, byteIdx, xorData1, 0, tmpLen);
-          xorData = xor16(xorData1, xorData2);
-          aesKey = this.aesEcbEncrypt(xorData, this._sha1Key);
-          copyBytes(aesKey, 0, xorData2, 0, 16);
-          payloadLen -= tmpLen;
-          byteIdx += tmpLen;
-        }
-
-        aesEncData.fill(0);
-        aesEncData[0] = 1;
-        const xorOut = xor16(this.aesEcbEncrypt(aesEncData, this._sha1Key), xorData2);
-        return Uint8Array.from([xorOut[0], xorOut[1], xorOut[2], xorOut[3]]);
-      }
-
-      async encrypt(data) {
-        const encrypted = new Uint8Array(152);
-        copyBytes(data, 0, encrypted, 0, 3);
-        const payloadLen = data.length - 3;
-        let payload = data.slice(3);
-
-        if (this._msgIt === 0) {
-          const crc = this.calcCrcFirstMsg(payload);
-          payload = this.cryptoFirst(payload);
-          copyBytes(payload, 0, encrypted, 3, payload.length);
-          encrypted[payloadLen + 3] = 0;
-          encrypted[payloadLen + 4] = 0;
-          encrypted[payloadLen + 5] = crc[0];
-          encrypted[payloadLen + 6] = crc[1];
-          encrypted[payloadLen + 7] = 0;
-          encrypted[payloadLen + 8] = 0;
-          this._msgIt++;
-          return encrypted.slice(0, payloadLen + 9);
-        } else {
-          this._msgIt++;
-          const crc = this.calcCrcNextMsg(data, this._msgIt);
-          payload = this.cryptoNext(payload, this._msgIt);
-          copyBytes(payload, 0, encrypted, 3, payload.length);
-          encrypted[payloadLen + 3] = crc[0];
-          encrypted[payloadLen + 4] = crc[1];
-          encrypted[payloadLen + 5] = crc[2];
-          encrypted[payloadLen + 6] = crc[3];
-          encrypted[payloadLen + 7] = (this._msgIt >>> 8) & 0xff;
-          encrypted[payloadLen + 8] = this._msgIt & 0xff;
-
-          if (
-            data.length >= 23 &&
-            data[0] === 0x5A && data[1] === 0xA5 && data[2] === 0x10 &&
-            data[3] === 0x3E && data[5] === 0x5C && data[6] === 0x00
-          ) {
-            copyBytes(data, 7, this._randomAppData, 0, 16);
-          }
-          return encrypted.slice(0, payloadLen + 9);
-        }
-      }
-
-      async decrypt(data) {
-        if (data.length < 9) throw new Error("RX zu kurz für NinebotCrypto");
-        const decrypted = new Uint8Array(data.length - 6);
-        copyBytes(data, 0, decrypted, 0, 3);
-
-        let newMsgIt = this._msgIt;
-        if ((newMsgIt & 0x0008000) > 0 && (data[data.length - 2] >> 7) === 0) {
-          newMsgIt += 0x0010000;
-        }
-        newMsgIt = (newMsgIt & 0xFFFF0000) + ((data[data.length - 2] << 8) | data[data.length - 1]);
-
-        const payloadLen = data.length - 9;
-        let payload = data.slice(3, 3 + payloadLen);
-
-        if (newMsgIt === 0) {
-          payload = this.cryptoFirst(payload);
-          copyBytes(payload, 0, decrypted, 3, payload.length);
-
-          if (
-            decrypted.length >= 23 &&
-            decrypted[0] === 0x5A && decrypted[1] === 0xA5 && decrypted[2] === 0x1E &&
-            decrypted[3] === 0x21 && decrypted[4] === 0x3E && decrypted[5] === 0x5B
-          ) {
-            copyBytes(decrypted, 7, this._randomBleData, 0, 16);
-            await this.calcSha1Key(this._name, this._randomBleData);
-          }
-          return decrypted;
-        } else if (newMsgIt > this._msgIt) {
-          payload = this.cryptoNext(payload, newMsgIt);
-          copyBytes(payload, 0, decrypted, 3, payload.length);
-
-          if (
-            decrypted.length >= 7 &&
-            decrypted[0] === 0x5A && decrypted[1] === 0xA5 && decrypted[2] === 0x00 &&
-            decrypted[3] === 0x21 && decrypted[4] === 0x3E && decrypted[5] === 0x5C && decrypted[6] === 0x01
-          ) {
-            await this.calcSha1Key(this._randomAppData, this._randomBleData);
-          }
-          this._msgIt = newMsgIt;
-          return decrypted;
-        } else {
-          throw new Error("altes/ungültiges msg_it");
-        }
-      }
-    }
-
-    async function initCryptoForCurrentDevice() {
-      const cryptoName = (state.device?.name || $("fallbackName").value || "N2O").slice(0, 16);
-      state.crypto = new NinebotCryptoJS(cryptoName);
-      await state.crypto.init();
-      log("Crypto-Name: " + cryptoName);
-    }
-
-    async function writeBytes(bytes) {
-      const mode = $("writeMode").value;
-      if (!state.writeChar) throw new Error("Write characteristic fehlt");
-
-      if (mode === "withoutResponse") {
-        if (!state.writeChar.properties.writeWithoutResponse) throw new Error("withoutResponse wird nicht unterstützt");
-        state.lastWriteModeUsed = "withoutResponse";
-        updatePills();
-        await state.writeChar.writeValueWithoutResponse(bytes);
-        return;
-      }
-
-      if (mode === "withResponse") {
-        if (!state.writeChar.properties.write) throw new Error("withResponse wird nicht unterstützt");
-        state.lastWriteModeUsed = "withResponse";
-        updatePills();
-        await state.writeChar.writeValue(bytes);
-        return;
-      }
-
-      if (state.writeChar.properties.writeWithoutResponse) {
-        state.lastWriteModeUsed = "withoutResponse(auto)";
-        updatePills();
-        await state.writeChar.writeValueWithoutResponse(bytes);
-        return;
-      }
-
-      if (state.writeChar.properties.write) {
-        state.lastWriteModeUsed = "withResponse(auto)";
-        updatePills();
-        await state.writeChar.writeValue(bytes);
-        return;
-      }
-
-      throw new Error("Characteristic ist nicht schreibbar");
-    }
-
-    async function sendInnerEncrypted(inner) {
-      const wrapped = wrapNinebotCryptoInner(inner);
-      const encrypted = await state.crypto.encrypt(wrapped);
-      log("TX INNER   " + hex(inner), "warn");
-      log("TX WRAPPED " + hex(wrapped), "warn");
-      log("TX ENCRYPT " + hex(encrypted), "warn");
-      await writeBytes(encrypted);
-    }
-
-    async function sendWrappedPlain(inner) {
-      const wrapped = wrapNinebotCryptoInner(inner);
-      log("TX INNER   " + hex(inner), "warn");
-      log("TX WRAPPED " + hex(wrapped), "warn");
-      await writeBytes(wrapped);
-    }
-
-    async function sendInnerOnly(inner) {
-      log("TX INNER   " + hex(inner), "warn");
-      await writeBytes(inner);
-    }
-
-    async function sendOnly5BEncrypted() {
-      setStatus("Test 5B verschlüsselt", "Sende <code>3e .. 5b 00</code> mit <code>c6/b</code>-Wrapper und NinebotCrypto.");
-      await sendInnerEncrypted(buildInner(0x5B, 0x00));
-    }
-
-    async function sendOnly5BWrapped() {
-      setStatus("Test 5B gewrappt", "Sende <code>5a a5 len + inner</code> ohne Crypto.");
-      await sendWrappedPlain(buildInner(0x5B, 0x00));
-    }
-
-    async function sendOnly5BInner() {
-      setStatus("Test 5B inner", "Sende nur das innere Paket <code>3e .. 5b 00</code>.");
-      await sendInnerOnly(buildInner(0x5B, 0x00));
-    }
-
-    function noteAddress(addr) {
-      state.destAddr = addr;
-      updatePills();
-      log("Teste Zieladresse 0x" + addr.toString(16).padStart(2, "0"));
-    }
-
-    async function trySingle5B(addr) {
-      noteAddress(addr);
-      await initCryptoForCurrentDevice();
-      state.serial14 = null;
-      const thisRun = state.authRunId;
-      await sendOnly5BEncrypted();
-
-      const timeoutMs = parseInt($("tryTimeoutMs").value, 10) || 2500;
-      return await new Promise((resolve) => {
-        schedule(() => {
-          if (state.authRunId !== thisRun) return resolve(false);
-          resolve(!!state.serial14);
-        }, timeoutMs);
-      });
-    }
-
-    async function run5BDiagnose() {
-      const addrs = $("diagnoseScan").checked ? parseHexList($("destScan").value) : [fromHexByte($("destAddr").value)];
-      state.authRunId++;
-      const runId = state.authRunId;
-      state.serial14 = null;
-
-      setStep("cmd5b", "active");
-      setStatus("Diagnose läuft", "Teste jetzt den korrigierten <code>c6/b → NinebotCrypto</code>-Pfad …");
-
-      for (const addr of addrs) {
-        if (runId !== state.authRunId) return false;
-        log("---- 5B Diagnose encrypted on 0x" + addr.toString(16).padStart(2, "0") + " ----");
-        const ok = await trySingle5B(addr);
-        if (ok) {
-          log("Treffer: verschlüsseltes 5B auf Adresse 0x" + addr.toString(16).padStart(2, "0"), "ok");
-          return true;
-        }
-      }
-
-      setStep("cmd5b", "error");
-      setStatus("Keine 5B-Antwort", "Auch mit korrektem <code>c6/b</code>-Wrapper kam keine passende <code>0x5B</code>-Antwort.");
-      log("Kein Treffer bei 5B-Diagnose.", "err");
-      return false;
-    }
-
-    async function startAuthFlow() {
-      if (!state.isConnected) throw new Error("Nicht verbunden");
-      clearTimers();
-      resetSteps();
-      state.completed = false;
-      state.waitingForPowerButton = false;
-      state.sending5D = false;
-      state.serial14 = null;
-      state.appRandom = randomBytes(16);
-      state.authRunId++;
-
-      const ok = await run5BDiagnose();
-      if (!ok || !state.serial14) return;
-
-      setStep("cmd5b", "done");
-      setStep("cmd5c", "active");
-      setStatus("0x5C senden", "Passende 5B-Antwort gefunden. Sende jetzt <code>0x5C</code> …");
-      await initCryptoForCurrentDevice();
-      await sendInnerEncrypted(buildInner(0x5C, 0x00, state.appRandom));
-
-      schedule(() => {
-        if (!state.waitingForPowerButton && !state.completed) {
-          state.waitingForPowerButton = true;
-          setStep("power", "active");
-          setStatus("Powerbutton drücken", "Bitte jetzt kurz den <b>Powerbutton drücken</b> oder das <b>Licht toggeln</b>.");
-          log("Auto-Hinweis: Powerbutton drücken / Licht toggeln.", "warn");
-        }
-      }, 1400);
-    }
-
-    async function continueWith5D() {
-      if (state.sending5D || !state.serial14) return;
-      state.sending5D = true;
-      setStep("cmd5c", "done");
-      setStep("power", "done");
-      setStep("cmd5d", "active");
-      setStatus("0x5D senden", "Finalisiere Auth …");
-      await sendInnerEncrypted(buildInner(0x5D, 0x00, state.serial14));
-    }
-
-    function finishAuth() {
-      state.completed = true;
-      setStep("cmd5d", "done");
-      setStep("done", "done");
-      setStatus("Fertig", "<span class='ok'><b>Connect + Auth erfolgreich abgeschlossen.</b></span>");
-      log("Auth erfolgreich abgeschlossen.", "ok");
-    }
-
-    async function handleDecryptedFrame(frame) {
-      const parsed = parseFrame(frame);
-      if (!parsed) return;
-      log(`FRAME len=${parsed.len} src=${parsed.src.toString(16)} dest=${parsed.dest.toString(16)} cmd=${parsed.cmd.toString(16)} ofs=${parsed.ofs.toString(16)} payload=${hex(parsed.payload)}`);
-
-      if (parsed.cmd === 0x5B) {
-        if (parsed.payload.length >= 30) {
-          state.serial14 = parsed.payload.slice(16, 30);
-          log("0x5B erkannt. 14-Byte-Block: " + hex(state.serial14), "ok");
-          setStep("cmd5b", "done");
-        } else {
-          log("0x5B erkannt, aber Payload zu kurz.", "err");
-        }
-        return;
-      }
-
-      if (parsed.cmd === 0x5C && parsed.ofs === 0x01) {
-        if (!state.waitingForPowerButton) {
-          state.waitingForPowerButton = true;
-          setStep("power", "active");
-          setStatus("Powerbutton drücken", "Scooter hat <code>0x5C 01</code> bestätigt. <b>Jetzt kurz Powerbutton drücken</b> oder Licht toggeln.");
-          log("0x5C 01 empfangen. Powerbutton-Hinweis eingeblendet.", "warn");
-        }
-        schedule(() => continueWith5D().catch(showError), 1500);
-        return;
-      }
-
-      if (parsed.cmd === 0x5D && parsed.ofs === 0x01) {
-        finishAuth();
-      }
-    }
-
-    async function onNotify(event) {
-      const value = event.target.value;
-      const raw = new Uint8Array(value.buffer.slice(value.byteOffset, value.byteOffset + value.byteLength));
-      state.rxCount++;
-      updatePills();
-      log("RX ENCRYPT " + hex(raw), "ok");
-
-      try {
-        const decrypted = await state.crypto.decrypt(raw);
-        log("RX DECRYPT " + hex(decrypted), "ok");
-        await handleDecryptedFrame(decrypted);
-      } catch (err) {
-        log("Decrypt fehlgeschlagen: " + String(err.message || err), "err");
-        try {
-          const maybeFrame = parseFrame(raw);
-          if (maybeFrame) {
-            log("RX scheint schon gewrappt/roh zu sein.", "warn");
-            await handleDecryptedFrame(raw);
-          }
-        } catch (_) {}
-      }
-    }
-
-    async function initCryptoAndConnection() {
-      state.rxCount = 0;
-      updatePills();
-      await initCryptoForCurrentDevice();
-    }
-
-    async function connect() {
-      if (!navigator.bluetooth) throw new Error("Web Bluetooth wird in diesem Browser nicht unterstützt.");
-
-      setStep("connect", "active");
-      setStatus("Geräteauswahl", "Bitte den Scooter im Browser-Popup auswählen …");
-
-      const serviceUuid = $("serviceUuid").value.trim();
-      const writeUuid = $("writeUuid").value.trim().toLowerCase();
-      const readUuid = $("readUuid").value.trim().toLowerCase();
-
-      state.device = await navigator.bluetooth.requestDevice({
-        filters: serviceUuid ? [{ services: [serviceUuid] }] : undefined,
-        acceptAllDevices: !serviceUuid,
-        optionalServices: serviceUuid ? [serviceUuid] : []
-      });
-
-      state.device.addEventListener("gattserverdisconnected", onDisconnected);
-
-      setStatus("Verbinde", "GATT-Verbindung wird aufgebaut …");
-      state.server = await state.device.gatt.connect();
-      state.isConnected = true;
-      setStep("connect", "done");
-
-      const services = await state.server.getPrimaryServices();
-      let foundWrite = null, foundRead = null, foundService = null;
-      for (const service of services) {
-        const chars = await service.getCharacteristics();
-        for (const ch of chars) {
-          const uuid = ch.uuid.toLowerCase();
-          if (uuid === writeUuid) { foundWrite = ch; foundService = service; }
-          if (uuid === readUuid) { foundRead = ch; foundService = service; }
-        }
-      }
-
-      if (!foundWrite || !foundRead) throw new Error("Write oder Read Characteristic nicht gefunden.");
-
-      state.service = foundService;
-      state.writeChar = foundWrite;
-      state.readChar = foundRead;
-
-      log("Write props: " + JSON.stringify({
-        write: !!state.writeChar.properties.write,
-        writeWithoutResponse: !!state.writeChar.properties.writeWithoutResponse,
-        notify: !!state.readChar.properties.notify,
-        indicate: !!state.readChar.properties.indicate
-      }));
-
-      setStep("notify", "active");
-      setStatus("Notifications", "Aktiviere Read-Notifications …");
-      await state.readChar.startNotifications();
-      state.readChar.addEventListener("characteristicvaluechanged", onNotify);
-      setStep("notify", "done");
-
-      await initCryptoAndConnection();
-
-      $("connectBtn").disabled = true;
-      $("disconnectBtn").disabled = false;
-      $("authBtn").disabled = false;
-      $("testEncryptedBtn").disabled = false;
-      $("testWrappedBtn").disabled = false;
-      $("testInnerBtn").disabled = false;
-
-      log("Verbunden mit: " + (state.device.name || state.device.id), "ok");
-      setStatus("Verbunden", "Jetzt den korrigierten <code>c6/b</code>-Pfad testen.");
-    }
-
-    async function disconnect() {
-      clearTimers();
-      try {
-        if (state.readChar) state.readChar.removeEventListener("characteristicvaluechanged", onNotify);
-      } catch (_) {}
-      try {
-        if (state.device?.gatt?.connected) state.device.gatt.disconnect();
-      } catch (_) {}
-      onDisconnected();
-    }
-
-    function onDisconnected() {
-      state.isConnected = false;
-      state.server = null;
-      state.service = null;
-      state.writeChar = null;
-      state.readChar = null;
-      state.completed = false;
-      state.crypto = null;
-      state.serial14 = null;
-      clearTimers();
-
-      $("connectBtn").disabled = false;
-      $("disconnectBtn").disabled = true;
-      $("authBtn").disabled = true;
-      $("testEncryptedBtn").disabled = true;
-      $("testWrappedBtn").disabled = true;
-      $("testInnerBtn").disabled = true;
-
-      resetSteps();
-      setStatus("Getrennt", "Die Verbindung wurde getrennt.");
-      log("Verbindung getrennt.", "err");
-    }
-
-    function showError(err) {
-      console.error(err);
-      setStatus("Fehler", `<span class="err">${String(err.message || err)}</span>`);
-      log(String(err.message || err), "err");
-    }
-
-    $("connectBtn").addEventListener("click", () => connect().catch(showError));
-    $("disconnectBtn").addEventListener("click", () => disconnect().catch(showError));
-    $("authBtn").addEventListener("click", () => startAuthFlow().catch(showError));
-    $("testEncryptedBtn").addEventListener("click", async () => {
-      try {
-        noteAddress(fromHexByte($("destAddr").value));
-        await initCryptoForCurrentDevice();
-        await sendOnly5BEncrypted();
-      } catch (e) { showError(e); }
-    });
-    $("testWrappedBtn").addEventListener("click", async () => {
-      try {
-        noteAddress(fromHexByte($("destAddr").value));
-        await sendOnly5BWrapped();
-      } catch (e) { showError(e); }
-    });
-    $("testInnerBtn").addEventListener("click", async () => {
-      try {
-        noteAddress(fromHexByte($("destAddr").value));
-        await sendOnly5BInner();
-      } catch (e) { showError(e); }
-    });
-    $("clearBtn").addEventListener("click", clearLog);
-
-    resetSteps();
+  }
+  if(!foundWrite || !foundRead) throw new Error("Write oder Read Characteristic nicht gefunden");
+
+  state.writeChar=foundWrite;
+  state.readChar=foundRead;
+
+  log("Write props: "+JSON.stringify({
+    write: !!state.writeChar.properties.write,
+    writeWithoutResponse: !!state.writeChar.properties.writeWithoutResponse,
+    notify: !!state.readChar.properties.notify,
+    indicate: !!state.readChar.properties.indicate
+  }));
+
+  setStep("notify","active");
+  setStatus("Notifications", "Aktiviere Read-Notifications …");
+  await state.readChar.startNotifications();
+  state.readChar.addEventListener("characteristicvaluechanged", onNotify);
+  setStep("notify","done");
+
+  state.rxCount=0; updatePills();
+  await initCryptoForCurrentDevice();
+
+  $("connectBtn").disabled=true;
+  $("disconnectBtn").disabled=false;
+  $("startBtn").disabled=false;
+
+  log("Verbunden mit: "+(state.device.name||state.device.id), "ok");
+  setStatus("Verbunden", "Jetzt kannst du den Connect + Auth Flow starten.");
+}
+
+function onDisconnected(){
+  state.connected=false;
+  state.server=null;
+  state.writeChar=null;
+  state.readChar=null;
+  state.running=false;
+  state.got5B=false; state.got5C=false; state.got5D=false;
+  state.scooterSerial14=null; state.crypto=null;
+  $("connectBtn").disabled=false;
+  $("disconnectBtn").disabled=true;
+  $("startBtn").disabled=true;
+  resetSteps();
+  setStatus("Getrennt", "Die Verbindung wurde getrennt.");
+  log("Verbindung getrennt.", "err");
+}
+async function disconnect(){
+  try{
+    if(state.readChar) state.readChar.removeEventListener("characteristicvaluechanged", onNotify);
+  }catch(_){}
+  try{
+    if(state.device?.gatt?.connected) state.device.gatt.disconnect();
+  }catch(_){}
+  onDisconnected();
+}
+
+async function runFullAuth(){
+  if(state.running) return;
+  state.running=true;
+  try{
+    state.destAddr=fromHexByte($("destAddr").value);
     updatePills();
-  </script>
+    await initCryptoForCurrentDevice();
+
+    state.got5B=false; state.got5C=false; state.got5D=false;
+    state.scooterSerial14=null;
+    state.appRandom=randomBytes(16);
+    resetSteps();
+    setStep("connect","done");
+    setStep("notify","done");
+
+    setStatus("5B läuft", "Frage jetzt den Scooter-Random ab …");
+    setStep("cmd5b","active");
+
+    const retry5b=parseInt($("retry5bMs").value,10) || 900;
+    let tries5b=0;
+    while(!state.got5B && tries5b<15){
+      await sendPlain5B();
+      tries5b++;
+      await sleep(retry5b);
+    }
+    if(!state.got5B) throw new Error("Keine passende 5B-Antwort erhalten");
+
+    setStatus("5C läuft", "Sende jetzt App-Random …");
+    setStep("cmd5c","active");
+
+    const retry5cd=parseInt($("retry5cdMs").value,10) || 500;
+    let tries5c=0;
+    while(!state.got5C && tries5c<12){
+      await sendEncryptedCmd(0x5C, state.appRandom);
+      tries5c++;
+      await sleep(retry5cd);
+    }
+    if(!state.got5C){
+      setStep("power","active");
+      setStatus("Powerbutton drücken", "Bitte jetzt kurz den <b>Powerbutton drücken</b> oder das <b>Licht toggeln</b>. Danach läuft 5D weiter.");
+      log("Kein 5C 01 gesehen. Powerbutton-Hinweis eingeblendet.", "warn");
+      // wir gehen trotzdem weiter wie die App es praktisch oft tut
+    }
+
+    setStatus("5D läuft", "Finalisiere jetzt Auth …");
+    setStep("cmd5d","active");
+
+    let tries5d=0;
+    while(!state.got5D && tries5d<20){
+      await sendEncryptedCmd(0x5D, state.scooterSerial14);
+      tries5d++;
+      await sleep(retry5cd);
+    }
+    if(!state.got5D) throw new Error("Keine passende 5D-Antwort erhalten");
+
+  } finally {
+    state.running=false;
+  }
+}
+
+function showError(err){
+  console.error(err);
+  setStatus("Fehler", `<span class="err">${String(err.message||err)}</span>`);
+  log(String(err.message||err), "err");
+}
+
+$("connectBtn").addEventListener("click", ()=>connect().catch(showError));
+$("startBtn").addEventListener("click", ()=>runFullAuth().catch(showError));
+$("disconnectBtn").addEventListener("click", ()=>disconnect().catch(showError));
+$("clearBtn").addEventListener("click", clearLog);
+
+resetSteps();
+updatePills();
+</script>
 </body>
 </html>
