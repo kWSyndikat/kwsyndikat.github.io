@@ -1,1 +1,442 @@
-<i>nothing here yet.</i>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>kWSyndikat — Scooter Firmware</title>
+<style>
+@font-face{font-family:'DxrkFont';src:url('https://files.catbox.moe/u8vo6e.ttf') format('truetype');font-display:swap}
+@font-face{font-family:'DxrkBody';src:url('https://files.catbox.moe/xdaycb.otf') format('opentype');font-display:swap}
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+--r:#c0392b;
+--r2:#8b0000;
+--r3:#e84030;
+--bg:#060202;
+--surface:rgba(18,5,5,0.88);
+--surface2:rgba(26,7,7,0.92);
+--text:#e8d5d0;
+--text2:rgba(232,213,208,0.58);
+--text3:rgba(232,213,208,0.3);
+--border:rgba(192,57,43,0.15);
+--border2:rgba(192,57,43,0.38);
+--rad:16px;
+--rad2:12px;
+--rad3:8px;
+}
+html{scroll-behavior:smooth;-webkit-font-smoothing:antialiased}
+body{background:var(--bg);color:var(--text);font-family:'DxrkFont',system-ui,sans-serif;overflow-x:hidden;min-height:100vh}
+
+canvas#hellbg{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:0}
+.heat-bottom{position:fixed;bottom:-10vh;left:50%;transform:translateX(-50%);width:130vw;height:55vh;background:radial-gradient(ellipse at 50% 100%,rgba(180,40,0,0.2),rgba(120,0,0,0.08) 45%,transparent 70%);pointer-events:none;z-index:0;animation:breathe 6s ease-in-out infinite}
+.heat-top{position:fixed;top:0;left:50%;transform:translateX(-50%);width:80vw;height:35vh;background:radial-gradient(ellipse at 50% 0%,rgba(150,20,0,0.14),transparent 70%);pointer-events:none;z-index:0;animation:breathe 9s ease-in-out infinite reverse}
+@keyframes breathe{0%,100%{opacity:0.6}50%{opacity:1}}
+
+.ember{position:fixed;border-radius:50%;pointer-events:none;z-index:1;animation:emberRise linear infinite}
+@keyframes emberRise{0%{transform:translateY(0) translateX(0);opacity:0.85}100%{transform:translateY(-110vh) translateX(var(--ex));opacity:0}}
+
+nav{
+position:fixed;top:0;left:0;right:0;z-index:100;
+height:62px;padding:0 clamp(1rem,5vw,2.5rem);
+display:flex;justify-content:space-between;align-items:center;
+background:rgba(4,1,1,0.82);
+backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
+border-bottom:1px solid var(--border);
+font-family:'DxrkBody',system-ui,sans-serif;
+}
+.nav-logo{font-size:1.45rem;color:#ff1800;text-decoration:none;letter-spacing:0.04em}
+.nav-links{display:flex;gap:clamp(0.8rem,2.5vw,1.8rem);align-items:center}
+.nav-links a{font-size:0.82rem;letter-spacing:0.07em;color:var(--text2);text-decoration:none;transition:color 0.22s;border-bottom:1px solid transparent;padding-bottom:2px}
+.nav-links a:hover{color:var(--text);border-bottom-color:rgba(192,57,43,0.45)}
+.nav-pill{background:rgba(192,57,43,0.12);border:1px solid var(--border2);color:var(--r);padding:0.28rem 0.8rem;border-radius:20px;font-size:0.72rem;letter-spacing:0.06em}
+.nav-pill:hover{background:rgba(192,57,43,0.2) !important;border-color:var(--r) !important;color:var(--text) !important}
+.hamburger{display:none;flex-direction:column;gap:5px;cursor:pointer;padding:6px;border:none;background:none}
+.hamburger span{display:block;width:20px;height:1.5px;background:var(--text2);border-radius:2px;transition:0.3s}
+.mob-menu{display:none;position:fixed;top:62px;left:0;right:0;z-index:99;background:rgba(5,1,1,0.96);border-bottom:1px solid var(--border);padding:1.2rem clamp(1rem,5vw,2.5rem);flex-direction:column;font-family:'DxrkBody',system-ui,sans-serif}
+.mob-menu.open{display:flex}
+.mob-menu a{font-size:0.88rem;color:var(--text2);text-decoration:none;padding:0.85rem 0;border-bottom:1px solid var(--border);transition:color 0.2s}
+.mob-menu a:last-child{border-bottom:none}
+.mob-menu a:hover{color:var(--text)}
+
+.hero{
+position:relative;z-index:2;min-height:100vh;
+display:flex;flex-direction:column;align-items:center;justify-content:center;
+padding:6rem clamp(1.5rem,6vw,3rem) 5rem;text-align:center;
+}
+.hero-chip{
+display:inline-flex;align-items:center;gap:0.45rem;
+background:rgba(192,57,43,0.1);border:1px solid rgba(192,57,43,0.22);
+border-radius:20px;padding:0.3rem 0.9rem;
+font-size:0.72rem;letter-spacing:0.12em;color:var(--r);
+margin-bottom:1.8rem;
+opacity:0;animation:up 0.8s 0.2s forwards;
+}
+.chip-dot{width:5px;height:5px;border-radius:50%;background:var(--r);animation:blink 2.2s ease-in-out infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.25}}
+.hero-name{font-size:clamp(4.5rem,15vw,9.5rem);color:#ff1800;line-height:1;letter-spacing:0.03em;margin-bottom:1rem;opacity:0;animation:up 0.9s 0.35s forwards}
+.hero-desc{font-size:clamp(0.92rem,2.2vw,1.1rem);color:var(--text2);max-width:420px;line-height:1.7;margin-bottom:2.5rem;opacity:0;animation:up 0.9s 0.5s forwards}
+.hero-btns{display:flex;gap:0.75rem;flex-wrap:wrap;justify-content:center;opacity:0;animation:up 0.9s 0.65s forwards}
+@keyframes up{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:translateY(0)}}
+.scroll-hint{position:absolute;bottom:2.5rem;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:0.45rem;opacity:0;animation:up 0.9s 1.1s forwards}
+.scroll-hint span{font-size:0.62rem;letter-spacing:0.22em;color:var(--text3)}
+.scroll-bar{width:1px;height:36px;background:linear-gradient(to bottom,rgba(192,57,43,0.7),transparent);animation:scrollAnim 2.5s ease-in-out infinite}
+@keyframes scrollAnim{0%{transform:scaleY(0);transform-origin:top}50%{transform:scaleY(1);transform-origin:top}51%{transform-origin:bottom}100%{transform:scaleY(0);transform-origin:bottom}}
+
+.btn{display:inline-flex;align-items:center;gap:0.45rem;font-family:'DxrkBody',sans-serif;font-size:0.83rem;letter-spacing:0.08em;border-radius:var(--rad3);padding:0.72rem 1.6rem;cursor:pointer;text-decoration:none;transition:transform 0.2s,box-shadow 0.25s,background 0.22s,border-color 0.22s,color 0.22s;border:1px solid transparent}
+.btn:active{transform:scale(0.97) !important}
+.btn-red{background:var(--r);color:#fff;border-color:var(--r)}
+.btn-red:hover{background:var(--r3);box-shadow:0 6px 28px rgba(192,57,43,0.4);transform:translateY(-2px)}
+.btn-outline{background:transparent;color:var(--text2);border-color:var(--border2)}
+.btn-outline:hover{color:var(--text);border-color:var(--r);background:rgba(192,57,43,0.07);transform:translateY(-2px)}
+
+.divider{position:relative;z-index:2;height:1px;background:linear-gradient(to right,transparent,var(--border2),transparent);margin:0 clamp(1.5rem,5vw,3rem)}
+
+.sec{position:relative;z-index:2;padding:5rem clamp(1.5rem,5vw,3rem);font-family:'DxrkBody',system-ui,sans-serif}
+.sec-inner{max-width:960px;margin:0 auto}
+.sec-label{font-size:0.68rem;letter-spacing:0.2em;color:var(--r);margin-bottom:0.5rem;opacity:0.8}
+.sec-title{font-size:clamp(1.5rem,3.5vw,2rem);color:var(--text);margin-bottom:0.45rem;line-height:1.2}
+.sec-sub{font-size:0.9rem;color:var(--text2);line-height:1.65;margin-bottom:2.5rem}
+
+.scooter-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:0.9rem}
+.scooter-card{
+position:relative;cursor:pointer;
+background:var(--surface);border:1px solid var(--border);border-radius:var(--rad);
+padding:1.8rem 1.2rem 1.4rem;text-align:center;
+transition:border-color 0.32s,background 0.32s,transform 0.32s,box-shadow 0.32s;
+overflow:hidden;-webkit-tap-highlight-color:transparent;
+}
+.scooter-card::before{content:'';position:absolute;inset:0;border-radius:var(--rad);background:radial-gradient(ellipse at 50% 110%,rgba(192,57,43,0.11),transparent 65%);opacity:0;transition:opacity 0.32s;pointer-events:none}
+.scooter-card:hover,.scooter-card.active{border-color:var(--border2);background:var(--surface2);transform:translateY(-3px)}
+.scooter-card:hover::before,.scooter-card.active::before{opacity:1}
+.scooter-card.active{border-color:var(--r);box-shadow:0 0 0 1px rgba(192,57,43,0.12),0 8px 36px rgba(139,0,0,0.22)}
+.card-dot{position:absolute;top:0.85rem;right:0.85rem;width:18px;height:18px;border-radius:50%;border:1.5px solid var(--border2);display:flex;align-items:center;justify-content:center;transition:background 0.28s,border-color 0.28s}
+.card-dot svg{width:9px;height:9px;stroke:#fff;stroke-width:2.2;fill:none;opacity:0;transition:opacity 0.28s}
+.scooter-card.active .card-dot{background:var(--r);border-color:var(--r)}
+.scooter-card.active .card-dot svg{opacity:1}
+.scooter-img{height:130px;display:flex;align-items:center;justify-content:center;margin-bottom:1.1rem;position:relative}
+.scooter-img::after{content:'';position:absolute;bottom:-2px;left:15%;right:15%;height:16px;background:radial-gradient(ellipse,rgba(192,57,43,0.18),transparent 70%);border-radius:50%;filter:blur(5px)}
+.scooter-card img{max-height:120px;max-width:100%;object-fit:contain;filter:drop-shadow(0 6px 18px rgba(139,0,0,0.3));transition:transform 0.32s,filter 0.32s}
+.scooter-card:hover img,.scooter-card.active img{transform:scale(1.07) translateY(-4px);filter:drop-shadow(0 14px 28px rgba(192,57,43,0.5))}
+.scooter-name{font-size:1.2rem;letter-spacing:0.05em;color:var(--text);margin-bottom:0.2rem}
+.scooter-meta{font-size:0.68rem;letter-spacing:0.14em;color:var(--text3)}
+.scooter-card.active .scooter-meta{color:rgba(192,57,43,0.55)}
+
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--rad);overflow:hidden;margin-bottom:0.9rem}
+.card-head{padding:1.3rem 1.7rem;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:0.9rem}
+.card-num{width:26px;height:26px;border-radius:7px;background:rgba(192,57,43,0.1);border:1px solid rgba(192,57,43,0.22);display:flex;align-items:center;justify-content:center;font-size:0.68rem;color:var(--r);letter-spacing:0.05em;flex-shrink:0}
+.card-head-title{font-size:0.95rem;letter-spacing:0.06em;color:var(--text)}
+
+.dl-wrap{padding:1.7rem}
+.dl-model{font-size:clamp(1.7rem,5vw,2.4rem);color:var(--text);line-height:1;margin-bottom:0.4rem}
+.dl-model span{color:var(--r)}
+.dl-tag{display:inline-flex;align-items:center;gap:0.35rem;background:rgba(192,57,43,0.09);border:1px solid rgba(192,57,43,0.18);border-radius:6px;padding:0.28rem 0.7rem;font-size:0.68rem;letter-spacing:0.1em;color:var(--r);margin-bottom:1.5rem}
+.dl-btns{display:flex;gap:0.7rem;flex-wrap:wrap}
+
+.steps{list-style:none}
+.step-row{display:flex;gap:0.85rem;align-items:flex-start;padding:0.95rem 1.7rem;border-bottom:1px solid rgba(139,0,0,0.07);transition:background 0.18s}
+.step-row:last-child{border-bottom:none}
+.step-row:hover{background:rgba(192,57,43,0.035)}
+.step-n{font-size:0.63rem;letter-spacing:0.1em;color:var(--r);min-width:1.7rem;margin-top:0.18rem;opacity:0.65;flex-shrink:0}
+.step-body{font-size:0.88rem;color:var(--text2);line-height:1.68}
+.step-body strong{color:var(--text);font-weight:400}
+.step-body a{color:var(--r);text-decoration:none;border-bottom:1px solid rgba(192,57,43,0.28);transition:border-color 0.18s}
+.step-body a:hover{border-bottom-color:var(--r)}
+.alert{margin:0 1.7rem 1.3rem;background:rgba(192,57,43,0.065);border:1px solid rgba(192,57,43,0.16);border-radius:var(--rad3);padding:0.85rem 1rem;font-size:0.8rem;color:rgba(232,213,208,0.6);line-height:1.6;display:flex;gap:0.55rem;align-items:flex-start}
+.alert-ico{color:var(--r);flex-shrink:0;font-size:0.82rem;margin-top:0.05rem}
+
+.speed-grid{display:grid;grid-template-columns:1fr 1fr;gap:0.9rem}
+.speed-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--rad);padding:1.7rem;transition:border-color 0.28s,background 0.28s}
+.speed-card:hover{border-color:var(--border2);background:var(--surface2)}
+.speed-icon{width:38px;height:38px;border-radius:9px;background:rgba(192,57,43,0.1);border:1px solid rgba(192,57,43,0.18);display:flex;align-items:center;justify-content:center;margin-bottom:1.1rem}
+.speed-title{font-size:0.95rem;letter-spacing:0.06em;color:var(--text);margin-bottom:0.9rem}
+.speed-row{font-size:0.86rem;color:var(--text2);line-height:1.65;padding:0.55rem 0;border-bottom:1px solid rgba(139,0,0,0.07)}
+.speed-row:last-of-type{border-bottom:none}
+.speed-row strong{color:var(--text);font-weight:400}
+.speed-note{margin-top:0.9rem;background:rgba(192,57,43,0.065);border:1px solid rgba(192,57,43,0.14);border-radius:7px;padding:0.7rem 0.85rem;font-size:0.77rem;color:rgba(232,213,208,0.52);line-height:1.55}
+
+footer{position:relative;z-index:2;border-top:1px solid var(--border);padding:1.8rem clamp(1.5rem,5vw,3rem);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;font-family:'DxrkBody',system-ui,sans-serif}
+.footer-logo{font-size:1rem;color:#ff1800}
+.footer-copy{font-size:0.7rem;letter-spacing:0.08em;color:var(--text3)}
+
+.reveal{opacity:0;transform:translateY(16px);transition:opacity 0.55s,transform 0.55s}
+.reveal.in{opacity:1;transform:translateY(0)}
+
+@media(max-width:680px){
+.scooter-grid{grid-template-columns:1fr}
+.speed-grid{grid-template-columns:1fr}
+.nav-links{display:none}
+.hamburger{display:flex}
+.hero-btns{flex-direction:column;align-items:stretch}
+.btn{justify-content:center}
+.step-row{padding:0.85rem 1.1rem}
+.card-head{padding:1.1rem 1.1rem}
+.dl-wrap{padding:1.3rem}
+.alert{margin:0 1.1rem 1rem}
+}
+</style>
+</head>
+<body>
+
+<canvas id="hellbg"></canvas>
+<div class="heat-bottom"></div>
+<div class="heat-top"></div>
+
+<nav>
+<a class="nav-logo" href="#">kWSyndikat</a>
+<div class="nav-links">
+<a href="#models">Models</a>
+<a href="#install">Install</a>
+<a href="#speed">Speed</a>
+<a href="https://utility-beta.cfw.sh/" target="_blank" class="nav-pill">SHU Beta ↗</a>
+</div>
+<button class="hamburger" id="burger" onclick="toggleMenu()" aria-label="Menu">
+<span></span><span></span><span></span>
+</button>
+</nav>
+
+<div class="mob-menu" id="mobMenu">
+<a href="#models" onclick="closeMenu()">Models</a>
+<a href="#install" onclick="closeMenu()">Install Guide</a>
+<a href="#speed" onclick="closeMenu()">Speed Control</a>
+<a href="https://utility-beta.cfw.sh/" target="_blank">Get SHU Beta ↗</a>
+</div>
+
+<section class="hero">
+<div class="hero-chip"><span class="chip-dot"></span>Custom Firmware · Beta</div>
+<div class="hero-name">kWSyndikat</div>
+<p class="hero-desc">Custom firmware for your scooter. Pick your model, flash it, and go.</p>
+<div class="hero-btns">
+<a href="#models" class="btn btn-red">Choose Your Model</a>
+<a href="#install" class="btn btn-outline">Installation Guide</a>
+</div>
+<div class="scroll-hint">
+<span>Scroll</span>
+<div class="scroll-bar"></div>
+</div>
+</section>
+
+<div class="divider"></div>
+
+<section class="sec" id="models">
+<div class="sec-inner">
+<div class="reveal">
+<div class="sec-label">Select your model</div>
+<div class="sec-title">Choose Your Scooter</div>
+<div class="sec-sub">Tap your model to load the correct firmware download.</div>
+</div>
+<div class="scooter-grid reveal">
+<div class="scooter-card active" onclick="selectScooter(this,'F3 <span>Pro</span>')">
+<div class="card-dot"><svg viewBox="0 0 9 7"><polyline points="1,3.5 3.2,5.8 8,1"/></svg></div>
+<div class="scooter-img"><img src="https://files.catbox.moe/62fizw.webp" alt="F3 Pro"></div>
+<div class="scooter-name">F3 Pro</div>
+<div class="scooter-meta">Model F3-P</div>
+</div>
+<div class="scooter-card" onclick="selectScooter(this,'ZT<span>3</span>')">
+<div class="card-dot"><svg viewBox="0 0 9 7"><polyline points="1,3.5 3.2,5.8 8,1"/></svg></div>
+<div class="scooter-img"><img src="https://files.catbox.moe/qqn58y.webp" alt="ZT3"></div>
+<div class="scooter-name">ZT3</div>
+<div class="scooter-meta">Model ZT-3</div>
+</div>
+<div class="scooter-card" onclick="selectScooter(this,'G<span>3</span>')">
+<div class="card-dot"><svg viewBox="0 0 9 7"><polyline points="1,3.5 3.2,5.8 8,1"/></svg></div>
+<div class="scooter-img"><img src="https://files.catbox.moe/5njiy0.webp" alt="G3"></div>
+<div class="scooter-name">G3</div>
+<div class="scooter-meta">Model G-3</div>
+</div>
+</div>
+</div>
+</section>
+
+<div class="divider"></div>
+
+<section class="sec" id="install">
+<div class="sec-inner">
+<div class="reveal">
+<div class="sec-label">Firmware</div>
+<div class="sec-title">Download & Install</div>
+<div class="sec-sub">The entire process takes around two minutes. Follow each step in order.</div>
+</div>
+
+<div class="card reveal">
+<div class="card-head">
+<div class="card-num">DL</div>
+<div class="card-head-title">Firmware Package</div>
+</div>
+<div class="dl-wrap">
+<div class="dl-model" id="dlTitle">F3 <span>Pro</span></div>
+<div class="dl-tag">kWSyndikat · Modded OFW</div>
+<div class="dl-btns">
+<a href="#" class="btn btn-red" id="dlBtn">Download .zip</a>
+<a href="https://utility-beta.cfw.sh/" target="_blank" class="btn btn-outline">SHU Beta App ↗</a>
+</div>
+</div>
+</div>
+
+<div class="card reveal">
+<div class="card-head">
+<div class="card-num">01</div>
+<div class="card-head-title">Get the SHU Beta App</div>
+</div>
+<ul class="steps">
+<li class="step-row">
+<span class="step-n">1.</span>
+<span class="step-body">Download <strong>SHU Beta</strong> from <a href="https://utility-beta.cfw.sh/" target="_blank">utility-beta.cfw.sh</a> and install it on your Android phone.</span>
+</li>
+<li class="step-row">
+<span class="step-n">2.</span>
+<span class="step-body"><strong>Germany only —</strong> connect a VPN to any country outside Germany <em>before</em> opening the app. If it still does not load, go to <strong>Settings → Apps → ScooterHackingUtility → Force Stop</strong>, make sure the VPN is active, then open the app again.</span>
+</li>
+</ul>
+</div>
+
+<div class="card reveal">
+<div class="card-head">
+<div class="card-num">02</div>
+<div class="card-head-title">Flash the Firmware</div>
+</div>
+<ul class="steps">
+<li class="step-row">
+<span class="step-n">3.</span>
+<span class="step-body">Open SHU Beta and tap <strong>Connect</strong> to pair with your scooter via Bluetooth.</span>
+</li>
+<li class="step-row">
+<span class="step-n">4.</span>
+<span class="step-body">Navigate to the <strong>Flash</strong> tab at the bottom of the app.</span>
+</li>
+<li class="step-row">
+<span class="step-n">5.</span>
+<span class="step-body">Tap <strong>Flash from File</strong>, then select the <strong>.zip</strong> file you downloaded above.</span>
+</li>
+<li class="step-row">
+<span class="step-n">6.</span>
+<span class="step-body">Tap <strong>Flash</strong> and keep your phone nearby. Do not close the app or lock your screen until it finishes.</span>
+</li>
+<li class="step-row">
+<span class="step-n">7.</span>
+<span class="step-body">Once complete, <strong>power off</strong> the scooter fully. The firmware is now installed.</span>
+</li>
+</ul>
+<div class="alert">
+<span class="alert-ico">⚠</span>
+<span>Disconnecting mid-flash can leave the scooter unresponsive. Keep your phone close and the screen on until the process is done.</span>
+</div>
+</div>
+
+</div>
+</section>
+
+<div class="divider"></div>
+
+<section class="sec" id="speed">
+<div class="sec-inner">
+<div class="reveal">
+<div class="sec-label">Speed control</div>
+<div class="sec-title">Unlock & Reset</div>
+<div class="sec-sub">The speed unlock is session-only — it resets every time you turn the scooter off.</div>
+</div>
+<div class="speed-grid reveal">
+<div class="speed-card">
+<div class="speed-icon">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#c0392b" stroke-width="1.8"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+</div>
+<div class="speed-title">Unlock Max Speed</div>
+<div class="speed-row">Hold the <strong>Right Brake</strong> and the <strong>Accelerator</strong> simultaneously while powering the scooter on.</div>
+<div class="speed-row">Keep holding until <strong>error codes appear</strong> on the display — that confirms the speed cap has been bypassed.</div>
+<div class="speed-note">You need to repeat this every ride. The unlock does not persist after shutdown.</div>
+</div>
+<div class="speed-card">
+<div class="speed-icon">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#c0392b" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+</div>
+<div class="speed-title">Reset to 22 km/h</div>
+<div class="speed-row"><strong>Turn off</strong> the scooter as normal.</div>
+<div class="speed-row">The next startup without the unlock method will automatically cap speed at <strong>22 km/h</strong>.</div>
+<div class="speed-note">Do not use the speed unlock on public roads or do, we don't care. kWSyndikat is not responsible for how you ride.</div>
+</div>
+</div>
+</div>
+</section>
+
+<footer>
+<div class="footer-logo">kWSyndikat</div>
+<div class="footer-copy">Modded OFW · Use at your own risk · Not affiliated with any manufacturer or ScooterHackingUtility</div>
+</footer>
+
+<script>
+function selectScooter(el,html){
+document.querySelectorAll('.scooter-card').forEach(c=>c.classList.remove('active'));
+el.classList.add('active');
+document.getElementById('dlTitle').innerHTML=html;
+}
+function toggleMenu(){document.getElementById('mobMenu').classList.toggle('open')}
+function closeMenu(){document.getElementById('mobMenu').classList.remove('open')}
+document.addEventListener('click',function(e){
+var m=document.getElementById('mobMenu');
+if(m.classList.contains('open')&&!m.contains(e.target)&&!document.getElementById('burger').contains(e.target))closeMenu();
+});
+
+(function spawnEmbers(){
+var cols=['rgba(255,70,0,','rgba(220,30,0,','rgba(255,110,0,'];
+for(var i=0;i<22;i++){
+var el=document.createElement('div');
+el.className='ember';
+var sz=Math.random()*2.5+0.8;
+var col=cols[i%3];
+var a=(Math.random()*0.55+0.25).toFixed(2);
+var dur=(Math.random()*10+6).toFixed(1);
+var delay=(Math.random()*14).toFixed(1);
+var ex=(Math.random()*100-50).toFixed(0)+'px';
+el.style.cssText='width:'+sz+'px;height:'+sz+'px;background:'+col+a+');left:'+Math.random()*100+'vw;bottom:'+Math.random()*15+'vh;--ex:'+ex+';animation-duration:'+dur+'s;animation-delay:'+delay+'s';
+document.body.appendChild(el);
+}
+})();
+
+(function hellCanvas(){
+var c=document.getElementById('hellbg');
+var ctx=c.getContext('2d');
+var W,H,orbs=[];
+function resize(){W=c.width=window.innerWidth;H=c.height=window.innerHeight}
+resize();window.addEventListener('resize',resize);
+for(var i=0;i<7;i++){
+var fromBottom=i<4;
+orbs.push({
+x:Math.random()*W,
+y:fromBottom?H*0.6+Math.random()*H*0.4:Math.random()*H*0.3,
+r:Math.random()*220+100,
+vx:(Math.random()-0.5)*0.25,
+vy:fromBottom?-(Math.random()*0.12+0.04):Math.random()*0.08-0.04,
+a:Math.random()*0.04+0.012,
+col:Math.random()>0.4?'170,25,0':'90,0,0'
+});
+}
+function draw(){
+ctx.clearRect(0,0,W,H);
+orbs.forEach(function(o){
+var g=ctx.createRadialGradient(o.x,o.y,0,o.x,o.y,o.r);
+g.addColorStop(0,'rgba('+o.col+','+o.a+')');
+g.addColorStop(1,'transparent');
+ctx.fillStyle=g;
+ctx.beginPath();ctx.arc(o.x,o.y,o.r,0,Math.PI*2);ctx.fill();
+o.x+=o.vx;o.y+=o.vy;
+if(o.y<-o.r){o.y=H+o.r;o.x=Math.random()*W}
+if(o.y>H+o.r){o.y=-o.r;o.x=Math.random()*W}
+if(o.x<-o.r)o.x=W+o.r;
+if(o.x>W+o.r)o.x=-o.r;
+});
+requestAnimationFrame(draw);
+}
+draw();
+})();
+
+(function reveals(){
+var els=document.querySelectorAll('.reveal');
+var obs=new IntersectionObserver(function(entries){
+entries.forEach(function(e,i){
+if(e.isIntersecting)setTimeout(function(){e.target.classList.add('in')},i*70);
+});
+},{threshold:0.07});
+els.forEach(function(el){obs.observe(el)});
+})();
+</script>
+</body>
+</html>
