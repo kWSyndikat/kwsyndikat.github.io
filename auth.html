@@ -12,7 +12,7 @@ body{font-family:system-ui,Arial,sans-serif;background:#0b0d10;color:#e8eef5;mar
 </head>
 <body>
 <div class="wrap">
-<h1>Ninebot WebBLE Asuth Test</h1>
+<h1>Ninebot WebBLE Authss Test</h1>
 <div class="card">
   <div class="row">
     <label>Scooter BLE Name für Key:</label>
@@ -63,14 +63,45 @@ class NinebotCrypto{
  cryptoNext(data,msg){const out=new Uint8Array(data.length),e=new Uint8Array(16);e[0]=1;e[1]=(msg>>>24)&255;e[2]=(msg>>>16)&255;e[3]=(msg>>>8)&255;e[4]=msg&255;e.set(this.randomBle.slice(0,8),5);e[15]=0;for(let o=0;o<data.length;o+=16){e[15]=(e[15]+1)&255;const ks=aes16(e,this.key);let n=Math.min(16,data.length-o);for(let i=0;i<n;i++)out[o+i]=data[o+i]^ks[i]}return out}
  decrypt(data){if(data.length<9)return null;const dec=new Uint8Array(data.length-6);dec.set(data.slice(0,3),0);let nm=this.msgIt;if((nm&0x8000)>0&&((data[data.length-2]>>>7)===0))nm+=0x10000;nm=(nm&0xffff0000)+(data[data.length-2]<<8)+data[data.length-1];let payload=data.slice(3,data.length-6);if(nm===0){payload=this.cryptoFirst(payload);dec.set(payload,3);if(match(dec,[0x5a,0xa5,0x1e,0x21,0x3e,0x5b])){const rb=dec.slice(7,23);randomBle.set(rb);this.setNameBle(rb);$("authBtn").disabled=false;auth("challenge received - press power if needed, then send app random");log("[AUTH] randomBle="+hex(rb))}}else if(nm>this.msgIt){payload=this.cryptoNext(payload,nm);dec.set(payload,3);if(match(dec,[0x5a,0xa5,0x00,0x21,0x3e,0x5c,0x01])){this.setFinal(randomApp,randomBle);auth("authenticated ✅")}this.msgIt=nm;$("msgItOut").textContent=String(this.msgIt)}return dec}
 }
-async function writeRaw(bytes){log("\n[TX RAW] "+hex(bytes));await txChar.writeValueWithoutResponse(bytes)}
-async function sendInitialKick(){if(!txChar)return alert("not connected");const raw=u8([0x5a,0xa5,0x00,0x73,0xa5,0xda,0x0b,0x00,0x00,0x62,0xff,0x00,0x00]);await writeRaw(raw);cryptoState.msgIt=1;$("msgItOut").textContent="1";auth("raw initial kick sent - waiting challenge")}
+async function writeRaw(bytes){
+  log("
+[TX RAW] "+hex(bytes));
+  try{
+    if(txChar.writeValueWithoutResponse){
+      await txChar.writeValueWithoutResponse(bytes);
+      log("[TX OK] writeValueWithoutResponse");
+      return;
+    }
+  }catch(e){
+    log("[TX WARN] writeValueWithoutResponse failed: "+e.message);
+  }
+  try{
+    if(txChar.writeValueWithResponse){
+      await txChar.writeValueWithResponse(bytes);
+      log("[TX OK] writeValueWithResponse");
+      return;
+    }
+  }catch(e){
+    log("[TX WARN] writeValueWithResponse failed: "+e.message);
+  }
+  await txChar.writeValue(bytes);
+  log("[TX OK] writeValue fallback");
+}
+async function sendInitialKick(){if(!txChar)return alert("not connected");const raw=u8([0x5a,0xa5,0x00,0x73,0xa5,0xda,0x0b,0x00,0x00,0x62,0xff,0x00,0x00]);await writeRaw(raw);// Wichtig: msgIt NICHT künstlich erhöhen. Wir warten auf das echte Scooter-Paket.
+// Die Challenge kommt normalerweise mit msgIt 0 und wird mit CryptoFirst entschlüsselt.
+auth("raw initial kick sent - waiting challenge")}
 function calcCrcFirst(payload){let crc=0;for(const v of payload)crc=(crc+v)&0xffff;crc=(~crc)&0xffff;return u8([crc&255,(crc>>>8)&255])}
 function calcCrcNext(frame,msg){const payloadLen=frame.length-3,e=new Uint8Array(16);e[0]=89;e[1]=(msg>>>24)&255;e[2]=(msg>>>16)&255;e[3]=(msg>>>8)&255;e[4]=msg&255;e.set(cryptoState.randomBle.slice(0,8),5);e[15]=payloadLen&255;let x2=aes16(e,cryptoState.key),x1=new Uint8Array(16);x1.set(frame.slice(0,3),0);x2=aes16(xor16(x1,x2),cryptoState.key);let idx=3,left=payloadLen;while(left>0){let tmp=Math.min(16,left);x1=new Uint8Array(16);x1.set(frame.slice(idx,idx+tmp),0);x2=aes16(xor16(x1,x2),cryptoState.key);idx+=tmp;left-=tmp}e[0]=1;e[15]=0;return xor16(aes16(e,cryptoState.key),x2).slice(0,4)}
 function encryptFrame(frame){const payloadLen=frame.length-3;let payload=frame.slice(3),out;if(cryptoState.msgIt===0){const crc=calcCrcFirst(payload);payload=cryptoState.cryptoFirst(payload);out=new Uint8Array(payloadLen+9);out.set(frame.slice(0,3),0);out.set(payload,3);out[payloadLen+5]=crc[0];out[payloadLen+6]=crc[1];cryptoState.msgIt++}else{cryptoState.msgIt++;const crc=calcCrcNext(frame,cryptoState.msgIt);payload=cryptoState.cryptoNext(payload,cryptoState.msgIt);out=new Uint8Array(payloadLen+9);out.set(frame.slice(0,3),0);out.set(payload,3);out[payloadLen+3]=crc[0];out[payloadLen+4]=crc[1];out[payloadLen+5]=crc[2];out[payloadLen+6]=crc[3];out[payloadLen+7]=(cryptoState.msgIt>>>8)&255;out[payloadLen+8]=cryptoState.msgIt&255}$("msgItOut").textContent=String(cryptoState.msgIt);return out}
 async function sendAppAuthRandom(){if(!txChar)return alert("not connected");crypto.getRandomValues(randomApp);const p=new Uint8Array(23);p.set([0x5a,0xa5,0x10,0x3e,0x21,0x5c,0x00],0);p.set(randomApp,7);cryptoState.randomApp.set(randomApp);log("\n[AUTH] randomApp="+hex(randomApp));log("[TX PLAIN] "+hex(p));await writeRaw(encryptFrame(p));auth("app random sent - waiting 5C 01")}
 function parsePlain(p){if(match(p,[0x5a,0xa5,0x0e,0x16,0x3e,0x04,0x10])){$("serialOut").textContent=ascii(p.slice(7));log("[SERIAL] "+ascii(p.slice(7)))}if(match(p,[0x5a,0xa5,0x1e,0x21,0x3e,0x5b]))log("[DETECT] challenge 5B received")}
-async function connect(){status("opening chooser...");device=await navigator.bluetooth.requestDevice({acceptAllDevices:true,optionalServices:[NUS_SERVICE]});const devName=device.name||"";const keyName=$("nameInput").value.trim()||devName;$("nameInput").value=keyName;$("deviceName").textContent=devName||"(no name)";$("keyNameOut").textContent=keyName;cryptoState=new NinebotCrypto(keyName);log("[BLE] selected: "+devName);log("[KEY] using key-name: "+JSON.stringify(keyName));log("[KEY] initial key = "+hex(cryptoState.key));status("connecting...");server=await device.gatt.connect();service=await server.getPrimaryService(NUS_SERVICE);txChar=await service.getCharacteristic(NUS_WRITE);rxChar=await service.getCharacteristic(NUS_NOTIFY);await rxChar.startNotifications();rxChar.addEventListener("characteristicvaluechanged",ev=>{const raw=new Uint8Array(ev.target.value.buffer.slice(0));log("\n[RX RAW] "+hex(raw));const plain=cryptoState.decrypt(raw);if(plain){log("[RX PLAIN] "+hex(plain)+" | "+ascii(plain));parsePlain(plain)}});status("connected");$("kickBtn").disabled=false;auth("connected - sending raw kick");await sendInitialKick()}
+async function connect(){status("opening chooser...");device=await navigator.bluetooth.requestDevice({acceptAllDevices:true,optionalServices:[NUS_SERVICE]});const devName=device.name||"";const keyName=$("nameInput").value.trim()||devName;$("nameInput").value=keyName;$("deviceName").textContent=devName||"(no name)";$("keyNameOut").textContent=keyName;cryptoState=new NinebotCrypto(keyName);log("[BLE] selected: "+devName);log("[KEY] using key-name: "+JSON.stringify(keyName));log("[KEY] initial key = "+hex(cryptoState.key));status("connecting...");server=await device.gatt.connect();service=await server.getPrimaryService(NUS_SERVICE);txChar=await service.getCharacteristic(NUS_WRITE);rxChar=await service.getCharacteristic(NUS_NOTIFY);
+log("[BLE] tx props: write="+txChar.properties.write+" writeWithoutResponse="+txChar.properties.writeWithoutResponse);
+log("[BLE] rx props: notify="+rxChar.properties.notify+" indicate="+rxChar.properties.indicate);
+await rxChar.startNotifications();
+log("[BLE] notifications started");rxChar.addEventListener("characteristicvaluechanged",ev=>{const raw=new Uint8Array(ev.target.value.buffer.slice(0));log("\n[RX RAW] "+hex(raw));const plain=cryptoState.decrypt(raw);if(plain){log("[RX PLAIN] "+hex(plain)+" | "+ascii(plain));parsePlain(plain)}});status("connected");$("kickBtn").disabled=false;auth("connected - sending raw kick after 800ms");
+await new Promise(r=>setTimeout(r,800));
+await sendInitialKick()}
 $("connectBtn").addEventListener("click",()=>connect().catch(e=>{console.error(e);log("[ERR] "+e.message);status("error")}));
 $("kickBtn").onclick=()=>sendInitialKick().catch(e=>log("[ERR] "+e.message));
 $("authBtn").onclick=()=>sendAppAuthRandom().catch(e=>log("[ERR] "+e.message));
