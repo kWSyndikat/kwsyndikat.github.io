@@ -31,6 +31,7 @@
       <label>Scooter BLE Name für Key:</label>
       <input id="nameInput" value="" placeholder="leer lassen = ausgewählter BLE-Name" />
       <button id="connectBtn">Device auswählen & connecten</button>
+      <button id="kickBtn" disabled>Send Initial Auth Kick</button>
       <button id="authBtn" disabled>Send App Auth Random</button>
       <button id="clearBtn">Clear Log</button>
     </div>
@@ -305,6 +306,18 @@ async function sendPlain(frame) {
   await txChar.writeValueWithoutResponse(enc);
 }
 
+async function sendInitialAuthKick() {
+  if (!cryptoState) return alert("Not connected");
+
+  // Aus deinem SHU-Trace zurückgerechnet:
+  // encrypted: 5a a5 00 73 a5 da 0b 00 00 62 ff 00 00
+  // plaintext: 5a a5 00 e5 d8 1f 32
+  // Das triggert die Scooter-Auth-Challenge 5A A5 1E 21 3E 5B ...
+  const p = u8([0x5a,0xa5,0x00,0xe5,0xd8,0x1f,0x32]);
+  await sendPlain(p);
+  setAuth("initial auth kick sent - waiting for 5A A5 1E 21 3E 5B");
+}
+
 async function sendAppAuthRandom() {
   if (!cryptoState) return alert("Not connected");
   crypto.getRandomValues(randomApp);
@@ -364,13 +377,16 @@ async function connectFromUserClick() {
   });
 
   setStatus("connected / notifications enabled");
-  setAuth("waiting for auth challenge 5A A5 1E 21 3E 5B");
-  log("[BLE] connected. Wait for auth challenge, then press scooter power if needed.");
+  $("kickBtn").disabled = false;
+  setAuth("connected - sending initial auth kick");
+  log("[BLE] connected. Sending initial auth kick now...");
+  await sendInitialAuthKick();
 }
 
 $("connectBtn").addEventListener("click", function () {
   connectFromUserClick().catch(e => { console.error(e); log("[ERR] " + e.message); setStatus("error"); });
 });
+$("kickBtn").onclick = () => sendInitialAuthKick().catch(e => { console.error(e); log("[ERR] " + e.message); });
 $("authBtn").onclick = () => sendAppAuthRandom().catch(e => { console.error(e); log("[ERR] " + e.message); });
 $("clearBtn").onclick = () => $("log").textContent = "";
 </script>
