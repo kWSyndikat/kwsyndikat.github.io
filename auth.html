@@ -13,7 +13,7 @@
     .card { background:#151a21; border:1px solid #2a3340; border-radius:14px; padding:16px; margin:12px 0; }
     button { background:#2f7df6; color:white; border:0; border-radius:10px; padding:10px 14px; font-weight:700; cursor:pointer; margin:4px; }
     button:disabled { background:#45505f; cursor:not-allowed; }
-    input { background:#0f1319; color:#e8eef5; border:1px solid #3a4554; border-radius:10px; padding:10px; min-width:240px; }
+    input { background:#0f1319; color:#e8eef5; border:1px solid #3a4554; border-radius:10px; padding:10px; min-width:280px; }
     code, pre { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; }
     pre { background:#07090c; border:1px solid #242b35; border-radius:12px; padding:12px; overflow:auto; height:520px; white-space:pre-wrap; }
     .row { display:flex; flex-wrap:wrap; gap:10px; align-items:center; }
@@ -29,18 +29,19 @@
   <div class="card">
     <div class="row">
       <label>Scooter BLE Name für Key:</label>
-      <input id="nameInput" value="" placeholder="z.B. Scooter-Bluetooth-Name" />
-      <button id="connectBtn">Connect</button>
+      <input id="nameInput" value="" placeholder="leer lassen = ausgewählter BLE-Name" />
+      <button id="connectBtn">Device auswählen & connecten</button>
       <button id="authBtn" disabled>Send App Auth Random</button>
       <button id="clearBtn">Clear Log</button>
     </div>
     <p>Status: <span id="status" class="status">idle</span></p>
-    <p class="warn">Chrome/Edge Desktop nötig. WebBluetooth geht nur auf HTTPS oder localhost. Der Name ist wichtig, weil der Start-Key aus <code>SHA1(name16 + fwData)</code> kommt.</p>
+    <p class="warn">Chrome/Edge Desktop nötig. WebBluetooth geht nur auf HTTPS oder localhost. Der Bluetooth-Chooser muss direkt durch den Button geöffnet werden.</p>
   </div>
 
   <div class="card">
     <h3>Gefundene Daten</h3>
     <div>Device: <code id="deviceName">-</code></div>
+    <div>Key-Name: <code id="keyNameOut">-</code></div>
     <div>Serial: <code id="serialOut">-</code></div>
     <div>Auth state: <code id="authState">not started</code></div>
     <div>msgIt: <code id="msgItOut">0</code></div>
@@ -314,27 +315,34 @@ async function sendAppAuthRandom() {
   setAuth("app random sent - waiting for 5C 01 ACK");
 }
 
-async function connect() {
+async function connectFromUserClick() {
   if (!navigator.bluetooth) {
     alert("WebBluetooth not supported. Use Chrome/Edge on HTTPS or localhost.");
     return;
   }
 
-  let name = $("nameInput").value.trim();
-  if (!name) {
-    name = prompt("Scooter BLE name für Key eingeben:") || "";
-    $("nameInput").value = name;
-  }
-  cryptoState = new NinebotCrypto(name);
-  log("[KEY] initial key = SHA1(name16 + fwData)[0:16] = " + hex(cryptoState.key));
+  setStatus("opening chooser...");
 
-  setStatus("requesting device...");
+  // Muss direkt im Klick passieren: kein prompt/await vorher.
   device = await navigator.bluetooth.requestDevice({
-    filters: [{ services: [NUS_SERVICE] }],
+    acceptAllDevices: true,
     optionalServices: [NUS_SERVICE]
   });
-  $("deviceName").textContent = device.name || "(no name)";
-  log("[BLE] selected: " + (device.name || "(no name)"));
+
+  const selectedName = device.name || "";
+  let keyName = $("nameInput").value.trim();
+  if (!keyName) {
+    keyName = selectedName;
+    $("nameInput").value = keyName;
+  }
+
+  $("deviceName").textContent = selectedName || "(no name)";
+  $("keyNameOut").textContent = keyName || "(empty)";
+
+  cryptoState = new NinebotCrypto(keyName);
+  log("[BLE] selected: " + (selectedName || "(no name)"));
+  log("[KEY] using key-name: " + JSON.stringify(keyName));
+  log("[KEY] initial key = SHA1(name16 + fwData)[0:16] = " + hex(cryptoState.key));
 
   setStatus("connecting...");
   server = await device.gatt.connect();
@@ -360,7 +368,9 @@ async function connect() {
   log("[BLE] connected. Wait for auth challenge, then press scooter power if needed.");
 }
 
-$("connectBtn").onclick = () => connect().catch(e => { console.error(e); log("[ERR] " + e.message); setStatus("error"); });
+$("connectBtn").addEventListener("click", function () {
+  connectFromUserClick().catch(e => { console.error(e); log("[ERR] " + e.message); setStatus("error"); });
+});
 $("authBtn").onclick = () => sendAppAuthRandom().catch(e => { console.error(e); log("[ERR] " + e.message); });
 $("clearBtn").onclick = () => $("log").textContent = "";
 </script>
