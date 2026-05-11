@@ -3,109 +3,350 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Ninebot WebBLE Auth Test</title>
+<title>Ninebot WebBLE Clean Crypto Test</title>
 <script src="https://cdn.jsdelivr.net/npm/aes-js@3.1.2/index.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/js-sha1@0.7.0/src/sha1.min.js"></script>
 <style>
-body{font-family:system-ui,Arial,sans-serif;background:#0b0d10;color:#e8eef5;margin:0;padding:20px}.wrap{max-width:1100px;margin:auto}.card{background:#151a21;border:1px solid #2a3340;border-radius:14px;padding:16px;margin:12px 0}button{background:#2f7df6;color:white;border:0;border-radius:10px;padding:10px 14px;font-weight:700;cursor:pointer;margin:4px}button:disabled{background:#45505f}input{background:#0f1319;color:#e8eef5;border:1px solid #3a4554;border-radius:10px;padding:10px;min-width:280px}pre{background:#07090c;border:1px solid #242b35;border-radius:12px;padding:12px;overflow:auto;height:520px;white-space:pre-wrap}.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}.status{font-weight:700;color:#9fe870}.warn{color:#ffd166}code{font-family:ui-monospace,Consolas,monospace}
+body{font-family:system-ui,Arial,sans-serif;background:#0b0d10;color:#e8eef5;margin:0;padding:20px}.wrap{max-width:1120px;margin:auto}.card{background:#151a21;border:1px solid #2a3340;border-radius:14px;padding:16px;margin:12px 0}button{background:#2f7df6;color:white;border:0;border-radius:10px;padding:10px 14px;font-weight:700;cursor:pointer;margin:4px}button:disabled{background:#45505f}input{background:#0f1319;color:#e8eef5;border:1px solid #3a4554;border-radius:10px;padding:10px;min-width:280px}pre{background:#07090c;border:1px solid #242b35;border-radius:12px;padding:12px;overflow:auto;height:540px;white-space:pre-wrap}.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}.status{font-weight:700;color:#9fe870}.warn{color:#ffd166}code{font-family:ui-monospace,Consolas,monospace}
 </style>
 </head>
 <body>
 <div class="wrap">
-<h1>Ninebot WebBLE Authss Test</h1>
+<h1>Ninebot WebBLE Clean Crypto Test <small>v1-clean</small></h1>
 <div class="card">
   <div class="row">
     <label>Scooter BLE Name für Key:</label>
     <input id="nameInput" placeholder="leer = ausgewählter BLE-Name" />
     <button id="connectBtn">Device auswählen & connecten</button>
-    <button id="kickBtn" disabled>RAW Initial Kick</button>
-    <button id="authBtn" disabled>Send App Auth Random</button>
+    <button id="sendFirstBtn" disabled>Send First/Auth Init</button>
+    <button id="sendAppRandomBtn" disabled>Send App Random Auth</button>
     <button id="clearBtn">Clear Log</button>
   </div>
   <p>Status: <span id="status" class="status">idle</span></p>
-  <p class="warn">Chrome/Edge Desktop. Datei über <code>localhost</code> oder HTTPS öffnen.</p>
+  <p class="warn">Clean-Port vom NinebotCrypto-Prinzip: SHA1-KeySchedule + AES-ECB-Keystream-XOR + CRC/MAC + msg counter.</p>
 </div>
 <div class="card">
-  <h3>Gefundene Daten</h3>
+  <h3>State</h3>
   <div>Device: <code id="deviceName">-</code></div>
   <div>Key-Name: <code id="keyNameOut">-</code></div>
   <div>Serial: <code id="serialOut">-</code></div>
-  <div>Auth state: <code id="authState">not started</code></div>
-  <div>msgIt: <code id="msgItOut">0</code></div>
+  <div>Auth: <code id="authOut">not started</code></div>
+  <div>TX msgIt: <code id="txMsgOut">0</code></div>
+  <div>RX msgIt: <code id="rxMsgOut">0</code></div>
 </div>
 <div class="card"><h3>Log</h3><pre id="log"></pre></div>
 </div>
 <script>
-const NUS_SERVICE="6e400001-b5a3-f393-e0a9-e50e24dcca9e";
-const NUS_WRITE="6e400002-b5a3-f393-e0a9-e50e24dcca9e";
-const NUS_NOTIFY="6e400003-b5a3-f393-e0a9-e50e24dcca9e";
-const fwData=u8([0x97,0xcf,0xb8,0x02,0x84,0x41,0x43,0xde,0x56,0x00,0x2b,0x3b,0x34,0x78,0x0a,0x5d]);
-let device,server,service,txChar,rxChar,cryptoState;
-let randomBle=new Uint8Array(16),randomApp=new Uint8Array(16);
-const $=id=>document.getElementById(id);
-function u8(a){return new Uint8Array(a)}
-function hex(b){return [...b].map(x=>x.toString(16).padStart(2,"0")).join(" ")}
-function ascii(b){return [...b].map(x=>x>=32&&x<=126?String.fromCharCode(x):".").join("")}
-function log(s){const e=$("log");e.textContent+=s+"\n";e.scrollTop=e.scrollHeight}
-function status(s){$("status").textContent=s}
-function auth(s){$("authState").textContent=s}
-function concat(a,b){const o=new Uint8Array(a.length+b.length);o.set(a,0);o.set(b,a.length);return o}
-function name16(n){const o=new Uint8Array(16);for(let i=0;i<Math.min(16,n.length);i++)o[i]=n.charCodeAt(i)&255;return o}
-function sha1_16(a,b){return new Uint8Array(sha1.array(concat(a,b)).slice(0,16))}
-function aes16(block,key){return new Uint8Array(new aesjs.ModeOfOperation.ecb([...key]).encrypt([...block]))}
-function xor16(a,b){const o=new Uint8Array(16);for(let i=0;i<16;i++)o[i]=(a[i]^b[i])&255;return o}
-function match(buf,arr){if(!buf||buf.length<arr.length)return false;for(let i=0;i<arr.length;i++)if(buf[i]!==arr[i])return false;return true}
-class NinebotCrypto{
- constructor(name){this.name=name16(name);this.randomBle=new Uint8Array(16);this.randomApp=new Uint8Array(16);this.key=sha1_16(this.name,fwData);this.msgIt=0}
- setNameBle(rb){this.randomBle.set(rb);this.key=sha1_16(this.name,this.randomBle);log("[KEY] SHA1(name+randomBle)= "+hex(this.key))}
- setFinal(ra,rb){this.randomApp.set(ra);this.randomBle.set(rb);this.key=sha1_16(this.randomApp,this.randomBle);log("[KEY] FINAL SHA1(randomApp+randomBle)= "+hex(this.key))}
- cryptoFirst(data){const out=new Uint8Array(data.length),ks=aes16(fwData,this.key);for(let o=0;o<data.length;o+=16){let n=Math.min(16,data.length-o);for(let i=0;i<n;i++)out[o+i]=data[o+i]^ks[i]}return out}
- cryptoNext(data,msg){const out=new Uint8Array(data.length),e=new Uint8Array(16);e[0]=1;e[1]=(msg>>>24)&255;e[2]=(msg>>>16)&255;e[3]=(msg>>>8)&255;e[4]=msg&255;e.set(this.randomBle.slice(0,8),5);e[15]=0;for(let o=0;o<data.length;o+=16){e[15]=(e[15]+1)&255;const ks=aes16(e,this.key);let n=Math.min(16,data.length-o);for(let i=0;i<n;i++)out[o+i]=data[o+i]^ks[i]}return out}
- decrypt(data){if(data.length<9)return null;const dec=new Uint8Array(data.length-6);dec.set(data.slice(0,3),0);let nm=this.msgIt;if((nm&0x8000)>0&&((data[data.length-2]>>>7)===0))nm+=0x10000;nm=(nm&0xffff0000)+(data[data.length-2]<<8)+data[data.length-1];let payload=data.slice(3,data.length-6);if(nm===0){payload=this.cryptoFirst(payload);dec.set(payload,3);if(match(dec,[0x5a,0xa5,0x1e,0x21,0x3e,0x5b])){const rb=dec.slice(7,23);randomBle.set(rb);this.setNameBle(rb);$("authBtn").disabled=false;auth("challenge received - press power if needed, then send app random");log("[AUTH] randomBle="+hex(rb))}}else if(nm>this.msgIt){payload=this.cryptoNext(payload,nm);dec.set(payload,3);if(match(dec,[0x5a,0xa5,0x00,0x21,0x3e,0x5c,0x01])){this.setFinal(randomApp,randomBle);auth("authenticated ✅")}this.msgIt=nm;$("msgItOut").textContent=String(this.msgIt)}return dec}
-}
-async function writeRaw(bytes){
-  log("
-[TX RAW] "+hex(bytes));
-  try{
-    if(txChar.writeValueWithoutResponse){
-      await txChar.writeValueWithoutResponse(bytes);
-      log("[TX OK] writeValueWithoutResponse");
-      return;
-    }
-  }catch(e){
-    log("[TX WARN] writeValueWithoutResponse failed: "+e.message);
+'use strict';
+
+const NUS_SERVICE = '6e400001-b5a3-f393-e0a9-e50e24dcca9e';
+const NUS_WRITE   = '6e400002-b5a3-f393-e0a9-e50e24dcca9e';
+const NUS_NOTIFY  = '6e400003-b5a3-f393-e0a9-e50e24dcca9e';
+
+const FW_DATA = bytes('97 cf b8 02 84 41 43 de 56 00 2b 3b 34 78 0a 5d');
+const FIRST_AUTH_PLAIN = bytes('5a a5 00 e5 d8 1f 32');
+const SHU_FIRST_AUTH_RAW = bytes('5a a5 00 73 a5 da 0b 00 00 62 ff 00 00');
+
+let ble = { device:null, server:null, service:null, tx:null, rx:null };
+let cryptoBox = null;
+let randomBle = new Uint8Array(16);
+let randomApp = new Uint8Array(16);
+
+const $ = id => document.getElementById(id);
+function setStatus(s){ $('status').textContent=s; }
+function setAuth(s){ $('authOut').textContent=s; }
+function log(s){ const el=$('log'); el.textContent += s + '\n'; el.scrollTop = el.scrollHeight; }
+function bytes(hex){ return new Uint8Array(hex.trim().split(/\s+/).filter(Boolean).map(x=>parseInt(x,16))); }
+function hex(buf){ return [...buf].map(b=>b.toString(16).padStart(2,'0')).join(' '); }
+function ascii(buf){ return [...buf].map(b=>b>=32&&b<=126?String.fromCharCode(b):'.').join(''); }
+function concat(...arrs){ const len=arrs.reduce((n,a)=>n+a.length,0); const out=new Uint8Array(len); let off=0; for(const a of arrs){out.set(a,off); off+=a.length;} return out; }
+function name16(name){ const out=new Uint8Array(16); for(let i=0;i<Math.min(16,name.length);i++) out[i]=name.charCodeAt(i)&0xff; return out; }
+function sha1First16(data){ return new Uint8Array(sha1.array(data).slice(0,16)); }
+function aesEcb16(block16,key16){ return new Uint8Array(new aesjs.ModeOfOperation.ecb([...key16]).encrypt([...block16])); }
+function xor16(a,b){ const out=new Uint8Array(16); for(let i=0;i<16;i++) out[i]=(a[i]^b[i])&0xff; return out; }
+function startsWith(buf, prefix){ if(!buf || buf.length<prefix.length) return false; for(let i=0;i<prefix.length;i++) if(buf[i]!==prefix[i]) return false; return true; }
+
+class NinebotCryptoClean {
+  constructor(deviceName){
+    this.name = name16(deviceName);
+    this.randomBle = new Uint8Array(16);
+    this.randomApp = new Uint8Array(16);
+    this.key = sha1First16(concat(this.name, FW_DATA));
+    this.txMsgIt = 0;
+    this.rxMsgIt = 0;
+    this.phase = 'initial';
   }
-  try{
-    if(txChar.writeValueWithResponse){
-      await txChar.writeValueWithResponse(bytes);
-      log("[TX OK] writeValueWithResponse");
-      return;
-    }
-  }catch(e){
-    log("[TX WARN] writeValueWithResponse failed: "+e.message);
+
+  logKey(label){ log(`[KEY] ${label}: ${hex(this.key)}`); }
+
+  setBleRandom(rb){
+    this.randomBle.set(rb);
+    this.key = sha1First16(concat(this.name, this.randomBle));
+    this.phase = 'ble-random';
+    this.logKey('SHA1(name16 + randomBle)[0:16]');
   }
-  await txChar.writeValue(bytes);
-  log("[TX OK] writeValue fallback");
+
+  setFinalSessionKey(ra=this.randomApp, rb=this.randomBle){
+    this.randomApp.set(ra);
+    this.randomBle.set(rb);
+    this.key = sha1First16(concat(this.randomApp, this.randomBle));
+    this.phase = 'session';
+    this.logKey('FINAL SHA1(randomApp + randomBle)[0:16]');
+  }
+
+  cryptoFirst(data){
+    const out = new Uint8Array(data.length);
+    const stream = aesEcb16(FW_DATA, this.key);
+    for(let off=0; off<data.length; off+=16){
+      const n = Math.min(16, data.length-off);
+      for(let i=0;i<n;i++) out[off+i] = data[off+i] ^ stream[i];
+    }
+    return out;
+  }
+
+  cryptoNext(data, msgIt){
+    const out = new Uint8Array(data.length);
+    const block = new Uint8Array(16);
+    block[0] = 1;
+    block[1] = (msgIt >>> 24) & 0xff;
+    block[2] = (msgIt >>> 16) & 0xff;
+    block[3] = (msgIt >>> 8) & 0xff;
+    block[4] = msgIt & 0xff;
+    block.set(this.randomBle.slice(0,8), 5);
+    block[15] = 0;
+
+    for(let off=0; off<data.length; off+=16){
+      block[15] = (block[15] + 1) & 0xff;
+      const stream = aesEcb16(block, this.key);
+      const n = Math.min(16, data.length-off);
+      for(let i=0;i<n;i++) out[off+i] = data[off+i] ^ stream[i];
+    }
+    return out;
+  }
+
+  calcCrcFirst(payload){
+    let crc = 0;
+    for(const b of payload) crc = (crc + b) & 0xffff;
+    crc = (~crc) & 0xffff;
+    return new Uint8Array([crc & 0xff, (crc >>> 8) & 0xff]);
+  }
+
+  calcCrcNext(frame, msgIt){
+    const payloadLen = frame.length - 3;
+    const block = new Uint8Array(16);
+    block[0] = 89;
+    block[1] = (msgIt >>> 24) & 0xff;
+    block[2] = (msgIt >>> 16) & 0xff;
+    block[3] = (msgIt >>> 8) & 0xff;
+    block[4] = msgIt & 0xff;
+    block.set(this.randomBle.slice(0,8), 5);
+    block[15] = payloadLen & 0xff;
+
+    let x2 = aesEcb16(block, this.key);
+    let x1 = new Uint8Array(16);
+    x1.set(frame.slice(0,3));
+    x2 = aesEcb16(xor16(x1,x2), this.key);
+
+    let idx = 3;
+    let left = payloadLen;
+    while(left > 0){
+      const n = Math.min(16,left);
+      x1 = new Uint8Array(16);
+      x1.set(frame.slice(idx, idx+n));
+      x2 = aesEcb16(xor16(x1,x2), this.key);
+      idx += n;
+      left -= n;
+    }
+
+    block[0] = 1;
+    block[15] = 0;
+    return xor16(aesEcb16(block,this.key), x2).slice(0,4);
+  }
+
+  encryptPlain(frame){
+    const payloadLen = frame.length - 3;
+    const plainPayload = frame.slice(3);
+    const out = new Uint8Array(payloadLen + 9);
+    out.set(frame.slice(0,3), 0);
+
+    if(this.txMsgIt === 0){
+      const crc = this.calcCrcFirst(plainPayload);
+      const encPayload = this.cryptoFirst(plainPayload);
+      out.set(encPayload, 3);
+      out[payloadLen+3] = 0;
+      out[payloadLen+4] = 0;
+      out[payloadLen+5] = crc[0];
+      out[payloadLen+6] = crc[1];
+      out[payloadLen+7] = 0;
+      out[payloadLen+8] = 0;
+      this.txMsgIt++;
+    } else {
+      this.txMsgIt++;
+      const crc = this.calcCrcNext(frame, this.txMsgIt);
+      const encPayload = this.cryptoNext(plainPayload, this.txMsgIt);
+      out.set(encPayload, 3);
+      out[payloadLen+3] = crc[0];
+      out[payloadLen+4] = crc[1];
+      out[payloadLen+5] = crc[2];
+      out[payloadLen+6] = crc[3];
+      out[payloadLen+7] = (this.txMsgIt >>> 8) & 0xff;
+      out[payloadLen+8] = this.txMsgIt & 0xff;
+    }
+
+    updateCounters();
+    return out;
+  }
+
+  decryptRaw(raw){
+    if(raw.length < 9) return null;
+    const plain = new Uint8Array(raw.length - 6);
+    plain.set(raw.slice(0,3), 0);
+
+    let newMsgIt = this.rxMsgIt;
+    if((newMsgIt & 0x0008000) > 0 && ((raw[raw.length-2] >>> 7) === 0)) newMsgIt += 0x0010000;
+    newMsgIt = (newMsgIt & 0xffff0000) + (raw[raw.length-2] << 8) + raw[raw.length-1];
+
+    let payload = raw.slice(3, raw.length - 6);
+    if(newMsgIt === 0){
+      payload = this.cryptoFirst(payload);
+      plain.set(payload, 3);
+    } else if(newMsgIt > this.rxMsgIt){
+      payload = this.cryptoNext(payload, newMsgIt);
+      plain.set(payload, 3);
+      this.rxMsgIt = newMsgIt;
+    } else {
+      return null;
+    }
+
+    updateCounters();
+    return plain;
+  }
 }
-async function sendInitialKick(){if(!txChar)return alert("not connected");const raw=u8([0x5a,0xa5,0x00,0x73,0xa5,0xda,0x0b,0x00,0x00,0x62,0xff,0x00,0x00]);await writeRaw(raw);// Wichtig: msgIt NICHT künstlich erhöhen. Wir warten auf das echte Scooter-Paket.
-// Die Challenge kommt normalerweise mit msgIt 0 und wird mit CryptoFirst entschlüsselt.
-auth("raw initial kick sent - waiting challenge")}
-function calcCrcFirst(payload){let crc=0;for(const v of payload)crc=(crc+v)&0xffff;crc=(~crc)&0xffff;return u8([crc&255,(crc>>>8)&255])}
-function calcCrcNext(frame,msg){const payloadLen=frame.length-3,e=new Uint8Array(16);e[0]=89;e[1]=(msg>>>24)&255;e[2]=(msg>>>16)&255;e[3]=(msg>>>8)&255;e[4]=msg&255;e.set(cryptoState.randomBle.slice(0,8),5);e[15]=payloadLen&255;let x2=aes16(e,cryptoState.key),x1=new Uint8Array(16);x1.set(frame.slice(0,3),0);x2=aes16(xor16(x1,x2),cryptoState.key);let idx=3,left=payloadLen;while(left>0){let tmp=Math.min(16,left);x1=new Uint8Array(16);x1.set(frame.slice(idx,idx+tmp),0);x2=aes16(xor16(x1,x2),cryptoState.key);idx+=tmp;left-=tmp}e[0]=1;e[15]=0;return xor16(aes16(e,cryptoState.key),x2).slice(0,4)}
-function encryptFrame(frame){const payloadLen=frame.length-3;let payload=frame.slice(3),out;if(cryptoState.msgIt===0){const crc=calcCrcFirst(payload);payload=cryptoState.cryptoFirst(payload);out=new Uint8Array(payloadLen+9);out.set(frame.slice(0,3),0);out.set(payload,3);out[payloadLen+5]=crc[0];out[payloadLen+6]=crc[1];cryptoState.msgIt++}else{cryptoState.msgIt++;const crc=calcCrcNext(frame,cryptoState.msgIt);payload=cryptoState.cryptoNext(payload,cryptoState.msgIt);out=new Uint8Array(payloadLen+9);out.set(frame.slice(0,3),0);out.set(payload,3);out[payloadLen+3]=crc[0];out[payloadLen+4]=crc[1];out[payloadLen+5]=crc[2];out[payloadLen+6]=crc[3];out[payloadLen+7]=(cryptoState.msgIt>>>8)&255;out[payloadLen+8]=cryptoState.msgIt&255}$("msgItOut").textContent=String(cryptoState.msgIt);return out}
-async function sendAppAuthRandom(){if(!txChar)return alert("not connected");crypto.getRandomValues(randomApp);const p=new Uint8Array(23);p.set([0x5a,0xa5,0x10,0x3e,0x21,0x5c,0x00],0);p.set(randomApp,7);cryptoState.randomApp.set(randomApp);log("\n[AUTH] randomApp="+hex(randomApp));log("[TX PLAIN] "+hex(p));await writeRaw(encryptFrame(p));auth("app random sent - waiting 5C 01")}
-function parsePlain(p){if(match(p,[0x5a,0xa5,0x0e,0x16,0x3e,0x04,0x10])){$("serialOut").textContent=ascii(p.slice(7));log("[SERIAL] "+ascii(p.slice(7)))}if(match(p,[0x5a,0xa5,0x1e,0x21,0x3e,0x5b]))log("[DETECT] challenge 5B received")}
-async function connect(){status("opening chooser...");device=await navigator.bluetooth.requestDevice({acceptAllDevices:true,optionalServices:[NUS_SERVICE]});const devName=device.name||"";const keyName=$("nameInput").value.trim()||devName;$("nameInput").value=keyName;$("deviceName").textContent=devName||"(no name)";$("keyNameOut").textContent=keyName;cryptoState=new NinebotCrypto(keyName);log("[BLE] selected: "+devName);log("[KEY] using key-name: "+JSON.stringify(keyName));log("[KEY] initial key = "+hex(cryptoState.key));status("connecting...");server=await device.gatt.connect();service=await server.getPrimaryService(NUS_SERVICE);txChar=await service.getCharacteristic(NUS_WRITE);rxChar=await service.getCharacteristic(NUS_NOTIFY);
-log("[BLE] tx props: write="+txChar.properties.write+" writeWithoutResponse="+txChar.properties.writeWithoutResponse);
-log("[BLE] rx props: notify="+rxChar.properties.notify+" indicate="+rxChar.properties.indicate);
-await rxChar.startNotifications();
-log("[BLE] notifications started");rxChar.addEventListener("characteristicvaluechanged",ev=>{const raw=new Uint8Array(ev.target.value.buffer.slice(0));log("\n[RX RAW] "+hex(raw));const plain=cryptoState.decrypt(raw);if(plain){log("[RX PLAIN] "+hex(plain)+" | "+ascii(plain));parsePlain(plain)}});status("connected");$("kickBtn").disabled=false;auth("connected - sending raw kick after 800ms");
-await new Promise(r=>setTimeout(r,800));
-await sendInitialKick()}
-$("connectBtn").addEventListener("click",()=>connect().catch(e=>{console.error(e);log("[ERR] "+e.message);status("error")}));
-$("kickBtn").onclick=()=>sendInitialKick().catch(e=>log("[ERR] "+e.message));
-$("authBtn").onclick=()=>sendAppAuthRandom().catch(e=>log("[ERR] "+e.message));
-$("clearBtn").onclick=()=>$("log").textContent="";
+
+function updateCounters(){
+  if(!cryptoBox) return;
+  $('txMsgOut').textContent = String(cryptoBox.txMsgIt);
+  $('rxMsgOut').textContent = String(cryptoBox.rxMsgIt);
+}
+
+function parsePlain(frame){
+  log(`[RX PLAIN] ${hex(frame)} | ${ascii(frame)}`);
+
+  if(startsWith(frame, bytes('5a a5 1e 21 3e 5b'))){
+    const rb = frame.slice(7,23);
+    randomBle.set(rb);
+    log(`[AUTH] randomBle=${hex(rb)}`);
+    cryptoBox.setBleRandom(rb);
+    $('sendAppRandomBtn').disabled = false;
+    setAuth('challenge received; press power if needed, then send app random');
+    return;
+  }
+
+  if(startsWith(frame, bytes('5a a5 00 21 3e 5c 01'))){
+    cryptoBox.setFinalSessionKey(randomApp, randomBle);
+    setAuth('authenticated ✅');
+    return;
+  }
+
+  if(startsWith(frame, bytes('5a a5 0e 16 3e 04 10'))){
+    const serial = ascii(frame.slice(7)).replace(/\.+$/g,'');
+    $('serialOut').textContent = serial;
+    log(`[SERIAL] ${serial}`);
+  }
+}
+
+async function writeRaw(raw){
+  log(`\n[TX RAW] ${hex(raw)}`);
+  try{
+    await ble.tx.writeValueWithoutResponse(raw);
+    log('[TX OK] writeValueWithoutResponse');
+  }catch(e1){
+    log(`[TX WARN] withoutResponse failed: ${e1.message}`);
+    try{
+      await ble.tx.writeValueWithResponse(raw);
+      log('[TX OK] writeValueWithResponse');
+    }catch(e2){
+      log(`[TX WARN] withResponse failed: ${e2.message}`);
+      await ble.tx.writeValue(raw);
+      log('[TX OK] writeValue fallback');
+    }
+  }
+}
+
+async function sendFirstAuthInit(){
+  if(!cryptoBox) return alert('not connected');
+
+  log('\n[TEST] Clean encrypted first packet from FIRST_AUTH_PLAIN:');
+  const clean = cryptoBox.encryptPlain(FIRST_AUTH_PLAIN);
+  log(`[TX PLAIN FIRST] ${hex(FIRST_AUTH_PLAIN)}`);
+  log(`[TX CLEAN ENC ] ${hex(clean)}`);
+  log(`[TX SHU RAW   ] ${hex(SHU_FIRST_AUTH_RAW)}`);
+
+  // For now send the known-good SHU first packet. Clean output is logged for comparison.
+  await writeRaw(SHU_FIRST_AUTH_RAW);
+  setAuth('first auth init sent; waiting for 5B challenge');
+}
+
+async function sendAppRandomAuth(){
+  if(!cryptoBox) return alert('not connected');
+  crypto.getRandomValues(randomApp);
+  cryptoBox.randomApp.set(randomApp);
+  const plain = new Uint8Array(23);
+  plain.set(bytes('5a a5 10 3e 21 5c 00'),0);
+  plain.set(randomApp,7);
+  log(`\n[AUTH] randomApp=${hex(randomApp)}`);
+  log(`[TX PLAIN APP_RANDOM] ${hex(plain)}`);
+  const raw = cryptoBox.encryptPlain(plain);
+  await writeRaw(raw);
+  setAuth('app random sent; waiting 5C 01');
+}
+
+async function connect(){
+  if(!navigator.bluetooth){ alert('WebBluetooth nicht verfügbar'); return; }
+  setStatus('opening chooser...');
+
+  ble.device = await navigator.bluetooth.requestDevice({
+    acceptAllDevices: true,
+    optionalServices: [NUS_SERVICE]
+  });
+
+  const devName = ble.device.name || '';
+  const keyName = $('nameInput').value.trim() || devName;
+  $('nameInput').value = keyName;
+  $('deviceName').textContent = devName || '(no name)';
+  $('keyNameOut').textContent = keyName || '(empty)';
+
+  cryptoBox = new NinebotCryptoClean(keyName);
+  log(`[BLE] selected=${devName}`);
+  log(`[KEY] key-name=${JSON.stringify(keyName)}`);
+  cryptoBox.logKey('INITIAL SHA1(name16 + fwData)[0:16]');
+
+  setStatus('connecting...');
+  ble.server = await ble.device.gatt.connect();
+  ble.service = await ble.server.getPrimaryService(NUS_SERVICE);
+  ble.tx = await ble.service.getCharacteristic(NUS_WRITE);
+  ble.rx = await ble.service.getCharacteristic(NUS_NOTIFY);
+
+  log(`[BLE] TX props write=${ble.tx.properties.write} writeWithoutResponse=${ble.tx.properties.writeWithoutResponse}`);
+  log(`[BLE] RX props notify=${ble.rx.properties.notify} indicate=${ble.rx.properties.indicate}`);
+
+  await ble.rx.startNotifications();
+  ble.rx.addEventListener('characteristicvaluechanged', ev => {
+    const raw = new Uint8Array(ev.target.value.buffer.slice(0));
+    log(`\n[RX RAW] ${hex(raw)}`);
+    const plain = cryptoBox.decryptRaw(raw);
+    if(plain) parsePlain(plain); else log('[RX PLAIN] <decrypt skipped/stale counter>');
+  });
+
+  setStatus('connected');
+  $('sendFirstBtn').disabled = false;
+  setAuth('connected; click Send First/Auth Init');
+}
+
+$('connectBtn').addEventListener('click', () => connect().catch(e => { console.error(e); log(`[ERR] ${e.message}`); setStatus('error'); }));
+$('sendFirstBtn').onclick = () => sendFirstAuthInit().catch(e => log(`[ERR] ${e.message}`));
+$('sendAppRandomBtn').onclick = () => sendAppRandomAuth().catch(e => log(`[ERR] ${e.message}`));
+$('clearBtn').onclick = () => $('log').textContent = '';
 </script>
 </body>
 </html>
