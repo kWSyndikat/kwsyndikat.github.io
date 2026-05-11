@@ -309,13 +309,20 @@ async function sendPlain(frame) {
 async function sendInitialAuthKick() {
   if (!cryptoState) return alert("Not connected");
 
-  // Aus deinem SHU-Trace zurückgerechnet:
-  // encrypted: 5a a5 00 73 a5 da 0b 00 00 62 ff 00 00
-  // plaintext: 5a a5 00 e5 d8 1f 32
-  // Das triggert die Scooter-Auth-Challenge 5A A5 1E 21 3E 5B ...
-  const p = u8([0x5a,0xa5,0x00,0xe5,0xd8,0x1f,0x32]);
-  await sendPlain(p);
-  setAuth("initial auth kick sent - waiting for 5A A5 1E 21 3E 5B");
+  // Erstmal RAW senden, weil der First-Message-CRC aus SHU nicht unserem geratenen Plaintext entspricht.
+  // Aus deinem echten SHU-Trace:
+  // RAW encrypted kick: 5a a5 00 73 a5 da 0b 00 00 62 ff 00 00
+  // Danach sollte die 5A A5 1E 21 3E 5B Challenge kommen.
+  const raw = u8([0x5a,0xa5,0x00,0x73,0xa5,0xda,0x0b,0x00,0x00,0x62,0xff,0x00,0x00]);
+  log("
+[TX RAW INITIAL KICK] " + hex(raw));
+  await txChar.writeValueWithoutResponse(raw);
+
+  // Der erste Encrypt-Schritt erhöht msgIt auf 1. Das müssen wir hier manuell spiegeln,
+  // weil wir RAW statt sendPlain()/encrypt() benutzt haben.
+  cryptoState.msgIt = 1;
+  $("msgItOut").textContent = String(cryptoState.msgIt);
+  setAuth("raw initial auth kick sent - waiting for 5A A5 1E 21 3E 5B");
 }
 
 async function sendAppAuthRandom() {
