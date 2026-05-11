@@ -814,8 +814,10 @@ class NinebotCrypto {
       const decPay = await this.cryptoFirst(payload);
       decrypted.set(decPay, 3);
 
-      // Check for BLE random seed packet: 5A A5 1E 21 3E 5B
-      if (decrypted[0]===0x5A && decrypted[1]===0xA5 && decrypted[2]===0x1E &&
+      // Check for BLE random seed packet
+      // byte[0..1] = 5A A5 (magic), byte[2] = payload length (variable!), byte[3..5] = command
+      // Command for BLE challenge: 21 3E 5B  (from C++ source: 0x21, 0x3E, 0x5B)
+      if (decrypted[0]===0x5A && decrypted[1]===0xA5 &&
           decrypted[3]===0x21 && decrypted[4]===0x3E && decrypted[5]===0x5B) {
         this.randomBleData = decrypted.slice(7, 23);
         await this.calcSha1Key(this.name, this.randomBleData);
@@ -824,8 +826,8 @@ class NinebotCrypto {
       const decPay = await this.cryptoNext(payload, newMsgIt);
       decrypted.set(decPay, 3);
 
-      // Check for ACK packet: 5A A5 00 21 3E 5C 01
-      if (decrypted[0]===0x5A && decrypted[1]===0xA5 && decrypted[2]===0x00 &&
+      // Check for ACK packet: command bytes 21 3E 5C 01
+      if (decrypted[0]===0x5A && decrypted[1]===0xA5 &&
           decrypted[3]===0x21 && decrypted[4]===0x3E && decrypted[5]===0x5C &&
           decrypted[6]===0x01) {
         await this.calcSha1Key(this.randomAppData, this.randomBleData);
@@ -1019,7 +1021,20 @@ async function startConnect() {
 
     rxChar_.addEventListener('characteristicvaluechanged', onNotify);
     await rxChar_.startNotifications();
-    log('✓', 'Notifications aktiv — warte auf Scooter …', 'ok');
+    log('✓', 'Notifications aktiv', 'ok');
+
+    // ── Send Hello/Probe packet — required to trigger scooter BLE challenge ──
+    // Observed from Frida log: app sends 5a a5 00 [crc_lo crc_hi xx xx] 00 00 62 ff 00 00
+    // This is an empty-payload CryptoFirst packet (msg_it=0)
+    // Empty payload CRC: ~(0) & 0xFFFF = 0xFFFF, but observed is 62 ff → scooter-specific
+    // Use the exact observed hello bytes from the log:
+    const hello = new Uint8Array([0x5a, 0xa5, 0x00, 0xa8, 0x79, 0x9e, 0x39, 0x00, 0x00, 0x62, 0xff, 0x00, 0x00]);
+    // Actually compute it properly via encrypt of empty packet:
+    const helloPlain = new Uint8Array([0x5a, 0xa5, 0x00]); // header only, 0 payload
+    const helloEnc = await crypto_.encrypt(helloPlain);
+    rawLog('out', helloEnc);
+    await txChar_.writeValue(helloEnc);
+    log('✓', `Hello gesendet → warte auf BLE Challenge …`, 'ok');
 
     setDot('warn'); setTitle('Warte auf Challenge …');
     document.getElementById('infoDevice').textContent = device_.name || name;
@@ -1057,9 +1072,9 @@ async function onNotify(event) {
 
     const h = decrypted;
 
-    // Phase 1: BLE sent its random → recalculated sha1Key → now send app random
+    // Phase 1: BLE challenge — byte[2] is payload length (0x1E=30), command is [3..5] = 21 3E 5B
     if (authPhase === 1 &&
-        h[0]===0x5A && h[1]===0xA5 && h[2]===0x1E &&
+        h[0]===0x5A && h[1]===0xA5 &&
         h[3]===0x21 && h[4]===0x3E && h[5]===0x5B) {
 
       log('✓', `BLE-Random empfangen: <span class="dim">${toHex(crypto_.randomBleData)}</span>`, 'ok');
@@ -1067,8 +1082,9 @@ async function onNotify(event) {
 
       // Generate app random
       const appRandom = crypto.getRandomValues(new Uint8Array(16));
-      // Build app challenge packet
-      const appPacket = new Uint8Array(3 + 1 + 16);
+      // Build app challenge packet: 5A A5 10 3E 21 5C 00 [16 random bytes]
+      // byte[2]=0x10=16 is payload length, command = 3E 21 5C 00
+      const appPacket = new Uint8Array(3 + 16 + 4); // header + 16 random + 4 command prefix
       appPacket[0] = 0x5A; appPacket[1] = 0xA5; appPacket[2] = 0x10;
       appPacket[3] = 0x3E; appPacket[4] = 0x21; appPacket[5] = 0x5C; appPacket[6] = 0x00;
       appPacket.set(appRandom, 7);
@@ -1085,9 +1101,9 @@ async function onNotify(event) {
       updateInfoPanel();
     }
 
-    // Phase 2: Scooter confirmed → authenticated
+    // Phase 2: Scooter ACK after power button — command [3..6] = 21 3E 5C 01
     if (authPhase === 2 &&
-        h[0]===0x5A && h[1]===0xA5 && h[2]===0x00 &&
+        h[0]===0x5A && h[1]===0xA5 &&
         h[3]===0x21 && h[4]===0x3E && h[5]===0x5C && h[6]===0x01) {
 
       document.getElementById('powerPrompt').classList.remove('visible');
@@ -1103,8 +1119,17 @@ async function onNotify(event) {
 
     updateInfoPanel();
 
+    // Debug: zeige decrypted Bytes wenn kein Phase-Match (hilft beim Debuggen)
+    if (authPhase === 1 || authPhase === 2) {
+      const matched = (h[3]===0x21 && h[4]===0x3E);
+      if (!matched) {
+        log('·', `RX unmatched: <span class="dim">${toHex(decrypted.slice(0, Math.min(9, decrypted.length)))}</span>`, '');
+      }
+    }
+
   } catch (err) {
     rawLog('sys', new TextEncoder().encode('ERR: ' + err.message));
+    log('✕', `Decrypt-Fehler: ${err.message}`, 'err');
   }
 }
 
