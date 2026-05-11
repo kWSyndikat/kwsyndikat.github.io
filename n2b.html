@@ -3,22 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ninebot Web-Auth</title>
+    <title>xNinebot Web-Auth</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; padding: 20px; background: #121212; color: #fff; }
+        body { font-family: -apple-system, sans-serif; padding: 20px; background: #121212; color: #fff; }
         button { padding: 15px 30px; font-size: 18px; cursor: pointer; background: #007bff; color: white; border: none; border-radius: 8px; margin-bottom: 20px; }
-        button:disabled { background: #555; cursor: not-allowed; }
-        #log { background: #1e1e1e; padding: 15px; border-radius: 8px; font-family: monospace; white-space: pre-wrap; word-wrap: break-word; height: 400px; overflow-y: scroll; font-size: 14px; }
+        button:disabled { background: #555; }
+        #log { background: #1e1e1e; padding: 15px; border-radius: 8px; font-family: monospace; white-space: pre-wrap; word-wrap: break-word; height: 500px; overflow-y: scroll; font-size: 14px; }
         .info { color: #00bfff; }
         .rx { color: #00ff00; }
         .tx { color: #ff9900; }
         .err { color: #ff4444; }
+        .success { color: #ff00ff; font-weight: bold;}
     </style>
 </head>
 <body>
 
-    <h2>Ninebot Crypto Authenticator</h2>
+    <h2>Ninebot Crypto Authenticator (Full Port)</h2>
     <button id="connectBtn">Scooter Verbinden</button>
     <div id="log"></div>
 
@@ -53,7 +54,7 @@ function log(msg, type = 'info') {
     logEl.scrollTop = logEl.scrollHeight;
 }
 
-// --- Ninebot Crypto Portierung (1:1 aus C++) ---
+// --- Ninebot Crypto (1:1 aus C++) ---
 class NinebotCrypto {
     constructor(nameStr) {
         this._fw_data = new Uint8Array([0x97, 0xCF, 0xB8, 0x02, 0x84, 0x41, 0x43, 0xDE, 0x56, 0x00, 0x2B, 0x3B, 0x34, 0x78, 0x0A, 0x5D]);
@@ -63,11 +64,9 @@ class NinebotCrypto {
         this._name = new Uint8Array(16);
         this._msg_it = 0;
 
-        // Kopiere Namen in _name Array (max 16 bytes)
         for (let i = 0; i < Math.min(nameStr.length, 16); i++) {
             this._name[i] = nameStr.charCodeAt(i);
         }
-
         this.CalcSha1Key(this._name, this._fw_data);
     }
 
@@ -77,16 +76,13 @@ class NinebotCrypto {
 
     XOR16(data1, data2) {
         let out = new Uint8Array(16);
-        for (let i = 0; i < 16; i++) {
-            out[i] = data1[i] ^ data2[i];
-        }
+        for (let i = 0; i < 16; i++) out[i] = data1[i] ^ data2[i];
         return out;
     }
 
     Sha1(data32) {
         const waData = uint8ArrayToWordArray(data32);
-        const hashWa = CryptoJS.SHA1(waData);
-        return wordArrayToUint8Array(hashWa);
+        return wordArrayToUint8Array(CryptoJS.SHA1(waData));
     }
 
     CalcSha1Key(data1, data2) {
@@ -98,13 +94,10 @@ class NinebotCrypto {
     }
 
     AesEcbEncrypt(data16, key16) {
-        const waData = uint8ArrayToWordArray(data16);
-        const waKey = uint8ArrayToWordArray(key16);
-        const encrypted = CryptoJS.AES.encrypt(waData, waKey, {
+        const encrypted = CryptoJS.AES.encrypt(uint8ArrayToWordArray(data16), uint8ArrayToWordArray(key16), {
             mode: CryptoJS.mode.ECB,
             padding: CryptoJS.pad.NoPadding
         });
-        // Das Resultat ist Base64, wir brauchen den raw ciphertext
         return wordArrayToUint8Array(encrypted.ciphertext);
     }
 
@@ -149,7 +142,7 @@ class NinebotCrypto {
         let xor_data_2 = new Uint8Array(16);
 
         while (payload_len > 0) {
-            aes_enc_data[15]++;
+            aes_enc_data[15] = (aes_enc_data[15] + 1) & 0xFF;
             let tmp_len = (payload_len <= 16) ? payload_len : 16;
 
             xor_data_1.fill(0);
@@ -166,15 +159,111 @@ class NinebotCrypto {
         return result;
     }
 
+    CalcCrcFirstMsg(payload) {
+        let crc = 0;
+        for (let i = 0; i < payload.length; i++) crc += payload[i];
+        crc = (~crc) & 0xFFFF;
+        return new Uint8Array([crc & 0xFF, (crc >>> 8) & 0xFF]);
+    }
+
+    CalcCrcNextMsg(data, msgIt) {
+        let aes_enc_data = new Uint8Array(16);
+        let payload_len = data.length - 3;
+        let byte_idx = 3;
+        let xor_data_1 = new Uint8Array(16);
+        let xor_data_2 = new Uint8Array(16);
+
+        aes_enc_data[0] = 89;
+        aes_enc_data[1] = (msgIt & 0xFF000000) >>> 24;
+        aes_enc_data[2] = (msgIt & 0x00FF0000) >>> 16;
+        aes_enc_data[3] = (msgIt & 0x0000FF00) >>> 8;
+        aes_enc_data[4] = (msgIt & 0x000000FF);
+        this.BlockCopy(this._random_ble_data, 0, aes_enc_data, 5, 8);
+        aes_enc_data[15] = payload_len & 0xFF;
+
+        let aes_key = this.AesEcbEncrypt(aes_enc_data, this._sha1_key);
+        this.BlockCopy(aes_key, 0, xor_data_2, 0, 16);
+
+        this.BlockCopy(data, 0, xor_data_1, 0, 3);
+
+        let xor_data = this.XOR16(xor_data_1, xor_data_2);
+        aes_key = this.AesEcbEncrypt(xor_data, this._sha1_key);
+        this.BlockCopy(aes_key, 0, xor_data_2, 0, 16);
+
+        while (payload_len > 0) {
+            let tmp_len = (payload_len <= 16) ? payload_len : 16;
+            xor_data_1.fill(0);
+            this.BlockCopy(data, byte_idx, xor_data_1, 0, tmp_len);
+
+            xor_data = this.XOR16(xor_data_1, xor_data_2);
+            aes_key = this.AesEcbEncrypt(xor_data, this._sha1_key);
+            this.BlockCopy(aes_key, 0, xor_data_2, 0, 16);
+
+            payload_len -= tmp_len;
+            byte_idx += tmp_len;
+        }
+
+        aes_enc_data[0] = 1;
+        aes_enc_data[15] = 0;
+
+        aes_key = this.AesEcbEncrypt(aes_enc_data, this._sha1_key);
+        this.BlockCopy(aes_key, 0, xor_data_1, 0, 16);
+        xor_data = this.XOR16(xor_data_1, xor_data_2);
+        return new Uint8Array([xor_data[0], xor_data[1], xor_data[2], xor_data[3]]);
+    }
+
+    Encrypt(data) {
+        let payload_len = data.length - 3;
+        let payload = new Uint8Array(payload_len);
+        this.BlockCopy(data, 3, payload, 0, payload_len);
+
+        let encrypted = new Uint8Array(payload_len + 9);
+        this.BlockCopy(data, 0, encrypted, 0, 3); // Header kopieren
+
+        if (this._msg_it === 0) {
+            let crc = this.CalcCrcFirstMsg(payload);
+            payload = this.CryptoFirst(payload);
+
+            this.BlockCopy(payload, 0, encrypted, 3, payload.length);
+
+            encrypted[payload_len + 3] = 0;
+            encrypted[payload_len + 4] = 0;
+            encrypted[payload_len + 5] = crc[0];
+            encrypted[payload_len + 6] = crc[1];
+            encrypted[payload_len + 7] = 0;
+            encrypted[payload_len + 8] = 0;
+            this._msg_it++;
+        } else {
+            this._msg_it++;
+            let crc = this.CalcCrcNextMsg(data, this._msg_it);
+            payload = this.CryptoNext(payload, this._msg_it);
+
+            this.BlockCopy(payload, 0, encrypted, 3, payload.length);
+
+            encrypted[payload_len + 3] = crc[0];
+            encrypted[payload_len + 4] = crc[1];
+            encrypted[payload_len + 5] = crc[2];
+            encrypted[payload_len + 6] = crc[3];
+            encrypted[payload_len + 7] = (this._msg_it & 0x0000FF00) >>> 8;
+            encrypted[payload_len + 8] = (this._msg_it & 0x000000FF);
+
+            // Speichert die App-Random-Data (nur wenn es exakt das Pairing-Paket ist)
+            if (data[0] === 0x5A && data[1] === 0xA5 && data[2] === 0x10 && data[3] === 0x3E && data[4] === 0x21 && data[5] === 0x5C && data[6] === 0x00) {
+                this.BlockCopy(data, 7, this._random_app_data, 0, 16);
+            }
+        }
+        return encrypted;
+    }
+
     Decrypt(data) {
         let decrypted = new Uint8Array(data.length - 6);
         this.BlockCopy(data, 0, decrypted, 0, 3);
 
         let new_msg_it = this._msg_it;
-        if ((new_msg_it & 0x0008000) > 0 && (data[data.length - 2] >> 7) == 0) {
+        if ((new_msg_it & 0x0008000) > 0 && (data[data.length - 2] >> 7) === 0) {
             new_msg_it += 0x0010000;
         }
-        new_msg_it = (new_msg_it & 0xFFFF0000) + (data[data.length - 2] << 8) + data[data.length - 1];
+        new_msg_it = ((new_msg_it & 0xFFFF0000) + (data[data.length - 2] << 8) + data[data.length - 1]) >>> 0;
 
         let payload_len = data.length - 9;
         let payload = new Uint8Array(payload_len);
@@ -188,21 +277,40 @@ class NinebotCrypto {
             if (decrypted[0] === 0x5A && decrypted[1] === 0xA5 && decrypted[2] === 0x1E && decrypted[3] === 0x21 && decrypted[4] === 0x3E && decrypted[5] === 0x5B) {
                 this.BlockCopy(decrypted, 7, this._random_ble_data, 0, 16);
                 this.CalcSha1Key(this._name, this._random_ble_data);
-                log("⚡ [Auth] Scooter Challenge erhalten! Drücke jetzt den Power-Button am Scooter!", "info");
+                
+                log("⚡ [Auth] Challenge vom Scooter erhalten!", "info");
+                log("👉 BITTE JETZT DEN POWER BUTTON AM SCOOTER DRÜCKEN!", "success");
+                
+                // Wir senden jetzt unsere generierte Response zurück an den Scooter
+                this.sendPairingResponse();
             }
         } else if (new_msg_it > 0 && new_msg_it > this._msg_it) {
             payload = this.CryptoNext(payload, new_msg_it);
             this.BlockCopy(payload, 0, decrypted, 3, payload.length);
 
-            // Frame check für Pairing Success
+            // Frame check für erfolgreiches Pairing
             if (decrypted[0] === 0x5A && decrypted[1] === 0xA5 && decrypted[2] === 0x00 && decrypted[3] === 0x21 && decrypted[4] === 0x3E && decrypted[5] === 0x5C && decrypted[6] === 0x01) {
                 this.CalcSha1Key(this._random_app_data, this._random_ble_data);
-                log("✅ [Auth] Pairing erfolgreich! Schlüssel synchronisiert.", "info");
+                log("✅ [Auth] PAIRING ERFOLGREICH! Schlüssel synchronisiert.", "success");
             }
             this._msg_it = new_msg_it;
         }
 
         return decrypted;
+    }
+
+    async sendPairingResponse() {
+        let responsePlain = new Uint8Array(23);
+        // Header + Cmd für Pairing Response
+        responsePlain.set([0x5A, 0xA5, 0x10, 0x3E, 0x21, 0x5C, 0x00], 0);
+        
+        // 16 Bytes Random Data für die App
+        let rand = new Uint8Array(16);
+        window.crypto.getRandomValues(rand);
+        responsePlain.set(rand, 7);
+
+        log(`[Auth] Sende Pairing Response (Plain): ${toHex(responsePlain)}`, "info");
+        await sendRaw( this.Encrypt(responsePlain) );
     }
 }
 
@@ -210,27 +318,20 @@ class NinebotCrypto {
 let device, server, rxChar, txChar;
 let cryptoSession = null;
 
-// Die Liste der Seriennummer-Präfixe aus deiner DB
 const validPrefixes = [
-    // GT3 Serie
     "03GG", "03G", "03SD", "03SE", "03SP",
-    // G3 Serie
     "1CGA", "1CGB", "1CGC", "1CGD", "1CGE", "1CGI",
-    // ZT3 Serie
     "1K1D", "1K1E", "1K1I", "1K1U", "1K1Z",
-    // F3 Pro & F3 Serie
     "1EFF", "1EFG", "1EFH", "1EFJ", "1EFK", "1EFA", "1EFB", "1EFC", "1EFD", "1EFE"
 ];
 
 const NINEBOT_UART_SERVICE = "6e400001-b5a3-f393-e0a9-e50e24dcca9e";
-const NINEBOT_UART_TX      = "6e400002-b5a3-f393-e0a9-e50e24dcca9e"; // Wir schreiben hier
-const NINEBOT_UART_RX      = "6e400003-b5a3-f393-e0a9-e50e24dcca9e"; // Wir lesen hier
+const NINEBOT_UART_TX      = "6e400002-b5a3-f393-e0a9-e50e24dcca9e";
+const NINEBOT_UART_RX      = "6e400003-b5a3-f393-e0a9-e50e24dcca9e";
 
 document.getElementById('connectBtn').addEventListener('click', async () => {
     try {
         log("🔍 Suche nach Ninebot Scootern...");
-        
-        // Web Bluetooth Filter zusammenbauen
         const filters = validPrefixes.map(prefix => ({ namePrefix: prefix }));
         
         device = await navigator.bluetooth.requestDevice({
@@ -239,32 +340,21 @@ document.getElementById('connectBtn').addEventListener('click', async () => {
         });
 
         log(`📱 Gerät ausgewählt: ${device.name}`);
-        
-        // Crypto initialisieren mit dem Device Name (wichtig für den _name Seed)
         cryptoSession = new NinebotCrypto(device.name);
-        log(`🔐 Crypto Session initialisiert mit Name: ${device.name}`);
-
-        device.addEventListener('gattserverdisconnected', () => {
-            log("❌ Verbindung getrennt.", "err");
-        });
-
+        
         server = await device.gatt.connect();
-        log("🔗 Mit GATT Server verbunden.");
-
         const service = await server.getPrimaryService(NINEBOT_UART_SERVICE);
         txChar = await service.getCharacteristic(NINEBOT_UART_TX);
         rxChar = await service.getCharacteristic(NINEBOT_UART_RX);
 
-        // RX Notifications aktivieren
         await rxChar.startNotifications();
         rxChar.addEventListener('characteristicvaluechanged', handleIncomingData);
-        log("📡 Empfangsbereit. Warte auf Daten vom Scooter...");
+        log("🔗 Verbunden! Starte Auth-Prozess...");
 
-        // Sende Initial-Ping (Dies weckt den Scooter auf und fordert die Auth-Challenge an)
-        // 5A A5 ist der Header. Diesen Command musst du evtl. anpassen, je nachdem welches Paket den Prozess anstößt.
-        // Ein Read-Info Request z.B.: 5A A5 00 3E 21 01 00
-        const initPing = new Uint8Array([0x5A, 0xA5, 0x00, 0x3E, 0x21, 0x01, 0x00]); 
-        await sendRaw(initPing);
+        // Sende Initial-Ping (jetzt KORREKT ENCRYPTED!)
+        const initPingPlain = new Uint8Array([0x5A, 0xA5, 0x00, 0x3E, 0x21, 0x01, 0x00]); 
+        const initPingEncrypted = cryptoSession.Encrypt(initPingPlain);
+        await sendRaw(initPingEncrypted);
 
     } catch (err) {
         log(`Fehler: ${err.message}`, "err");
@@ -272,31 +362,35 @@ document.getElementById('connectBtn').addEventListener('click', async () => {
 });
 
 let rxBuffer = new Uint8Array(0);
+let rxTimeout = null;
 
 function handleIncomingData(event) {
     const data = new Uint8Array(event.target.value.buffer);
-    log(`RX RAW: ${toHex(data)}`, "rx");
     
-    // Einfaches Buffer-Management (In der Realität muss man hier 5A A5 Framelength parsen)
+    // Chunk in Buffer hängen
     let newBuffer = new Uint8Array(rxBuffer.length + data.length);
     newBuffer.set(rxBuffer);
     newBuffer.set(data, rxBuffer.length);
     rxBuffer = newBuffer;
 
-    // Wenn Frame komplett ist (sehr simplifiziert)
-    if (rxBuffer.length > 9 && rxBuffer[0] === 0x5A && rxBuffer[1] === 0xA5) {
-        try {
-            const decrypted = cryptoSession.Decrypt(rxBuffer);
-            log(`🔓 RX DECRYPTED: ${toHex(decrypted)}`, "rx");
-        } catch (e) {
-            log(`Fehler bei Entschlüsselung: ${e.message}`, "err");
+    // Timeout-basierter Assembler: Wenn nach 50ms kein neuer BLE-Chunk kommt, gilt das Paket als komplett
+    clearTimeout(rxTimeout);
+    rxTimeout = setTimeout(() => {
+        if (rxBuffer.length >= 9 && rxBuffer[0] === 0x5A && rxBuffer[1] === 0xA5) {
+            log(`📥 RX RAW (Komplett): ${toHex(rxBuffer)}`, "rx");
+            try {
+                const decrypted = cryptoSession.Decrypt(rxBuffer);
+                log(`🔓 RX DECRYPTED: ${toHex(decrypted)}`, "rx");
+            } catch (e) {
+                log(`Fehler bei Entschlüsselung: ${e.message}`, "err");
+            }
         }
-        rxBuffer = new Uint8Array(0); // Buffer leeren nach Verarbeitung
-    }
+        rxBuffer = new Uint8Array(0); // Buffer reset
+    }, 50);
 }
 
 async function sendRaw(payload) {
-    log(`TX RAW: ${toHex(payload)}`, "tx");
+    log(`📤 TX ENCRYPTED: ${toHex(payload)}`, "tx");
     try {
         await txChar.writeValue(payload);
     } catch(e) {
