@@ -2,980 +2,367 @@
 <html lang="de">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Scooter Crypto – Ninebot BLE</title>
-
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Ninebot WebBLE Test</title>
+  <script src="https://cdn.jsdelivr.net/npm/aes-js@3.1.2/index.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/js-sha1@0.7.0/src/sha1.min.js"></script>
   <style>
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background: #f4f6f9;
-      color: #1f2937;
-      max-width: 960px;
-      margin: 0 auto;
-      padding: 1.5rem 1rem;
-    }
-
-    h1, h2 {
-      color: #111827;
-      margin-top: 0.5rem;
-    }
-
-    .card {
-      border-radius: 0.75rem;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-      background: #fff;
-      padding: 1.25rem;
-      margin-bottom: 1.25rem;
-    }
-
-    .card h2 {
-      font-size: 1.25rem;
-      margin-top: 0.25rem;
-    }
-
-    .card p {
-      margin: 0.5rem 0;
-    }
-
-    .btn {
-      font-size: 1rem;
-      padding: 0.625rem 1rem;
-      border-radius: 0.5rem;
-      border: none;
-      cursor: pointer;
-      font-weight: 500;
-      transition: 0.15s;
-      margin-right: 0.5rem;
-      margin-bottom: 0.5rem;
-      background: #e5e7eb;
-      color: #111827;
-    }
-
-    .btn-primary {
-      background: #1f7de8;
-      color: #fff;
-      box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-    }
-
-    .btn-primary:hover {
-      background: #155eb9;
-    }
-
-    .btn-danger {
-      background: #dc2626;
-      color: #fff;
-    }
-
-    .btn-danger:hover {
-      background: #b91c1c;
-    }
-
-    .btn:disabled {
-      background: #d1d5db;
-      color: #6b7280;
-      cursor: not-allowed;
-    }
-
-    .row {
-      margin: 1rem 0 0.5rem;
-    }
-
-    .label {
-      font-size: 0.9rem;
-      margin-bottom: 0.25rem;
-      font-weight: 500;
-    }
-
-    .status {
-      font-size: 0.95rem;
-      padding: 0.5rem 0.75rem;
-      border-radius: 0.5rem;
-      background: #f0fdf4;
-      color: #059669;
-      border: 1px solid #a7f3d0;
-    }
-
-    .status.warn {
-      background: #fef3c7;
-      color: #d97706;
-      border: 1px solid #fbbf24;
-    }
-
-    .status.error {
-      background: #fee2e2;
-      color: #dc2626;
-      border: 1px solid #fca5a5;
-    }
-
-    .logbox {
-      font-family: SFMono-Regular, Consolas, "Liberation Mono", Monaco, monospace;
-      font-size: 0.9rem;
-      width: 100%;
-      min-height: 220px;
-      max-height: 420px;
-      padding: 0.75rem;
-      border-radius: 0.5rem;
-      border: 1px solid #d1d5db;
-      background: #0f0f0f;
-      color: #e5e7eb;
-      resize: vertical;
-      box-sizing: border-box;
-    }
-
-    .pairing-box {
-      padding: 0.75rem 1rem;
-      border-radius: 0.5rem;
-      background: #f0fdf4;
-      border: 1px solid #a7f3d0;
-      margin-top: 0.75rem;
-    }
-
-    .pairing-box h3 {
-      margin: 0.25rem 0;
-      color: #059669;
-      font-size: 1.1rem;
-    }
-
-    .pairing-box.warn {
-      background: #fef3c7;
-      border: 1px solid #fbbf24;
-      color: #d97706;
-    }
-
-    .pairing-box.error {
-      background: #fee2e2;
-      border: 1px solid #fca5a5;
-      color: #dc2626;
-    }
-
-    input {
-      width: 100%;
-      padding: 0.65rem 0.75rem;
-      font-size: 1rem;
-      border: 1px solid #d1d5db;
-      border-radius: 0.5rem;
-      box-sizing: border-box;
-    }
-
-    code {
-      background: #f3f4f6;
-      padding: 0.1rem 0.35rem;
-      border-radius: 0.3rem;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-    }
-
-    .muted {
-      color: #6b7280;
-      font-size: 0.92rem;
-    }
+    body { font-family: system-ui, Arial, sans-serif; background:#0b0d10; color:#e8eef5; margin:0; padding:20px; }
+    .wrap { max-width:1100px; margin:auto; }
+    h1 { margin-top:0; }
+    .card { background:#151a21; border:1px solid #2a3340; border-radius:14px; padding:16px; margin:12px 0; }
+    button { background:#2f7df6; color:white; border:0; border-radius:10px; padding:10px 14px; font-weight:700; cursor:pointer; margin:4px; }
+    button:disabled { background:#45505f; cursor:not-allowed; }
+    input { background:#0f1319; color:#e8eef5; border:1px solid #3a4554; border-radius:10px; padding:10px; min-width:240px; }
+    code, pre { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; }
+    pre { background:#07090c; border:1px solid #242b35; border-radius:12px; padding:12px; overflow:auto; height:520px; white-space:pre-wrap; }
+    .row { display:flex; flex-wrap:wrap; gap:10px; align-items:center; }
+    .status { font-weight:700; color:#9fe870; }
+    .warn { color:#ffd166; }
+    .bad { color:#ff6b6b; }
   </style>
-
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"></script>
 </head>
 <body>
-  <h1>Scooter Crypto – Ninebot BLE</h1>
+<div class="wrap">
+  <h1>Ninebot WebBLE Test</h1>
 
   <div class="card">
     <div class="row">
-      <button id="btnConnect" class="btn btn-primary">Device suchen & verbinden</button>
-      <button id="btnDisconnect" class="btn btn-danger" disabled>Schließen</button>
+      <label>Scooter BLE Name für Key:</label>
+      <input id="nameInput" value="" placeholder="z.B. Scooter-Bluetooth-Name" />
+      <button id="connectBtn">Connect</button>
+      <button id="authBtn" disabled>Send App Auth Random</button>
+      <button id="clearBtn">Clear Log</button>
     </div>
-
-    <div class="row">
-      <div class="label">Status:</div>
-      <div id="status" class="status">Waiting</div>
-    </div>
-
-    <div class="row">
-      <div class="label">Device:</div>
-      <div id="deviceName">-</div>
-    </div>
-  </div>
-
-  <div id="pairingSection" class="card" hidden>
-    <h2>🔐 Pairing-Ablauf</h2>
-    <div class="pairing-box" id="pairingBox">
-      <p>Drücke den Power-Knopf auf dem Scooter, sobald die Nachricht unten erscheint.</p>
-    </div>
+    <p>Status: <span id="status" class="status">idle</span></p>
+    <p class="warn">Chrome/Edge Desktop nötig. WebBluetooth geht nur auf HTTPS oder localhost. Der Name ist wichtig, weil der Start-Key aus <code>SHA1(name16 + fwData)</code> kommt.</p>
   </div>
 
   <div class="card">
-    <div class="row">
-      <label class="label" for="payloadHex">Roh-Payload (Hex, ohne 0x-Prefix):</label>
-      <input id="payloadHex" placeholder="z.B. 5aa5043e215b00 oder 3e215b00" />
-      <div class="muted" style="margin-top:0.4rem;">
-        Für unverschlüsselte Tests kannst du z.B. <code>3e215b00</code> schicken.
-        Für verschlüsselte Nutzdaten idealerweise vollständige Frames ab Byte 0.
-      </div>
-    </div>
-
-    <div class="row">
-      <button id="btnSendPlain" class="btn" disabled>Roh senden</button>
-      <button id="btnSendEncrypted" class="btn btn-primary" disabled>Sicher mit Crypto senden</button>
-    </div>
+    <h3>Gefundene Daten</h3>
+    <div>Device: <code id="deviceName">-</code></div>
+    <div>Serial: <code id="serialOut">-</code></div>
+    <div>Auth state: <code id="authState">not started</code></div>
+    <div>msgIt: <code id="msgItOut">0</code></div>
   </div>
 
   <div class="card">
-    <div class="row">
-      <label class="label" for="log">Log:</label>
-      <textarea id="log" class="logbox" readonly></textarea>
-    </div>
+    <h3>Log</h3>
+    <pre id="log"></pre>
   </div>
+</div>
 
 <script>
-// =================== BLE-UUIDs ===================
-const SHU_NRF_SERVICE = "6e400001-b5a3-f393-e0a9-e50e24dcca9e";
-const SHU_NRF_CHAR_A  = "6e400002-b5a3-f393-e0a9-e50e24dcca9e"; // write
-const SHU_NRF_CHAR_B  = "6e400003-b5a3-f393-e0a9-e50e24dcca9e"; // notify
+const NUS_SERVICE = "6e400001-b5a3-f393-e0a9-e50e24dcca9e";
+const NUS_WRITE   = "6e400002-b5a3-f393-e0a9-e50e24dcca9e";
+const NUS_NOTIFY  = "6e400003-b5a3-f393-e0a9-e50e24dcca9e";
 
-// =================== Utility ===================
-const $ = (id) => document.getElementById(id);
+const fwData = u8([0x97,0xcf,0xb8,0x02,0x84,0x41,0x43,0xde,0x56,0x00,0x2b,0x3b,0x34,0x78,0x0a,0x5d]);
 
-const log = (msg) => {
+let device, server, service, txChar, rxChar;
+let cryptoState = null;
+let randomBle = new Uint8Array(16);
+let randomApp = new Uint8Array(16);
+
+const $ = id => document.getElementById(id);
+
+function setStatus(s) { $("status").textContent = s; }
+function setAuth(s) { $("authState").textContent = s; }
+function log(s) {
   const el = $("log");
-  el.value += `[${new Date().toLocaleTimeString()}] ${msg}\n`;
+  el.textContent += s + "\n";
   el.scrollTop = el.scrollHeight;
-};
-
-const setStatus = (msg, type = "") => {
-  const el = $("status");
-  el.textContent = msg;
-  el.className = "status" + (type ? " " + type : "");
-};
-
-function hexToBytes(hex) {
-  const clean = (hex || "").replace(/[^0-9a-fA-F]/g, "");
-  if (!clean.length) return new Uint8Array();
-  if (clean.length % 2) throw new Error("Hex-Länge muss gerade sein");
-  const out = new Uint8Array(clean.length / 2);
-  for (let i = 0; i < clean.length; i += 2) {
-    out[i / 2] = parseInt(clean.slice(i, i + 2), 16);
-  }
+}
+function u8(arr) { return new Uint8Array(arr); }
+function hex(bytes) { return [...bytes].map(b => b.toString(16).padStart(2, "0")).join(" "); }
+function ascii(bytes) { return [...bytes].map(b => b >= 32 && b <= 126 ? String.fromCharCode(b) : ".").join(""); }
+function concat(a, b) { const o = new Uint8Array(a.length + b.length); o.set(a,0); o.set(b,a.length); return o; }
+function name16(name) {
+  const out = new Uint8Array(16);
+  for (let i=0; i<Math.min(16, name.length); i++) out[i] = name.charCodeAt(i) & 0xff;
   return out;
 }
-
-function bytesToHex(bs) {
-  return Array.from(bs, b => b.toString(16).padStart(2, "0")).join("");
+function sha1_16(a, b) {
+  const input = concat(a, b);
+  const digest = sha1.array(input);
+  return new Uint8Array(digest.slice(0, 16));
+}
+function aesEcbEncrypt16(block16, key16) {
+  const aes = new aesjs.ModeOfOperation.ecb([...key16]);
+  return new Uint8Array(aes.encrypt([...block16]));
+}
+function xor16(a, b) {
+  const o = new Uint8Array(16);
+  for (let i=0; i<16; i++) o[i] = (a[i] ^ b[i]) & 0xff;
+  return o;
 }
 
-function concatBytes(...arrays) {
-  const total = arrays.reduce((n, a) => n + a.length, 0);
-  const out = new Uint8Array(total);
-  let off = 0;
-  for (const a of arrays) {
-    out.set(a, off);
-    off += a.length;
-  }
-  return out;
-}
-
-function subBytes(arr, start, len) {
-  return arr.slice(start, start + len);
-}
-
-function equalsBytes(a, b) {
-  if (a.length !== b.length) return false;
-  for (let i = 0; i < a.length; i++) {
-    if (a[i] !== b[i]) return false;
-  }
-  return true;
-}
-
-function sleep(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-function setPairingHtml(html, kind = "") {
-  const box = $("pairingBox");
-  box.className = "pairing-box" + (kind ? " " + kind : "");
-  box.innerHTML = html;
-}
-
-// =================== CryptoJS Wrapper ===================
-function u8ToWordArray(u8) {
-  const words = [];
-  for (let i = 0; i < u8.length; i += 4) {
-    words.push(
-      ((u8[i]     || 0) << 24) |
-      ((u8[i + 1] || 0) << 16) |
-      ((u8[i + 2] || 0) <<  8) |
-      ((u8[i + 3] || 0) <<  0)
-    );
-  }
-  return CryptoJS.lib.WordArray.create(words, u8.length);
-}
-
-function wordArrayToU8(wordArray) {
-  const { words, sigBytes } = wordArray;
-  const out = new Uint8Array(sigBytes);
-  for (let i = 0; i < sigBytes; i++) {
-    out[i] = (words[i >>> 2] >>> (24 - (i % 4) * 8)) & 0xff;
-  }
-  return out;
-}
-
-function aesEcbEncrypt16(data16, key16) {
-  if (data16.length !== 16 || key16.length !== 16) {
-    throw new Error("AES-ECB-128 erwartet exakt 16 Byte Daten und 16 Byte Key");
-  }
-
-  const encrypted = CryptoJS.AES.encrypt(
-    u8ToWordArray(data16),
-    u8ToWordArray(key16),
-    {
-      mode: CryptoJS.mode.ECB,
-      padding: CryptoJS.pad.NoPadding
-    }
-  );
-
-  return wordArrayToU8(encrypted.ciphertext);
-}
-
-function sha1_32_to_20(data32) {
-  if (data32.length !== 32) {
-    throw new Error("SHA1 erwartet hier exakt 32 Byte");
-  }
-  return wordArrayToU8(CryptoJS.SHA1(u8ToWordArray(data32)));
-}
-
-// =================== NinebotCrypto JS-Port ===================
-// Portiert entlang der hochgeladenen NinebotCrypto.h/.cpp Logik:
-// _fw_data, CalcSha1Key, AesEcbEncrypt, Sha1, XOR16,
-// CryptoFirst, CryptoNext, CalcCrcFirstMsg, CalcCrcNextMsg,
-// Encrypt, Decrypt. :contentReference[oaicite:4]{index=4} :contentReference[oaicite:5]{index=5} :contentReference[oaicite:6]{index=6} :contentReference[oaicite:7]{index=7}
 class NinebotCrypto {
   constructor(name) {
-    this._fw_data = new Uint8Array([
-      0x97, 0xCF, 0xB8, 0x02, 0x84, 0x41, 0x43, 0xDE,
-      0x56, 0x00, 0x2B, 0x3B, 0x34, 0x78, 0x0A, 0x5D
-    ]);
-
-    this._random_ble_data = new Uint8Array(16);
-    this._random_app_data = new Uint8Array(16);
-    this._sha1_key = new Uint8Array(16);
-    this._name = new Uint8Array(16);
-    this._msg_it = 0;
-
-    const nameBytes = new TextEncoder().encode(name || "");
-    this._name.fill(0);
-    this._name.set(nameBytes.slice(0, 16), 0);
-
-    this._random_ble_data.fill(0);
-    this.calcSha1Key(this._name, this._fw_data);
+    this.name = name16(name);
+    this.randomBle = new Uint8Array(16);
+    this.randomApp = new Uint8Array(16);
+    this.key = sha1_16(this.name, fwData);
+    this.msgIt = 0;
   }
 
-  blockCopy(src, srcOffset, dst, dstOffset, length) {
-    if (src.length < srcOffset + length) throw new Error("BlockCopy src out of range");
-    if (dst.length < dstOffset + length) throw new Error("BlockCopy dst out of range");
-    for (let i = 0; i < length; i++) {
-      dst[dstOffset + i] = src[srcOffset + i];
-    }
+  setKeyFromNameAndBle(randomBleIn) {
+    this.randomBle.set(randomBleIn);
+    this.key = sha1_16(this.name, this.randomBle);
+    log("[KEY] key = SHA1(name16 + randomBle)[0:16] = " + hex(this.key));
   }
 
-  xor16(a, b) {
-    const out = new Uint8Array(16);
-    for (let i = 0; i < 16; i++) out[i] = a[i] ^ b[i];
-    return out;
-  }
-
-  aesEcbEncrypt(data, key) {
-    return aesEcbEncrypt16(data, key);
-  }
-
-  sha1(data32) {
-    return sha1_32_to_20(data32);
-  }
-
-  calcSha1Key(data1, data2) {
-    const data = new Uint8Array(32);
-    this.blockCopy(data1, 0, data, 0, 16);
-    this.blockCopy(data2, 0, data, 16, 16);
-    const hash = this.sha1(data);
-    this.blockCopy(hash, 0, this._sha1_key, 0, 16);
+  setFinalKey(randomAppIn, randomBleIn) {
+    this.randomApp.set(randomAppIn);
+    this.randomBle.set(randomBleIn);
+    this.key = sha1_16(this.randomApp, this.randomBle);
+    log("[KEY] final session key = SHA1(randomApp + randomBle)[0:16] = " + hex(this.key));
   }
 
   cryptoFirst(data) {
     const result = new Uint8Array(data.length);
-    let payloadLen = data.length;
-    let byteIdx = 0;
-
-    while (payloadLen > 0) {
-      const tmpLen = payloadLen <= 16 ? payloadLen : 16;
-
-      const xorData1 = new Uint8Array(16);
-      xorData1.fill(0);
-      this.blockCopy(data, byteIdx, xorData1, 0, tmpLen);
-
-      const aesKey = this.aesEcbEncrypt(this._fw_data, this._sha1_key);
-      const xorData2 = new Uint8Array(16);
-      this.blockCopy(aesKey, 0, xorData2, 0, 16);
-
-      const xorData = this.xor16(xorData1, xorData2);
-      this.blockCopy(xorData, 0, result, byteIdx, tmpLen);
-
-      payloadLen -= tmpLen;
-      byteIdx += tmpLen;
+    const ks = aesEcbEncrypt16(fwData, this.key);
+    for (let off=0; off<data.length; off += 16) {
+      const n = Math.min(16, data.length - off);
+      for (let i=0; i<n; i++) result[off+i] = data[off+i] ^ ks[i];
     }
-
     return result;
   }
 
   cryptoNext(data, msgIt) {
     const result = new Uint8Array(data.length);
+    const encData = new Uint8Array(16);
+    encData[0] = 1;
+    encData[1] = (msgIt >>> 24) & 0xff;
+    encData[2] = (msgIt >>> 16) & 0xff;
+    encData[3] = (msgIt >>> 8) & 0xff;
+    encData[4] = msgIt & 0xff;
+    encData.set(this.randomBle.slice(0, 8), 5);
+    encData[15] = 0;
 
-    const aesEncData = new Uint8Array(16);
-    aesEncData.fill(0);
-    aesEncData[0] = 1;
-    aesEncData[1] = (msgIt >>> 24) & 0xff;
-    aesEncData[2] = (msgIt >>> 16) & 0xff;
-    aesEncData[3] = (msgIt >>>  8) & 0xff;
-    aesEncData[4] = (msgIt >>>  0) & 0xff;
-    this.blockCopy(this._random_ble_data, 0, aesEncData, 5, 8);
-    aesEncData[15] = 0;
-
-    let payloadLen = data.length;
-    let byteIdx = 0;
-
-    while (payloadLen > 0) {
-      aesEncData[15] = (aesEncData[15] + 1) & 0xff;
-      const tmpLen = payloadLen <= 16 ? payloadLen : 16;
-
-      const xorData1 = new Uint8Array(16);
-      xorData1.fill(0);
-      this.blockCopy(data, byteIdx, xorData1, 0, tmpLen);
-
-      const aesKey = this.aesEcbEncrypt(aesEncData, this._sha1_key);
-      const xorData2 = new Uint8Array(16);
-      this.blockCopy(aesKey, 0, xorData2, 0, 16);
-
-      const xorData = this.xor16(xorData1, xorData2);
-      this.blockCopy(xorData, 0, result, byteIdx, tmpLen);
-
-      payloadLen -= tmpLen;
-      byteIdx += tmpLen;
+    for (let off=0; off<data.length; off += 16) {
+      encData[15] = (encData[15] + 1) & 0xff;
+      const ks = aesEcbEncrypt16(encData, this.key);
+      const n = Math.min(16, data.length - off);
+      for (let i=0; i<n; i++) result[off+i] = data[off+i] ^ ks[i];
     }
-
     return result;
   }
 
-  calcCrcFirstMsg(data) {
+  calcCrcFirst(payload) {
     let crc = 0;
-    for (const v of data) crc = (crc + v) & 0xffff;
+    for (const v of payload) crc = (crc + v) & 0xffff;
     crc = (~crc) & 0xffff;
-    return new Uint8Array([
-      crc & 0xff,
-      (crc >>> 8) & 0xff
-    ]);
+    return u8([crc & 0xff, (crc >>> 8) & 0xff]);
   }
 
-  calcCrcNextMsg(data, msgIt) {
-    const aesEncData = new Uint8Array(16);
-    aesEncData.fill(0);
+  calcCrcNext(frame, msgIt) {
+    const payloadLen = frame.length - 3;
+    const encData = new Uint8Array(16);
+    encData[0] = 89;
+    encData[1] = (msgIt >>> 24) & 0xff;
+    encData[2] = (msgIt >>> 16) & 0xff;
+    encData[3] = (msgIt >>> 8) & 0xff;
+    encData[4] = msgIt & 0xff;
+    encData.set(this.randomBle.slice(0,8), 5);
+    encData[15] = payloadLen & 0xff;
 
-    let payloadLen = data.length - 3;
+    let xor2 = aesEcbEncrypt16(encData, this.key);
+    let xor1 = new Uint8Array(16);
+    xor1.set(frame.slice(0,3), 0);
+    let aesKey = aesEcbEncrypt16(xor16(xor1, xor2), this.key);
+    xor2 = aesKey;
+
     let byteIdx = 3;
-
-    aesEncData[0] = 89;
-    aesEncData[1] = (msgIt >>> 24) & 0xff;
-    aesEncData[2] = (msgIt >>> 16) & 0xff;
-    aesEncData[3] = (msgIt >>>  8) & 0xff;
-    aesEncData[4] = (msgIt >>>  0) & 0xff;
-    this.blockCopy(this._random_ble_data, 0, aesEncData, 5, 8);
-    aesEncData[15] = payloadLen & 0xff;
-
-    let aesKey = this.aesEcbEncrypt(aesEncData, this._sha1_key);
-    let xorData2 = new Uint8Array(16);
-    this.blockCopy(aesKey, 0, xorData2, 0, 16);
-
-    const xorData1a = new Uint8Array(16);
-    xorData1a.fill(0);
-    this.blockCopy(data, 0, xorData1a, 0, 3);
-
-    let xorData = this.xor16(xorData1a, xorData2);
-    aesKey = this.aesEcbEncrypt(xorData, this._sha1_key);
-    this.blockCopy(aesKey, 0, xorData2, 0, 16);
-
-    while (payloadLen > 0) {
-      const tmpLen = payloadLen <= 16 ? payloadLen : 16;
-
-      const xorData1 = new Uint8Array(16);
-      xorData1.fill(0);
-      this.blockCopy(data, byteIdx, xorData1, 0, tmpLen);
-
-      xorData = this.xor16(xorData1, xorData2);
-      aesKey = this.aesEcbEncrypt(xorData, this._sha1_key);
-      this.blockCopy(aesKey, 0, xorData2, 0, 16);
-
-      payloadLen -= tmpLen;
-      byteIdx += tmpLen;
+    let left = payloadLen;
+    while (left > 0) {
+      const tmp = Math.min(16, left);
+      xor1 = new Uint8Array(16);
+      xor1.set(frame.slice(byteIdx, byteIdx + tmp), 0);
+      aesKey = aesEcbEncrypt16(xor16(xor1, xor2), this.key);
+      xor2 = aesKey;
+      left -= tmp;
+      byteIdx += tmp;
     }
 
-    aesEncData[0] = 1;
-    aesEncData[15] = 0;
-
-    aesKey = this.aesEcbEncrypt(aesEncData, this._sha1_key);
-
-    const xorData1b = new Uint8Array(16);
-    this.blockCopy(aesKey, 0, xorData1b, 0, 16);
-
-    xorData = this.xor16(xorData1b, xorData2);
-    return new Uint8Array([xorData[0], xorData[1], xorData[2], xorData[3]]);
+    encData[0] = 1;
+    encData[15] = 0;
+    const k = aesEcbEncrypt16(encData, this.key);
+    const out = xor16(k, xor2);
+    return out.slice(0,4);
   }
 
   decrypt(data) {
-    if (!(data instanceof Uint8Array)) data = new Uint8Array(data);
-    if (data.length < 9) throw new Error("Decrypt: Paket zu kurz");
-
+    if (data.length < 9) return null;
     const decrypted = new Uint8Array(data.length - 6);
-    this.blockCopy(data, 0, decrypted, 0, 3);
+    decrypted.set(data.slice(0,3), 0);
 
-    let newMsgIt = this._msg_it >>> 0;
-    if ((newMsgIt & 0x0008000) > 0 && ((data[data.length - 2] >>> 7) === 0)) {
-      newMsgIt = (newMsgIt + 0x0010000) >>> 0;
-    }
+    let newMsgIt = this.msgIt;
+    if ((newMsgIt & 0x0008000) > 0 && ((data[data.length - 2] >>> 7) === 0)) newMsgIt += 0x0010000;
+    newMsgIt = (newMsgIt & 0xffff0000) + (data[data.length - 2] << 8) + data[data.length - 1];
 
-    newMsgIt =
-      ((newMsgIt & 0xFFFF0000) >>> 0) +
-      ((data[data.length - 2] << 8) >>> 0) +
-      (data[data.length - 1] >>> 0);
-
-    const payloadLen = data.length - 9;
-    let payload = new Uint8Array(payloadLen);
-    this.blockCopy(data, 3, payload, 0, payloadLen);
-
+    let payload = data.slice(3, data.length - 6);
     if (newMsgIt === 0) {
-      const payloadD = this.cryptoFirst(payload);
-      const payloadE = this.cryptoFirst(payloadD);
-      if (!equalsBytes(payloadE, payload)) {
-        log("Decrypt-Hinweis: First-Block Reencrypt-Check nicht gleich");
-      }
-
       payload = this.cryptoFirst(payload);
-      this.blockCopy(payload, 0, decrypted, 3, payload.length);
+      decrypted.set(payload, 3);
 
-      if (
-        decrypted.length >= 23 &&
-        decrypted[0] === 0x5A && decrypted[1] === 0xA5 && decrypted[2] === 0x1E &&
-        decrypted[3] === 0x21 && decrypted[4] === 0x3E && decrypted[5] === 0x5B
-      ) {
-        this.blockCopy(decrypted, 7, this._random_ble_data, 0, 16);
-        this.calcSha1Key(this._name, this._random_ble_data);
-        log("Crypto: random_ble_data übernommen, SHA1-Key aktualisiert");
+      if (match(decrypted, [0x5a,0xa5,0x1e,0x21,0x3e,0x5b])) {
+        const rb = decrypted.slice(7,23);
+        log("[AUTH] randomBle = " + hex(rb));
+        this.setKeyFromNameAndBle(rb);
+        randomBle.set(rb);
+        $("authBtn").disabled = false;
+        setAuth("BLE random received - press scooter power, then click Send App Auth Random");
       }
-    } else if (newMsgIt > 0 && newMsgIt > this._msg_it) {
-      const payloadD = this.cryptoNext(payload, newMsgIt);
-      const payloadE = this.cryptoNext(payloadD, newMsgIt);
-      if (!equalsBytes(payloadE, payload)) {
-        log("Decrypt-Hinweis: Next-Block Reencrypt-Check nicht gleich");
-      }
-
+    } else if (newMsgIt > this.msgIt) {
       payload = this.cryptoNext(payload, newMsgIt);
-      this.blockCopy(payload, 0, decrypted, 3, payload.length);
+      decrypted.set(payload, 3);
 
-      if (
-        decrypted.length >= 7 &&
-        decrypted[0] === 0x5A && decrypted[1] === 0xA5 && decrypted[2] === 0x00 &&
-        decrypted[3] === 0x21 && decrypted[4] === 0x3E && decrypted[5] === 0x5C &&
-        decrypted[6] === 0x01
-      ) {
-        this.calcSha1Key(this._random_app_data, this._random_ble_data);
-        log("Crypto: SHA1-Key auf app_random + ble_random umgestellt");
+      if (match(decrypted, [0x5a,0xa5,0x00,0x21,0x3e,0x5c,0x01])) {
+        this.setFinalKey(randomApp, randomBle);
+        setAuth("authenticated / final session key set");
       }
-
-      this._msg_it = newMsgIt >>> 0;
+      this.msgIt = newMsgIt;
+      $("msgItOut").textContent = String(this.msgIt);
     }
-
     return decrypted;
   }
 
-  encrypt(data) {
-    if (!(data instanceof Uint8Array)) data = new Uint8Array(data);
-    if (data.length < 3) throw new Error("Encrypt: Daten zu kurz");
+  encrypt(frame) {
+    const payloadLen = frame.length - 3;
+    let payload = frame.slice(3);
+    let out;
 
-    const encrypted = new Uint8Array(152);
-    this.blockCopy(data, 0, encrypted, 0, 3);
-
-    const payloadLen = data.length - 3;
-    let payload = new Uint8Array(payloadLen);
-    this.blockCopy(data, 3, payload, 0, payloadLen);
-
-    if (this._msg_it === 0) {
-      const crc = this.calcCrcFirstMsg(payload);
+    if (this.msgIt === 0) {
+      const crc = this.calcCrcFirst(payload);
       payload = this.cryptoFirst(payload);
-
-      this.blockCopy(payload, 0, encrypted, 3, payload.length);
-
-      encrypted[payloadLen + 3] = 0;
-      encrypted[payloadLen + 4] = 0;
-      encrypted[payloadLen + 5] = crc[0];
-      encrypted[payloadLen + 6] = crc[1];
-      encrypted[payloadLen + 7] = 0;
-      encrypted[payloadLen + 8] = 0;
-
-      this._msg_it = (this._msg_it + 1) >>> 0;
-      return encrypted.slice(0, payloadLen + 9);
+      out = new Uint8Array(payloadLen + 9);
+      out.set(frame.slice(0,3), 0);
+      out.set(payload, 3);
+      out[payloadLen+3] = 0;
+      out[payloadLen+4] = 0;
+      out[payloadLen+5] = crc[0];
+      out[payloadLen+6] = crc[1];
+      out[payloadLen+7] = 0;
+      out[payloadLen+8] = 0;
+      this.msgIt++;
     } else {
-      this._msg_it = (this._msg_it + 1) >>> 0;
+      this.msgIt++;
+      const crc = this.calcCrcNext(frame, this.msgIt);
+      payload = this.cryptoNext(payload, this.msgIt);
+      out = new Uint8Array(payloadLen + 9);
+      out.set(frame.slice(0,3), 0);
+      out.set(payload, 3);
+      out[payloadLen+3] = crc[0];
+      out[payloadLen+4] = crc[1];
+      out[payloadLen+5] = crc[2];
+      out[payloadLen+6] = crc[3];
+      out[payloadLen+7] = (this.msgIt >>> 8) & 0xff;
+      out[payloadLen+8] = this.msgIt & 0xff;
 
-      const crc = this.calcCrcNextMsg(data, this._msg_it);
-      payload = this.cryptoNext(payload, this._msg_it);
-
-      this.blockCopy(payload, 0, encrypted, 3, payload.length);
-
-      encrypted[payloadLen + 3] = crc[0];
-      encrypted[payloadLen + 4] = crc[1];
-      encrypted[payloadLen + 5] = crc[2];
-      encrypted[payloadLen + 6] = crc[3];
-      encrypted[payloadLen + 7] = (this._msg_it >>> 8) & 0xff;
-      encrypted[payloadLen + 8] = this._msg_it & 0xff;
-
-      if (
-        data.length >= 23 &&
-        data[0] === 0x5A && data[1] === 0xA5 && data[2] === 0x10 &&
-        data[3] === 0x3E && data[4] === 0x21 && data[5] === 0x5C && data[6] === 0x00
-      ) {
-        this.blockCopy(data, 7, this._random_app_data, 0, 16);
-        log("Crypto: random_app_data gespeichert");
+      if (match(frame, [0x5a,0xa5,0x10,0x3e,0x21,0x5c,0x00])) {
+        randomApp.set(frame.slice(7,23));
+        this.randomApp.set(randomApp);
+        log("[AUTH] randomApp = " + hex(randomApp));
       }
-
-      return encrypted.slice(0, payloadLen + 9);
     }
+    $("msgItOut").textContent = String(this.msgIt);
+    return out;
   }
 }
 
-// =================== BLE-Stack ===================
-let device = null;
-let server = null;
-let service = null;
-let charA = null;
-let charB = null;
-let MsgCrypto = null;
+function match(buf, arr) {
+  if (!buf || buf.length < arr.length) return false;
+  for (let i=0; i<arr.length; i++) if (buf[i] !== arr[i]) return false;
+  return true;
+}
+
+function parsePlain(frame) {
+  if (!frame || frame.length < 6 || frame[0] !== 0x5a || frame[1] !== 0xa5) return;
+
+  if (match(frame, [0x5a,0xa5,0x1e,0x21,0x3e,0x5b])) {
+    log("[DETECT] Auth challenge / scooter random packet. Press power button now if required.");
+  }
+
+  if (match(frame, [0x5a,0xa5,0x0e,0x16,0x3e,0x04,0x10])) {
+    const serialBytes = frame.slice(7);
+    const serial = ascii(serialBytes).replace(/\.+$/g, "");
+    $("serialOut").textContent = serial;
+    log("[SERIAL] " + serial);
+  }
+
+  if (match(frame, [0x5a,0xa5,0x02]) && frame.length >= 9 && frame[6] === 0x48) {
+    log("[SPEED_REG_RESPONSE] max_speed_sports = " + frame[8] + " km/h (raw 00 " + frame[8].toString(16).padStart(2,"0") + ")");
+  }
+}
+
+async function sendPlain(frame) {
+  if (!cryptoState) throw new Error("crypto not initialized");
+  const enc = cryptoState.encrypt(frame);
+  log("\n[TX PLAIN] " + hex(frame));
+  log("[TX ENCRYPTED] " + hex(enc));
+  await txChar.writeValueWithoutResponse(enc);
+}
+
+async function sendAppAuthRandom() {
+  if (!cryptoState) return alert("Not connected");
+  crypto.getRandomValues(randomApp);
+  const p = new Uint8Array(23);
+  p.set([0x5a,0xa5,0x10,0x3e,0x21,0x5c,0x00], 0);
+  p.set(randomApp, 7);
+  await sendPlain(p);
+  setAuth("app random sent - waiting for 5C 01 ACK");
+}
 
 async function connect() {
-  try {
-    if (!navigator.bluetooth) {
-      throw new Error("Web Bluetooth wird in diesem Browser nicht unterstützt");
-    }
-
-    setStatus("Device wird gesucht...", "warn");
-    $("btnConnect").disabled = true;
-
-    device = await navigator.bluetooth.requestDevice({
-      filters: [{ services: [SHU_NRF_SERVICE] }],
-      optionalServices: [SHU_NRF_SERVICE]
-    });
-
-    $("deviceName").textContent = device.name || "(unnamed)";
-    device.addEventListener("gattserverdisconnected", onDisconnect);
-
-    setStatus("BLE-Verbindung öffnen...", "warn");
-    server = await device.gatt.connect();
-
-    setStatus("Service laden...", "warn");
-    service = await server.getPrimaryService(SHU_NRF_SERVICE);
-    charA = await service.getCharacteristic(SHU_NRF_CHAR_A);
-    charB = await service.getCharacteristic(SHU_NRF_CHAR_B);
-
-    try {
-      await charB.startNotifications();
-      charB.addEventListener("characteristicvaluechanged", onNotify);
-      log("Notifications auf CHAR_B gestartet");
-    } catch (e) {
-      log("startNotifications fehlgeschlagen: " + e.message);
-    }
-
-    $("btnDisconnect").disabled = false;
-    $("btnSendPlain").disabled = false;
-    $("btnSendEncrypted").disabled = false;
-    $("pairingSection").hidden = false;
-
-    MsgCrypto = new NinebotCrypto("NinebotBleApp");
-
-    setStatus("✅ Verbunden – starte Pairing...", "");
-    log("Device verbunden: " + (device.name || "(unnamed)"));
-    startPairing();
-  } catch (e) {
-    setStatus("❌ Fehler", "error");
-    log("Connect-Fehler: " + e.message);
-    $("btnConnect").disabled = false;
-  }
-}
-
-async function disconnect() {
-  try {
-    clearInterval(timer5c);
-    timer5c = null;
-    pairingFinished = false;
-
-    if (charB) {
-      try {
-        charB.removeEventListener("characteristicvaluechanged", onNotify);
-      } catch {}
-      try {
-        await charB.stopNotifications();
-      } catch {}
-    }
-
-    if (device?.gatt?.connected) {
-      device.gatt.disconnect();
-    }
-  } catch (e) {
-    log("Disconnect-Fehler: " + e.message);
-  } finally {
-    onDisconnect();
-  }
-}
-
-function onDisconnect() {
-  clearInterval(timer5c);
-  timer5c = null;
-  pairingFinished = false;
-
-  device = null;
-  server = null;
-  service = null;
-  charA = null;
-  charB = null;
-  MsgCrypto = null;
-
-  $("deviceName").textContent = "-";
-  $("btnDisconnect").disabled = true;
-  $("btnConnect").disabled = false;
-  $("btnSendPlain").disabled = true;
-  $("btnSendEncrypted").disabled = true;
-  $("pairingSection").hidden = true;
-
-  setStatus("Trennung", "");
-  log("Device getrennt");
-}
-
-function onNotify(event) {
-  const raw = new Uint8Array(event.target.value.buffer.slice(0));
-  log("Raw NOTIFY: " + bytesToHex(raw));
-
-  let decrypted = raw;
-  if (MsgCrypto) {
-    try {
-      decrypted = MsgCrypto.decrypt(raw);
-      log("Decrypted : " + bytesToHex(decrypted));
-    } catch (e) {
-      log("Decrypt-Fehler: " + e.message);
-    }
+  if (!navigator.bluetooth) {
+    alert("WebBluetooth not supported. Use Chrome/Edge on HTTPS or localhost.");
+    return;
   }
 
-  try {
-    handleReply(decrypted, raw);
-  } catch (e) {
-    log("handleReply-Fehler: " + e.message);
+  let name = $("nameInput").value.trim();
+  if (!name) {
+    name = prompt("Scooter BLE name für Key eingeben:") || "";
+    $("nameInput").value = name;
   }
-}
+  cryptoState = new NinebotCrypto(name);
+  log("[KEY] initial key = SHA1(name16 + fwData)[0:16] = " + hex(cryptoState.key));
 
-async function writeBle(data) {
-  if (!charA) throw new Error("Write-Characteristic nicht verfügbar");
-
-  if (charA.writeValueWithoutResponse) {
-    await charA.writeValueWithoutResponse(data);
-  } else if (charA.writeValue) {
-    await charA.writeValue(data);
-  } else {
-    throw new Error("Characteristic kann nicht geschrieben werden");
-  }
-}
-
-async function sendPacketRaw(label, data) {
-  await writeBle(data);
-  log(`SEND RAW ${label}: ${bytesToHex(data)}`);
-}
-
-async function sendPacket(label, plaintext) {
-  if (!MsgCrypto) throw new Error("Crypto nicht initialisiert");
-  const encrypted = MsgCrypto.encrypt(plaintext);
-  await writeBle(encrypted);
-  log(`SEND ENC ${label}: PLAIN=${bytesToHex(plaintext)} | ENC=${bytesToHex(encrypted)}`);
-}
-
-// =================== Pairing-Logik ===================
-let pairingState = 0;   // 0=initial, 1=5B-done, 2=5C-running, 3=5D-done
-let pairingFinished = false;
-let sn = null;          // 14 bytes
-let key5c = null;       // 16 bytes random key
-let timer5c = null;
-
-function startPairing() {
-  pairingState = 0;
-  pairingFinished = false;
-  sn = null;
-  key5c = null;
-
-  clearInterval(timer5c);
-  timer5c = null;
-
-  setPairingHtml(`
-    <h3>Initialisierung</h3>
-    <p>Starte 0x5B-Initialisierung …</p>
-  `);
-
-  send5B().catch(e => {
-    log("send5B-Fehler: " + e.message);
-    setPairingHtml(`<p>❌ 5B konnte nicht gesendet werden.</p>`, "error");
+  setStatus("requesting device...");
+  device = await navigator.bluetooth.requestDevice({
+    filters: [{ services: [NUS_SERVICE] }],
+    optionalServices: [NUS_SERVICE]
   });
-}
+  $("deviceName").textContent = device.name || "(no name)";
+  log("[BLE] selected: " + (device.name || "(no name)"));
 
-async function send5B() {
-  const data = hexToBytes("3e215b00");
-  await sendPacketRaw("5B", data);
-}
+  setStatus("connecting...");
+  server = await device.gatt.connect();
+  service = await server.getPrimaryService(NUS_SERVICE);
+  txChar = await service.getCharacteristic(NUS_WRITE);
+  rxChar = await service.getCharacteristic(NUS_NOTIFY);
 
-async function send5C() {
-  const key = new Uint8Array(16);
-  crypto.getRandomValues(key);
-  key5c = key;
-
-  const bundle = new Uint8Array([
-    0x5A, 0xA5, 0x10, 0x3E, 0x21, 0x5C, 0x00,
-    ...key5c
-  ]);
-
-  await sendPacket("5C", bundle);
-}
-
-async function send5D() {
-  if (!sn || sn.length !== 14) {
-    setPairingHtml(`
-      <h3>Fehler</h3>
-      <p>❌ S/N nicht empfangen – 5D wird übersprungen.</p>
-    `, "error");
-    return;
-  }
-
-  const bundle = new Uint8Array([
-    0x5A, 0xA5, 0x0E, 0x3E, 0x21, 0x5D, 0x00,
-    ...sn
-  ]);
-
-  log("Sende 5D dreimal");
-  for (let i = 0; i < 3; i++) {
-    setTimeout(() => {
-      sendPacket("5D", bundle).catch(e => log("send5D-Fehler: " + e.message));
-    }, 500 + i * 800);
-  }
-}
-
-function handleReply(data, raw) {
-  const d = bytesToHex(data);
-  const r = bytesToHex(raw);
-
-  // 5B Antwort
-  if (d.startsWith("213e5b") || d.includes("213e5b")) {
-    log("5B-Antwort erkannt");
-
-    // Versuche 14 Byte S/N zu extrahieren wie in deinem Code: data.slice(16, 30)
-    if (data.length >= 30) {
-      sn = data.slice(16, 30);
-      log("S/N extrahiert: " + bytesToHex(sn));
-
-      setPairingHtml(`
-        <h3>5B erfolgreich</h3>
-        <p>✅ S/N extrahiert.</p>
-        <p>S/N: <code>${bytesToHex(sn)}</code></p>
-        <p>Drücke jetzt den Power-Knopf am Scooter.</p>
-        <p>5C wird jede Sekunde gesendet, bis die Bestätigung kommt.</p>
-      `);
+  await rxChar.startNotifications();
+  rxChar.addEventListener("characteristicvaluechanged", ev => {
+    const raw = new Uint8Array(ev.target.value.buffer.slice(0));
+    log("\n[RX ENCRYPTED] " + hex(raw));
+    const plain = cryptoState.decrypt(raw);
+    if (plain) {
+      log("[RX PLAIN] " + hex(plain) + " | " + ascii(plain));
+      parsePlain(plain);
     } else {
-      setPairingHtml(`
-        <h3>5B empfangen</h3>
-        <p>⚠ Antwort erkannt, aber S/N konnte nicht sicher extrahiert werden.</p>
-        <p>Power-Knopf drücken. 5C wird trotzdem gesendet.</p>
-      `, "warn");
+      log("[RX PLAIN] <not decrypted>");
     }
+  });
 
-    pairingState = 1;
-
-    clearInterval(timer5c);
-    timer5c = setInterval(() => {
-      if (!pairingFinished) {
-        send5C().catch(e => log("5C-Loop Fehler: " + e.message));
-      }
-    }, 1000);
-
-    return;
-  }
-
-  // 5C bestätigt
-  if (
-    d.startsWith("213e5c01") || d.includes("213e5c01") ||
-    r.startsWith("213e5c01") || r.includes("213e5c01")
-  ) {
-    log("5C-01 erkannt (Power-Button bestätigt)");
-    pairingState = 2;
-
-    clearInterval(timer5c);
-    timer5c = null;
-
-    setPairingHtml(`
-      <h3>5C bestätigt</h3>
-      <p>✅ Power-Button wurde erkannt.</p>
-      <p>Jetzt wird 5D gesendet …</p>
-    `);
-
-    send5D().catch(e => log("send5D-Fehler: " + e.message));
-    return;
-  }
-
-  // 5D bestätigt / Pairing fertig
-  if (
-    d.startsWith("213e5d01") || d.includes("213e5d01") ||
-    d.includes("5d01") ||
-    r.startsWith("213e5d01") || r.includes("213e5d01")
-  ) {
-    log("5D-Bestätigung erkannt");
-    pairingState = 3;
-    pairingFinished = true;
-
-    clearInterval(timer5c);
-    timer5c = null;
-
-    setPairingHtml(`
-      <h3>Pairing abgeschlossen</h3>
-      <p>✅ 5D bestätigt – Crypto-Link ist aktiv.</p>
-      <p>Du kannst jetzt verschlüsselte Pakete senden.</p>
-    `);
-
-    setStatus("✅ Pairing abgeschlossen", "");
-    return;
-  }
+  setStatus("connected / notifications enabled");
+  setAuth("waiting for auth challenge 5A A5 1E 21 3E 5B");
+  log("[BLE] connected. Wait for auth challenge, then press scooter power if needed.");
 }
 
-// =================== UI Actions ===================
-$("btnConnect").addEventListener("click", () => {
-  connect().catch(e => log("Connect Fehler: " + e.message));
-});
-
-$("btnDisconnect").addEventListener("click", () => {
-  disconnect().catch(e => log("Disconnect Fehler: " + e.message));
-});
-
-$("btnSendPlain").addEventListener("click", async () => {
-  try {
-    const data = hexToBytes($("payloadHex").value);
-    if (!data.length) throw new Error("Bitte Hex eingeben");
-    await sendPacketRaw("MANUAL-RAW", data);
-  } catch (e) {
-    log("Manual RAW Fehler: " + e.message);
-  }
-});
-
-$("btnSendEncrypted").addEventListener("click", async () => {
-  try {
-    const data = hexToBytes($("payloadHex").value);
-    if (!data.length) throw new Error("Bitte Hex eingeben");
-    await sendPacket("MANUAL-ENC", data);
-  } catch (e) {
-    log("Manual ENC Fehler: " + e.message);
-  }
-});
-
-log("App bereit");
+$("connectBtn").onclick = () => connect().catch(e => { console.error(e); log("[ERR] " + e.message); setStatus("error"); });
+$("authBtn").onclick = () => sendAppAuthRandom().catch(e => { console.error(e); log("[ERR] " + e.message); });
+$("clearBtn").onclick = () => $("log").textContent = "";
 </script>
 </body>
 </html>
