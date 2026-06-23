@@ -2,11 +2,143 @@
 <html lang="de">
 <head>
   <meta charset="utf-8">
-  <meta http-equiv="refresh" content="0; url=vescometer.html">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>VESC-O-Meter</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#060202">
+  <title>kWSyndikat VESC-O-Meter</title>
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <a href="vescometer.html">VESC-O-Meter öffnen</a>
+  <canvas id="hellbg" aria-hidden="true"></canvas>
+  <div class="heat-top" aria-hidden="true"></div>
+  <div class="heat-bottom" aria-hidden="true"></div>
+
+  <nav class="nav">
+    <a class="nav-logo" href="https://kwsyndikat.github.io/">kWSyndikat</a>
+    <div class="nav-links">
+      <a href="https://kwsyndikat.github.io/">Home</a>
+      <a href="https://kwsyndikat.github.io/#install">Install</a>
+      <a class="nav-pill" href="vescometer.html">VESC Meter</a>
+    </div>
+  </nav>
+
+  <main class="meter-page">
+    <section class="dash-subsite" aria-label="VESC-O-Meter Dashboard">
+      <header class="dash-head">
+        <div>
+          <div class="hero-chip"><span class="chip-dot"></span>VESC 7.0 BLE Cockpit</div>
+          <h1>VESC-O-Meter</h1>
+        </div>
+        <div class="actions">
+          <button id="demoToggle" class="btn btn-outline" type="button" title="Demo-Modus umschalten" aria-label="Demo-Modus umschalten">Demo</button>
+          <button id="connectButton" class="btn btn-red" type="button" title="VESC per BLE verbinden" aria-label="VESC per BLE verbinden">Connect</button>
+        </div>
+      </header>
+
+      <section class="cockpit">
+        <article class="speed-card">
+          <div class="status-row">
+            <span id="connectionState" class="state-pill offline">Offline</span>
+            <span id="packetState">Hold km/h for GPS</span>
+          </div>
+
+          <button id="speedHold" class="speed-button" type="button" aria-label="Geschwindigkeitsquelle halten zum Wechseln">
+            <svg class="speed-ring" viewBox="0 0 240 240" role="img" aria-label="Speed gauge">
+              <circle class="ring-bg" cx="120" cy="120" r="99"></circle>
+              <circle id="speedArc" class="ring-value" cx="120" cy="120" r="99"></circle>
+            </svg>
+            <span class="hold-progress" aria-hidden="true"></span>
+            <span class="speed-readout">
+              <span id="speedValue">0</span>
+              <small id="speedSource">VESC km/h</small>
+            </span>
+          </button>
+
+          <div class="voltage-block">
+            <div>
+              <span>Battery Voltage</span>
+              <strong><span id="batteryValue">--</span> V</strong>
+            </div>
+            <div class="battery-shell" aria-hidden="true">
+              <div id="batteryFill" class="battery-fill"></div>
+            </div>
+            <small id="batteryRange">waiting for VESC limits</small>
+          </div>
+        </article>
+
+        <article class="priority-grid">
+          <div class="readout wide">
+            <span>Power</span>
+            <strong><span id="powerValue">--</span> W</strong>
+          </div>
+          <div class="readout">
+            <span>Current</span>
+            <strong><span id="currentValue">--</span> A</strong>
+          </div>
+          <div class="readout">
+            <span>Duty</span>
+            <strong><span id="dutyValue">--</span>%</strong>
+          </div>
+          <div class="readout">
+            <span>ESC</span>
+            <strong><span id="escTemp">--</span>C</strong>
+          </div>
+          <div class="readout">
+            <span>Motor</span>
+            <strong><span id="motorTemp">--</span>C</strong>
+          </div>
+        </article>
+      </section>
+
+      <section class="compact-telemetry" aria-label="Weitere Telemetrie">
+        <article>
+          <span>Trip</span>
+          <strong><span id="distanceValue">0.00</span> km</strong>
+        </article>
+        <article>
+          <span>Ah Drawn</span>
+          <strong><span id="ahValue">0.000</span> Ah</strong>
+        </article>
+        <article>
+          <span>Consumption</span>
+          <strong><span id="consumptionValue">--</span></strong>
+          <small>Wh/km</small>
+        </article>
+        <article>
+          <span>Mosfet Heat</span>
+          <strong><span id="mosfetNow">--</span>C</strong>
+          <small>avg <span id="mosfetAvg">--</span> / max <span id="mosfetMax">--</span></small>
+        </article>
+        <article>
+          <span>RPM</span>
+          <strong><span id="rpmValue">--</span></strong>
+        </article>
+        <article>
+          <span>Wh Trip</span>
+          <strong><span id="whTrip">0.0</span></strong>
+        </article>
+      </section>
+
+      <section class="config-strip" aria-label="Automatisch gelesene VESC-Konfiguration">
+        <div>
+          <span>Motor poles</span>
+          <strong id="configPoles">auto</strong>
+        </div>
+        <div>
+          <span>Gear</span>
+          <strong id="configGear">auto</strong>
+        </div>
+        <div>
+          <span>Wheel</span>
+          <strong id="configWheel">auto</strong>
+        </div>
+        <div>
+          <span>App cfg</span>
+          <strong id="configApp">pending</strong>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
 </body>
 </html>
