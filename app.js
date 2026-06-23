@@ -12,7 +12,14 @@ const VESC = {
 
 const els = {
   connectButton: document.getElementById("connectButton"),
-  demoToggle: document.getElementById("demoToggle"),
+  disconnectButton: document.getElementById("disconnectButton"),
+  gateState: document.getElementById("gateState"),
+  profileButton: document.getElementById("profileButton"),
+  profilePanel: document.getElementById("profilePanel"),
+  profileClose: document.getElementById("profileClose"),
+  profileState: document.getElementById("profileState"),
+  panicUntilReboot: document.getElementById("panicUntilReboot"),
+  panicPermanent: document.getElementById("panicPermanent"),
   connectionState: document.getElementById("connectionState"),
   packetState: document.getElementById("packetState"),
   speedHold: document.getElementById("speedHold"),
@@ -21,6 +28,7 @@ const els = {
   speedValue: document.getElementById("speedValue"),
   batteryValue: document.getElementById("batteryValue"),
   batteryFill: document.getElementById("batteryFill"),
+  batteryPercent: document.getElementById("batteryPercent"),
   batteryRange: document.getElementById("batteryRange"),
   powerValue: document.getElementById("powerValue"),
   currentValue: document.getElementById("currentValue"),
@@ -38,7 +46,8 @@ const els = {
   configPoles: document.getElementById("configPoles"),
   configGear: document.getElementById("configGear"),
   configWheel: document.getElementById("configWheel"),
-  configApp: document.getElementById("configApp")
+  configApp: document.getElementById("configApp"),
+  configBattery: document.getElementById("configBattery")
 };
 
 const state = {
@@ -49,6 +58,9 @@ const state = {
   demoTimer: 0,
   holdTimer: 0,
   holdRaf: 0,
+  tapTimes: [],
+  swipeStartX: 0,
+  swipeStartY: 0,
   watchId: null,
   writeQueue: Promise.resolve(),
   demo: false,
@@ -70,6 +82,8 @@ const state = {
     maxVoltage: 50.4,
     batteryCutStart: null,
     batteryCutEnd: null,
+    batteryCells: null,
+    batteryAh: null,
     maxErpm: 60000,
     mcconf: false,
     appconf: false,
@@ -78,11 +92,18 @@ const state = {
 };
 
 els.connectButton.addEventListener("click", connectVesc);
-els.demoToggle.addEventListener("click", toggleDemo);
+els.disconnectButton.addEventListener("click", disconnectVesc);
+els.profileButton.addEventListener("click", () => toggleProfiles(true));
+els.profileClose.addEventListener("click", () => toggleProfiles(false));
+els.panicUntilReboot.addEventListener("click", () => requestPanicProfile("until reboot"));
+els.panicPermanent.addEventListener("click", () => requestPanicProfile("permanently"));
 els.speedHold.addEventListener("pointerdown", startSpeedHold);
 els.speedHold.addEventListener("pointerup", cancelSpeedHold);
 els.speedHold.addEventListener("pointercancel", cancelSpeedHold);
 els.speedHold.addEventListener("pointerleave", cancelSpeedHold);
+els.speedHold.addEventListener("click", trackSpeedTap);
+document.addEventListener("touchstart", beginSwipe, { passive: true });
+document.addEventListener("touchend", endSwipe, { passive: true });
 
 initHellCanvas();
 renderConfig();
@@ -94,8 +115,8 @@ async function connectVesc() {
   }
 
   try {
-    stopDemo();
     setStatus("Search", "Select VESC BLE device", "demo");
+    setGateState("Select VESC BLE device");
 
     state.device = await navigator.bluetooth.requestDevice({
       filters: [{ services: [VESC.serviceUuid] }],
@@ -112,17 +133,33 @@ async function connectVesc() {
     state.tx.addEventListener("characteristicvaluechanged", handleNotification);
 
     setStatus("Online", state.device.name || "VESC connected", "online");
+    document.body.classList.add("connected");
+    setGateState("Connected");
     await requestVescConfig();
     pollValues();
     state.pollTimer = window.setInterval(pollValues, 220);
   } catch (error) {
     setStatus("Offline", error.message || "BLE connection cancelled", "offline");
+    setGateState(error.message || "BLE connection cancelled");
   }
 }
 
 function handleDisconnect() {
   window.clearInterval(state.pollTimer);
+  state.rx = null;
+  state.tx = null;
+  document.body.classList.remove("connected");
+  toggleProfiles(false);
   setStatus("Offline", "VESC disconnected", "offline");
+  setGateState("Disconnected");
+}
+
+function disconnectVesc() {
+  if (state.device?.gatt?.connected) {
+    state.device.gatt.disconnect();
+    return;
+  }
+  handleDisconnect();
 }
 
 async function requestVescConfig() {
@@ -386,8 +423,113 @@ function parseMcconf(payload) {
   if (maxErpm > 1000) {
     state.config.maxErpm = maxErpm;
   }
+  parseMcconfSetup(payload);
   state.config.mcconf = true;
   renderConfig();
+}
+
+function parseMcconfSetup(payload) {
+  try {
+    let i = 1;
+    const byte = () => payload[i++];
+    const skip = (count) => { i += count; };
+    const auto = () => readFloat32Auto(payload, (next) => { i = next; }, i);
+    const f16 = () => { i += 2; };
+
+    skip(4);
+    skip(4);
+    for (let n = 0; n < 4; n++) auto();
+    f16(); f16();
+    auto(); auto();
+    const maxErpm = auto();
+    f16();
+    auto(); auto();
+    for (let n = 0; n < 6; n++) f16();
+    skip(5);
+    f16(); f16(); f16();
+    auto(); auto();
+    f16(); f16(); f16();
+    byte();
+    auto(); auto(); auto();
+    f16(); f16();
+    auto(); auto();
+    skip(8);
+    for (let n = 0; n < 5; n++) auto();
+    byte();
+    auto(); auto();
+    byte();
+    for (let n = 0; n < 8; n++) auto();
+    f16();
+    auto(); auto();
+    f16();
+    auto(); auto();
+    for (let n = 0; n < 7; n++) f16();
+    skip(8);
+    auto(); auto(); auto();
+    skip(3);
+    f16();
+    byte();
+    f16(); f16();
+    skip(3);
+    f16();
+    byte();
+    for (let n = 0; n < 6; n++) f16();
+    auto(); auto();
+    skip(2);
+    auto();
+    skip(2);
+    auto(); auto(); auto();
+    for (let n = 0; n < 6; n++) f16();
+    skip(2);
+    auto();
+    byte();
+    auto();
+    for (let n = 0; n < 4; n++) f16();
+    skip(2);
+    f16(); f16();
+    byte();
+    auto(); auto(); auto();
+    f16();
+    auto();
+    byte();
+    auto();
+    byte();
+    auto(); auto(); auto(); auto();
+    f16();
+    auto();
+    f16();
+    auto();
+    f16();
+    auto(); auto();
+    f16();
+    skip(4);
+    f16();
+    auto();
+    skip(4);
+    for (let n = 0; n < 6; n++) f16();
+    skip(4);
+    auto(); auto(); auto(); auto();
+    skip(2);
+    auto();
+    f16(); f16();
+    skip(2);
+
+    const poles = byte();
+    const gearRatio = auto();
+    const wheelDiameter = auto();
+    byte();
+    const batteryCells = byte();
+    const batteryAh = auto();
+
+    if (maxErpm > 1000) state.config.maxErpm = maxErpm;
+    if (poles >= 2 && poles <= 80) state.config.motorPoles = poles;
+    if (gearRatio > 0 && gearRatio < 30) state.config.gearRatio = gearRatio;
+    if (wheelDiameter > 0.03 && wheelDiameter < 2) state.config.wheelDiameter = wheelDiameter;
+    if (batteryCells > 0 && batteryCells <= 40) state.config.batteryCells = batteryCells;
+    if (batteryAh > 0 && batteryAh < 1000) state.config.batteryAh = batteryAh;
+  } catch (error) {
+    setStatus("Config", "Battery setup parse fallback", "demo");
+  }
 }
 
 function render(values) {
@@ -461,10 +603,37 @@ function setGauge(speed) {
 }
 
 function setBattery(voltage) {
+  const percent = estimateBatteryPercent(voltage);
+  els.batteryFill.style.width = `${percent}%`;
+  setText(els.batteryPercent, `${Math.round(percent)}%`);
+}
+
+function estimateBatteryPercent(voltage) {
+  const cells = state.config.batteryCells;
+  if (cells) {
+    return estimateLithiumPercent(voltage / cells);
+  }
   const min = state.config.batteryCutEnd || state.config.minVoltage;
   const max = state.config.maxVoltage;
-  const percent = clamp((voltage - min) / Math.max(1, max - min), 0, 1) * 100;
-  els.batteryFill.style.width = `${percent}%`;
+  return clamp((voltage - min) / Math.max(1, max - min), 0, 1) * 100;
+}
+
+function estimateLithiumPercent(cellVoltage) {
+  const curve = [
+    [3.0, 0], [3.2, 5], [3.45, 15], [3.6, 32], [3.7, 50],
+    [3.82, 68], [3.92, 80], [4.05, 92], [4.2, 100]
+  ];
+  if (cellVoltage <= curve[0][0]) return 0;
+  if (cellVoltage >= curve[curve.length - 1][0]) return 100;
+  for (let i = 1; i < curve.length; i++) {
+    const [v2, p2] = curve[i];
+    const [v1, p1] = curve[i - 1];
+    if (cellVoltage <= v2) {
+      const mix = (cellVoltage - v1) / (v2 - v1);
+      return p1 + (p2 - p1) * mix;
+    }
+  }
+  return 0;
 }
 
 function startSpeedHold(event) {
@@ -532,6 +701,67 @@ function toggleGpsSpeed() {
   });
 }
 
+function beginSwipe(event) {
+  const touch = event.changedTouches[0];
+  state.swipeStartX = touch.clientX;
+  state.swipeStartY = touch.clientY;
+}
+
+function endSwipe(event) {
+  if (!document.body.classList.contains("connected")) {
+    return;
+  }
+  const touch = event.changedTouches[0];
+  const dx = touch.clientX - state.swipeStartX;
+  const dy = touch.clientY - state.swipeStartY;
+  if (Math.abs(dx) > 70 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+    toggleProfiles(dx < 0);
+  }
+}
+
+function toggleProfiles(open) {
+  els.profilePanel.classList.toggle("open", open);
+  if (open) {
+    refreshProfiles();
+  }
+}
+
+function refreshProfiles() {
+  setText(els.profileState, "Profile read/write protocol armed. VESCOMETERPANIC template ready.");
+}
+
+function trackSpeedTap() {
+  const now = performance.now();
+  state.tapTimes = state.tapTimes.filter((time) => now - time < 1300);
+  state.tapTimes.push(now);
+  if (state.tapTimes.length >= 5) {
+    state.tapTimes.length = 0;
+    triggerPanicShortcut();
+  }
+}
+
+function triggerPanicShortcut() {
+  document.body.classList.add("panic-shake");
+  window.setTimeout(() => document.body.classList.remove("panic-shake"), 460);
+  toggleProfiles(true);
+  setStatus("Panic", "Confirm VESCOMETERPANIC profile action", "demo");
+  setText(els.profileState, "5-tap shortcut detected. Confirm before writing a permanent VESC profile.");
+}
+
+function requestPanicProfile(mode) {
+  const message = `VESCOMETERPANIC ${mode}: 22 km/h forward/reverse and 500 W max output. Confirming here does not flash yet because the VESC profile packet format must be verified for your firmware build.`;
+  setText(els.profileState, message);
+  setStatus("Profile", mode === "permanently" ? "Permanent write held for confirmation-safe protocol" : "Until reboot held for confirmation-safe protocol", "demo");
+  document.body.classList.add("panic-shake");
+  window.setTimeout(() => document.body.classList.remove("panic-shake"), 460);
+}
+
+function setGateState(message) {
+  if (els.gateState) {
+    els.gateState.textContent = message;
+  }
+}
+
 function toggleDemo() {
   if (state.demo) {
     stopDemo();
@@ -597,7 +827,8 @@ function renderConfig() {
   setText(els.configGear, state.config.mcconfTemp ? `${format(state.config.gearRatio, 2)}:1` : "auto");
   setText(els.configWheel, state.config.mcconfTemp ? `${Math.round(state.config.wheelDiameter * 1000)} mm` : "auto");
   setText(els.configApp, state.config.appconf ? "read" : "pending");
-  setText(els.batteryRange, state.config.mcconf ? `${format(state.config.minVoltage, 1)}-${format(state.config.maxVoltage, 1)} V from VESC` : "waiting for VESC limits");
+  setText(els.configBattery, state.config.batteryCells ? `${state.config.batteryCells}s ${format(state.config.batteryAh, 1)}Ah` : "auto");
+  setText(els.batteryRange, state.config.batteryCells ? `${state.config.batteryCells}s ${format(state.config.batteryAh, 1)}Ah from VESC` : state.config.mcconf ? `${format(state.config.minVoltage, 1)}-${format(state.config.maxVoltage, 1)} V from VESC` : "waiting for VESC limits");
 }
 
 function setStatus(label, detail, mode) {

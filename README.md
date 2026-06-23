@@ -35,7 +35,7 @@ while ($listener.IsListening) {
 }
 ```
 
-Dann `http://localhost:8080/vescometer.html` in Chrome oder Edge oeffnen.
+Dann `http://localhost:8080/` oder `http://localhost:8080/vescometer.html` in Chrome oder Edge oeffnen.
 
 ## Daten
 
@@ -69,3 +69,12 @@ Geparst werden unter anderem:
 Speed und Distance nehmen automatisch die Setup-Werte aus dem VESC. Halte die
 km/h-Anzeige 3 Sekunden gedrueckt, um auf GPS km/h umzuschalten. GPS nutzt die
 Browser-Geolocation und braucht die entsprechende Handy-Berechtigung.
+
+## UI
+
+- Vor der Verbindung ist nur die Connect-Seite sichtbar.
+- Nach der Verbindung erscheint das Dashboard mit Disconnect.
+- Nach links swipen oder `Profiles` antippen oeffnet die Profilseite.
+- 5 schnelle Taps auf die km/h-Anzeige markieren den VESCOMETERPANIC-Pfad und shaken den Screen.
+
+Permanent schreibende Profilaktionen sind in dieser Version bewusst bestaetigungssicher gehalten. Sie veraendern reale VESC-Konfigurationen und sollten erst nach verifizierter Profil-Paketstruktur fuer den konkreten Firmware-Build schreibend aktiviert werden.

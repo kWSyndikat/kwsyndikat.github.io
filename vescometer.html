@@ -22,6 +22,16 @@
   </nav>
 
   <main class="meter-page">
+    <section id="connectGate" class="connect-gate" aria-label="VESC Verbindung">
+      <div class="gate-card">
+        <div class="hero-chip"><span class="chip-dot"></span>VESC 7.0 BLE Cockpit</div>
+        <h1>VESC-O-Meter</h1>
+        <p>Connect your VESC to unlock the live dashboard.</p>
+        <button id="connectButton" class="btn btn-red gate-connect" type="button" title="VESC per BLE verbinden" aria-label="VESC per BLE verbinden">Connect VESC</button>
+        <small id="gateState">Chrome/Edge on HTTPS or localhost</small>
+      </div>
+    </section>
+
     <section class="dash-subsite" aria-label="VESC-O-Meter Dashboard">
       <header class="dash-head">
         <div>
@@ -29,8 +39,8 @@
           <h1>VESC-O-Meter</h1>
         </div>
         <div class="actions">
-          <button id="demoToggle" class="btn btn-outline" type="button" title="Demo-Modus umschalten" aria-label="Demo-Modus umschalten">Demo</button>
-          <button id="connectButton" class="btn btn-red" type="button" title="VESC per BLE verbinden" aria-label="VESC per BLE verbinden">Connect</button>
+          <button id="profileButton" class="btn btn-outline" type="button" title="Profile anzeigen" aria-label="Profile anzeigen">Profiles</button>
+          <button id="disconnectButton" class="btn btn-red" type="button" title="VESC trennen" aria-label="VESC trennen">Disconnect</button>
         </div>
       </header>
 
@@ -61,7 +71,10 @@
             <div class="battery-shell" aria-hidden="true">
               <div id="batteryFill" class="battery-fill"></div>
             </div>
-            <small id="batteryRange">waiting for VESC limits</small>
+            <div class="battery-details">
+              <strong id="batteryPercent">--%</strong>
+              <small id="batteryRange">waiting for VESC limits</small>
+            </div>
           </div>
         </article>
 
@@ -135,7 +148,33 @@
           <span>App cfg</span>
           <strong id="configApp">pending</strong>
         </div>
+        <div>
+          <span>Battery</span>
+          <strong id="configBattery">auto</strong>
+        </div>
       </section>
+
+      <aside id="profilePanel" class="profile-panel" aria-label="VESC Profile">
+        <div class="profile-head">
+          <div>
+            <span>Swipe panel</span>
+            <strong>Profiles</strong>
+          </div>
+          <button id="profileClose" class="btn btn-outline" type="button">Close</button>
+        </div>
+        <div id="profileList" class="profile-list">
+          <article class="profile-card panic">
+            <span>Safety Template</span>
+            <strong>VESCOMETERPANIC</strong>
+            <small>22 km/h forward/reverse, 500 W out. Writes require confirmation.</small>
+            <div class="profile-actions">
+              <button id="panicUntilReboot" class="btn btn-outline" type="button">Until Reboot</button>
+              <button id="panicPermanent" class="btn btn-red" type="button">Use Permanently</button>
+            </div>
+          </article>
+        </div>
+        <small id="profileState">Swipe left from dashboard or tap Profiles.</small>
+      </aside>
     </section>
   </main>
 
