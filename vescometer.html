@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#05070a">
+  <title>VESC-O-Meter</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="shell">
+    <section class="dashboard" aria-label="VESC Dashboard">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">VESC 7.0 BLE Cockpit</p>
+          <h1>VESC-O-Meter</h1>
+        </div>
+        <div class="actions">
+          <button id="demoToggle" class="icon-button secondary" type="button" title="Demo-Modus umschalten" aria-label="Demo-Modus umschalten">
+            <span class="dot"></span>
+            Demo
+          </button>
+          <button id="connectButton" class="icon-button primary" type="button" title="VESC per BLE verbinden" aria-label="VESC per BLE verbinden">
+            <span class="ble-mark"></span>
+            Verbinden
+          </button>
+        </div>
+      </header>
+
+      <section class="hero-grid">
+        <article class="speed-stage">
+          <div class="connection-line">
+            <span id="connectionState" class="state-pill offline">Offline</span>
+            <span id="packetState">Warte auf Daten</span>
+          </div>
+          <div class="speed-wrap" aria-label="Aktuelle Geschwindigkeit">
+            <svg class="speed-ring" viewBox="0 0 240 240" role="img" aria-label="Speed gauge">
+              <defs>
+                <linearGradient id="speedGradient" x1="30" x2="210" y1="210" y2="30" gradientUnits="userSpaceOnUse">
+                  <stop offset="0" stop-color="#34d399"/>
+                  <stop offset="0.5" stop-color="#38bdf8"/>
+                  <stop offset="1" stop-color="#fb7185"/>
+                </linearGradient>
+              </defs>
+              <circle class="ring-bg" cx="120" cy="120" r="99"></circle>
+              <circle id="speedArc" class="ring-value" cx="120" cy="120" r="99"></circle>
+            </svg>
+            <div class="speed-value">
+              <span id="speedValue">0</span>
+              <small>km/h</small>
+            </div>
+          </div>
+          <div class="battery-strip">
+            <div class="battery-meta">
+              <span>Battery Voltage</span>
+              <strong><span id="batteryValue">--</span> V</strong>
+            </div>
+            <div class="battery-shell" aria-hidden="true">
+              <div id="batteryFill" class="battery-fill"></div>
+            </div>
+          </div>
+        </article>
+
+        <article class="power-stage">
+          <div class="readout xl">
+            <span>Power</span>
+            <strong><span id="powerValue">--</span> W</strong>
+          </div>
+          <div class="readout">
+            <span>Current</span>
+            <strong><span id="currentValue">--</span> A</strong>
+          </div>
+          <div class="readout">
+            <span>Duty</span>
+            <strong><span id="dutyValue">--</span> %</strong>
+          </div>
+          <div class="thermal-line">
+            <span>Mosfet Heat</span>
+            <div>
+              <strong><span id="mosfetNow">--</span> C</strong>
+              <small>avg <span id="mosfetAvg">--</span> / max <span id="mosfetMax">--</span></small>
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <section class="metrics-grid" aria-label="VESC Telemetrie">
+        <article class="metric hot">
+          <span>ESC Temp</span>
+          <strong><span id="escTemp">--</span> C</strong>
+          <div class="spark"><span id="escTempBar"></span></div>
+        </article>
+        <article class="metric warm">
+          <span>Motor Temp</span>
+          <strong><span id="motorTemp">--</span> C</strong>
+          <div class="spark"><span id="motorTempBar"></span></div>
+        </article>
+        <article class="metric">
+          <span>Distance Trip</span>
+          <strong><span id="distanceValue">0.00</span> km</strong>
+          <div class="mini-note">seit App-Start</div>
+        </article>
+        <article class="metric">
+          <span>Ah Drawn</span>
+          <strong><span id="ahValue">0.000</span> Ah</strong>
+          <div class="mini-note">aus VESC-Zähler</div>
+        </article>
+        <article class="metric">
+          <span>Consumption</span>
+          <strong><span id="consumptionValue">--</span> Wh/km</strong>
+          <div class="mini-note"><span id="whTrip">0.0</span> Wh trip</div>
+        </article>
+        <article class="metric">
+          <span>RPM</span>
+          <strong><span id="rpmValue">--</span></strong>
+          <div class="mini-note">mechanisch berechnet</div>
+        </article>
+      </section>
+
+      <section class="settings-panel" aria-label="Fahrzeug-Konfiguration">
+        <label>
+          Wheel diameter
+          <input id="wheelDiameter" type="number" min="50" max="900" step="1" value="90">
+          <span>mm</span>
+        </label>
+        <label>
+          Motor poles
+          <input id="motorPoles" type="number" min="2" max="80" step="2" value="14">
+          <span>poles</span>
+        </label>
+        <label>
+          Gear ratio
+          <input id="gearRatio" type="number" min="0.1" max="20" step="0.01" value="1">
+          <span>:1</span>
+        </label>
+        <label>
+          Battery max
+          <input id="batteryMax" type="number" min="10" max="120" step="0.1" value="50.4">
+          <span>V</span>
+        </label>
+        <label>
+          Battery min
+          <input id="batteryMin" type="number" min="5" max="120" step="0.1" value="36">
+          <span>V</span>
+        </label>
+      </section>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
