@@ -7,6 +7,7 @@ const VESC = {
   commGetValues: 4,
   commGetMcconf: 14,
   commGetAppconf: 17,
+  commSetMcconfTempSetup: 49,
   commGetMcconfTemp: 91
 };
 
@@ -17,6 +18,7 @@ const els = {
   profileButton: document.getElementById("profileButton"),
   profilePanel: document.getElementById("profilePanel"),
   profileClose: document.getElementById("profileClose"),
+  profileList: document.getElementById("profileList"),
   profileState: document.getElementById("profileState"),
   panicUntilReboot: document.getElementById("panicUntilReboot"),
   panicPermanent: document.getElementById("panicPermanent"),
@@ -74,6 +76,8 @@ const state = {
   whBase: null,
   mosfetSamples: [],
   mosfetMax: null,
+  profiles: [],
+  activeProfile: null,
   config: {
     motorPoles: 14,
     gearRatio: 1,
@@ -106,6 +110,7 @@ document.addEventListener("touchstart", beginSwipe, { passive: true });
 document.addEventListener("touchend", endSwipe, { passive: true });
 
 initHellCanvas();
+loadProfiles();
 renderConfig();
 
 async function connectVesc() {
@@ -167,6 +172,7 @@ async function requestVescConfig() {
   await sendCommand(VESC.commGetMcconfTemp);
   await sendCommand(VESC.commGetMcconf);
   await sendCommand(VESC.commGetAppconf);
+  ensurePanicProfile();
 }
 
 function pollValues() {
@@ -178,7 +184,15 @@ function sendCommand(commandId) {
     return Promise.resolve();
   }
 
-  const packet = buildPacket(new Uint8Array([commandId]));
+  return sendPayload(new Uint8Array([commandId]));
+}
+
+function sendPayload(payload) {
+  if (!state.rx) {
+    return Promise.resolve();
+  }
+
+  const packet = buildPacket(payload);
   state.writeQueue = state.writeQueue.then(() => state.rx.writeValueWithoutResponse(packet).catch(() => state.rx.writeValue(packet))).catch((error) => {
     setStatus("Offline", error.message, "offline");
   });
@@ -343,16 +357,16 @@ function parseMcconfTemp(payload) {
 
   let i = 1;
   const readAuto = () => readFloat32Auto(payload, (next) => { i = next; }, i);
-  readAuto();
-  readAuto();
-  readAuto();
-  const maxErpm = readAuto();
-  readAuto();
-  readAuto();
-  readAuto();
-  readAuto();
-  readAuto();
-  readAuto();
+  const currentMinScale = readAuto();
+  const currentMaxScale = readAuto();
+  const erpmOrSpeedMin = readAuto();
+  const erpmOrSpeedMax = readAuto();
+  const dutyMin = readAuto();
+  const dutyMax = readAuto();
+  const wattMin = readAuto();
+  const wattMax = readAuto();
+  const inCurrentMin = readAuto();
+  const inCurrentMax = readAuto();
 
   const poles = payload[i++];
   const gearRatio = readAuto();
@@ -367,11 +381,27 @@ function parseMcconfTemp(payload) {
   if (wheelDiameter > 0.03 && wheelDiameter < 2) {
     state.config.wheelDiameter = wheelDiameter;
   }
-  if (maxErpm > 1000) {
-    state.config.maxErpm = maxErpm;
+  if (erpmOrSpeedMax > 1000) {
+    state.config.maxErpm = erpmOrSpeedMax;
   }
+  state.activeProfile = {
+    name: "Current VESC",
+    currentMinScale,
+    currentMaxScale,
+    speedMin: erpmToKmh(erpmToMechanicalRpm(erpmOrSpeedMin)) / 3.6,
+    speedMax: erpmToKmh(erpmToMechanicalRpm(erpmOrSpeedMax)) / 3.6,
+    dutyMin,
+    dutyMax,
+    wattMin,
+    wattMax,
+    inCurrentMin,
+    inCurrentMax,
+    isCurrent: true
+  };
   state.config.mcconfTemp = true;
+  ensurePanicProfile();
   renderConfig();
+  renderProfiles();
 }
 
 function parseMcconf(payload) {
@@ -727,7 +757,86 @@ function toggleProfiles(open) {
 }
 
 function refreshProfiles() {
-  setText(els.profileState, "Profile read/write protocol armed. VESCOMETERPANIC template ready.");
+  ensurePanicProfile();
+  renderProfiles();
+  setText(els.profileState, "Profiles are mcconf_temp sets. Until reboot = RAM, permanently = flash.");
+}
+
+function loadProfiles() {
+  try {
+    const saved = JSON.parse(localStorage.getItem("vescometerProfiles") || "[]");
+    state.profiles = Array.isArray(saved) ? saved : [];
+  } catch (error) {
+    state.profiles = [];
+  }
+  ensurePanicProfile();
+}
+
+function saveProfiles() {
+  localStorage.setItem("vescometerProfiles", JSON.stringify(state.profiles));
+}
+
+function ensurePanicProfile() {
+  if (state.profiles.some((profile) => profile.name === "VESCOMETERPANIC")) {
+    return;
+  }
+
+  const base = state.activeProfile || {
+    currentMinScale: 1,
+    currentMaxScale: 1,
+    dutyMin: -0.95,
+    dutyMax: 0.95,
+    inCurrentMin: -60,
+    inCurrentMax: 60
+  };
+
+  state.profiles.unshift({
+    name: "VESCOMETERPANIC",
+    currentMinScale: base.currentMinScale,
+    currentMaxScale: base.currentMaxScale,
+    speedMin: -22 / 3.6,
+    speedMax: 22 / 3.6,
+    dutyMin: base.dutyMin,
+    dutyMax: base.dutyMax,
+    wattMin: -500,
+    wattMax: 500,
+    inCurrentMin: base.inCurrentMin,
+    inCurrentMax: base.inCurrentMax
+  });
+  saveProfiles();
+}
+
+function renderProfiles() {
+  const profiles = [...state.profiles];
+  if (state.activeProfile) {
+    profiles.unshift(state.activeProfile);
+  }
+
+  els.profileList.innerHTML = profiles.map((profile, index) => {
+    const realIndex = state.activeProfile && index === 0 ? -1 : state.activeProfile ? index - 1 : index;
+    const panic = profile.name === "VESCOMETERPANIC" ? " panic" : "";
+    const active = profile.isCurrent ? " active" : "";
+    return `
+      <article class="profile-card${panic}${active}">
+        <span>${profile.isCurrent ? "Controller now" : "VESC profile"}</span>
+        <strong>${escapeHtml(profile.name)}</strong>
+        <small>${format(profile.speedMax * 3.6, 1)} km/h forward / ${format(Math.abs(profile.speedMin * 3.6), 1)} km/h reverse · ${format(profile.wattMax, 0)} W out</small>
+        <div class="profile-actions">
+          <button class="btn btn-outline" type="button" data-profile-action="reboot" data-profile-index="${realIndex}" ${profile.isCurrent ? "disabled" : ""}>Until Reboot</button>
+          <button class="btn btn-red" type="button" data-profile-action="permanent" data-profile-index="${realIndex}" ${profile.isCurrent ? "disabled" : ""}>Use Permanently</button>
+        </div>
+      </article>
+    `;
+  }).join("");
+
+  for (const button of els.profileList.querySelectorAll("[data-profile-action]")) {
+    button.addEventListener("click", () => {
+      const profile = state.profiles[Number(button.dataset.profileIndex)];
+      if (profile) {
+        applyProfile(profile, button.dataset.profileAction === "permanent");
+      }
+    });
+  }
 }
 
 function trackSpeedTap() {
@@ -741,19 +850,59 @@ function trackSpeedTap() {
 }
 
 function triggerPanicShortcut() {
-  document.body.classList.add("panic-shake");
-  window.setTimeout(() => document.body.classList.remove("panic-shake"), 460);
-  toggleProfiles(true);
-  setStatus("Panic", "Confirm VESCOMETERPANIC profile action", "demo");
-  setText(els.profileState, "5-tap shortcut detected. Confirm before writing a permanent VESC profile.");
+  const profile = state.profiles.find((item) => item.name === "VESCOMETERPANIC");
+  if (!profile) {
+    ensurePanicProfile();
+  }
+  const panic = state.profiles.find((item) => item.name === "VESCOMETERPANIC");
+  if (panic) {
+    applyProfile(panic, true, true);
+    toggleProfiles(true);
+    setText(els.profileState, "5-tap shortcut applied VESCOMETERPANIC permanently.");
+  }
 }
 
 function requestPanicProfile(mode) {
-  const message = `VESCOMETERPANIC ${mode}: 22 km/h forward/reverse and 500 W max output. Confirming here does not flash yet because the VESC profile packet format must be verified for your firmware build.`;
-  setText(els.profileState, message);
-  setStatus("Profile", mode === "permanently" ? "Permanent write held for confirmation-safe protocol" : "Until reboot held for confirmation-safe protocol", "demo");
-  document.body.classList.add("panic-shake");
-  window.setTimeout(() => document.body.classList.remove("panic-shake"), 460);
+  const profile = state.profiles.find((item) => item.name === "VESCOMETERPANIC");
+  if (profile) {
+    applyProfile(profile, mode === "permanently");
+  }
+}
+
+function applyProfile(profile, permanent, skipConfirm = false) {
+  if (!state.rx) {
+    setText(els.profileState, "Connect VESC first.");
+    return;
+  }
+  if (permanent && !skipConfirm && !confirm(`Use ${profile.name} permanently? This writes motor config to VESC flash.`)) {
+    return;
+  }
+  sendMcconfTempSetup(profile, permanent);
+  setText(els.profileState, `${profile.name} sent ${permanent ? "permanently" : "until reboot"}.`);
+  setStatus("Profile", `${profile.name} active`, "demo");
+  if (profile.name === "VESCOMETERPANIC") {
+    document.body.classList.add("panic-shake");
+    window.setTimeout(() => document.body.classList.remove("panic-shake"), 460);
+  }
+}
+
+function sendMcconfTempSetup(profile, permanent) {
+  const payload = [
+    VESC.commSetMcconfTempSetup,
+    permanent ? 1 : 0,
+    1,
+    1,
+    0,
+    ...float32AutoBytes(profile.currentMinScale),
+    ...float32AutoBytes(profile.currentMaxScale),
+    ...float32AutoBytes(profile.speedMin),
+    ...float32AutoBytes(profile.speedMax),
+    ...float32AutoBytes(profile.dutyMin),
+    ...float32AutoBytes(profile.dutyMax),
+    ...float32AutoBytes(profile.wattMin),
+    ...float32AutoBytes(profile.wattMax)
+  ];
+  sendPayload(new Uint8Array(payload));
 }
 
 function setGateState(message) {
@@ -849,6 +998,46 @@ function readFloat32Auto(buffer, setIndex, index) {
     e -= 126;
   }
   return (neg ? -sig : sig) * Math.pow(2, e);
+}
+
+function float32AutoBytes(number) {
+  if (!Number.isFinite(number) || Math.abs(number) < 1.5e-38) {
+    number = 0;
+  }
+
+  const neg = number < 0;
+  const abs = Math.abs(number);
+  let exponent = 0;
+  let sig = 0;
+
+  if (abs >= 1.5e-38) {
+    exponent = Math.floor(Math.log2(abs)) + 1;
+    const mantissa = abs / Math.pow(2, exponent);
+    sig = Math.floor((mantissa - 0.5) * 2 * 8388608);
+    exponent += 126;
+  }
+
+  let value = ((exponent & 255) << 23) | (sig & 0x7fffff);
+  if (neg) {
+    value |= 0x80000000;
+  }
+  value >>>= 0;
+  return [
+    (value >>> 24) & 255,
+    (value >>> 16) & 255,
+    (value >>> 8) & 255,
+    value & 255
+  ];
+}
+
+function escapeHtml(value) {
+  return String(value).replace(/[&<>"']/g, (char) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    "\"": "&quot;",
+    "'": "&#39;"
+  })[char]);
 }
 
 function average(values) {

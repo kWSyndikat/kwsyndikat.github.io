@@ -75,6 +75,9 @@ Browser-Geolocation und braucht die entsprechende Handy-Berechtigung.
 - Vor der Verbindung ist nur die Connect-Seite sichtbar.
 - Nach der Verbindung erscheint das Dashboard mit Disconnect.
 - Nach links swipen oder `Profiles` antippen oeffnet die Profilseite.
-- 5 schnelle Taps auf die km/h-Anzeige markieren den VESCOMETERPANIC-Pfad und shaken den Screen.
+- Profile werden wie in VESC Tool als `mcconf_temp`-Sets behandelt.
+- `Use until reboot` sendet `COMM_SET_MCCONF_TEMP_SETUP` mit `store=false`.
+- `Use permanently` sendet `COMM_SET_MCCONF_TEMP_SETUP` mit `store=true`.
+- 5 schnelle Taps auf die km/h-Anzeige senden das lokale `VESCOMETERPANIC`-Profil permanent und shaken den Screen.
 
-Permanent schreibende Profilaktionen sind in dieser Version bewusst bestaetigungssicher gehalten. Sie veraendern reale VESC-Konfigurationen und sollten erst nach verifizierter Profil-Paketstruktur fuer den konkreten Firmware-Build schreibend aktiviert werden.
+VESC Tool speichert die Profil-Liste appseitig und wendet sie dann auf den Controller an. Die Webapp macht das genauso ueber `localStorage` plus VESC-Paket.
