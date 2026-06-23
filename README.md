@@ -1,6 +1,8 @@
-# VESC-O-Meter
+# kWSyndikat VESC-O-Meter
 
-Frontend-only Webapp fuer VESC 7.0 Telemetrie ueber BLE.
+Frontend-only VESC 7.0 Telemetrie-Subsite fuer Handys. Die App ist optisch an
+`https://kwsyndikat.github.io/` angelehnt und laeuft komplett im Browser ueber
+Web Bluetooth.
 
 ## Start
 
@@ -33,7 +35,7 @@ while ($listener.IsListening) {
 }
 ```
 
-Dann `http://localhost:8080` in Chrome oder Edge oeffnen.
+Dann `http://localhost:8080/vescometer.html` in Chrome oder Edge oeffnen.
 
 ## Daten
 
@@ -43,7 +45,14 @@ Die App nutzt Web Bluetooth mit Nordic UART UUIDs:
 - RX Write: `6e400002-b5a3-f393-e0a9-e50e24dcca9e`
 - TX Notify: `6e400003-b5a3-f393-e0a9-e50e24dcca9e`
 
-Gesendet wird `COMM_GET_VALUES`. Geparst werden unter anderem:
+Gesendet werden:
+
+- `COMM_GET_VALUES` fuer Live-Telemetrie
+- `COMM_GET_MCCONF_TEMP` fuer Motor poles, Gear ratio, Wheel diameter und Max ERPM
+- `COMM_GET_MCCONF` fuer Battery voltage min/max/cut limits
+- `COMM_GET_APPCONF` als App-Config Read und Verbindungscheck
+
+Geparst werden unter anderem:
 
 - Battery Voltage
 - Motor Temp
@@ -57,4 +66,6 @@ Gesendet wird `COMM_GET_VALUES`. Geparst werden unter anderem:
 - Wh/km Consumption
 - Mosfet Heat now / average / maximum
 
-Speed und Distance brauchen Fahrzeugwerte. Stelle in der UI Wheel diameter, Motor poles und Gear ratio passend ein.
+Speed und Distance nehmen automatisch die Setup-Werte aus dem VESC. Halte die
+km/h-Anzeige 3 Sekunden gedrueckt, um auf GPS km/h umzuschalten. GPS nutzt die
+Browser-Geolocation und braucht die entsprechende Handy-Berechtigung.
