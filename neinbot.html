@@ -48,8 +48,8 @@ canvas#hellbg{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;
 .tab{flex:1;min-width:80px;padding:.6rem .8rem;text-align:center;background:transparent;border:none;border-radius:var(--rad3);color:var(--text2);font-family:var(--body);font-size:.78rem;letter-spacing:.06em;cursor:pointer;transition:.25s}
 .tab:hover{color:var(--text);background:rgba(192,57,43,.06)}
 .tab.active{color:var(--text);background:rgba(192,57,43,.12);box-shadow:inset 0 0 0 1px var(--border2)}
-.panel{display:none;animation:fadeIn .3s ease}
-.panel.active{display:block}
+.panel{display:none !important;animation:fadeIn .3s ease}
+.panel.active{display:block !important}
 @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
 .gauge-wrap{display:flex;flex-direction:column;align-items:center;padding:.3rem 0 .1rem}
 canvas#speedo{width:100%;max-width:320px;height:auto;aspect-ratio:1;display:block}
@@ -114,6 +114,31 @@ select{background:var(--surface);border:1px solid var(--border);color:var(--text
 ::-webkit-scrollbar{width:4px;height:4px}
 ::-webkit-scrollbar-track{background:var(--bg)}
 ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:4px}
+
+.gauge-card{padding:1.2rem 1rem 1.4rem !important;overflow:hidden}
+.gauge-ring{position:relative;width:min(100%,320px);aspect-ratio:1;margin:0 auto}
+.gauge-ring canvas{width:100%;height:100%;display:block}
+.gauge-center{
+  position:absolute;inset:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;pointer-events:none;
+  padding-top:8%;
+}
+.gauge-center .speed-readout{
+  font-family:var(--font);font-size:clamp(2.8rem,12vw,3.6rem);
+  color:#fff;letter-spacing:.02em;line-height:1;text-shadow:0 0 24px rgba(232,64,48,.45);
+  margin:0;
+}
+.gauge-center .speed-unit{
+  font-size:.72rem;letter-spacing:.2em;color:var(--text2);text-transform:uppercase;margin-top:.15rem;
+}
+.gauge-center .watt-readout{
+  margin-top:.55rem;font-family:var(--font);font-size:1.05rem;
+  color:var(--r3);letter-spacing:.06em;
+  padding:.2rem .7rem;border-radius:20px;
+  background:rgba(192,57,43,.12);border:1px solid rgba(192,57,43,.28);
+}
+.speed-hint{margin-top:.85rem !important}
+
 </style>
 </head>
 <body>
@@ -147,10 +172,16 @@ select{background:var(--surface);border:1px solid var(--border);color:var(--text
 
       <!-- TACHO -->
       <div class="panel active" id="panel-tacho">
-        <div class="card">
+        <div class="card gauge-card">
           <div class="gauge-wrap">
-            <canvas id="speedo" width="320" height="320"></canvas>
-            <div class="speed-readout" id="speedDisplay">0 <small>km/h</small></div>
+            <div class="gauge-ring">
+              <canvas id="speedo" width="360" height="360"></canvas>
+              <div class="gauge-center">
+                <div class="speed-readout" id="speedDisplay">0</div>
+                <div class="speed-unit">km/h</div>
+                <div class="watt-readout" id="liveWatts">— W</div>
+              </div>
+            </div>
             <div class="speed-hint" id="pollHint">Live · Polling</div>
           </div>
         </div>
@@ -357,12 +388,12 @@ select{background:var(--surface);border:1px solid var(--border);color:var(--text
           <div class="section-mark">04 · FOC RAW</div>
           <div class="card-title">Motorkalibrierung (D0–D8)</div>
           <div class="card-sub">Nur lesen / Stock-Vergleich. Schreiben über die Controls oben.</div>
-          <div id="focRegsDisplay" style="font-family:monospace;font-size:.72rem;color:var(--text2);line-height:1.7;letter-spacing:.02em">—</div>
+          <div id="focRegsDisplay" style="font-family:monospace;font-size:.72rem;color:var(--text2);line-height:1.7;letter-spacing:.02em;white-space:pre-wrap">—</div>
         </div>
-      
-    </div>
-  </div>
-</div>
+      </div><!-- /panel-motor -->
+    </div><!-- /dashboard -->
+  </div><!-- /content -->
+</div><!-- /app -->
 
 <script>
 /* ============================================================
@@ -585,58 +616,66 @@ var powerHint=document.getElementById('powerHint');
 var pollHint=document.getElementById('pollHint');
 
 function drawSpeedometer(speed){
-  var w=speedCanvas.width,h=speedCanvas.height,cx=w/2,cy=h/2,radius=135;
+  var w=speedCanvas.width,h=speedCanvas.height,cx=w/2,cy=h/2,radius=w*0.42;
   ctx.clearRect(0,0,w,h);
-  // outer ring
-  ctx.beginPath();ctx.arc(cx,cy,radius,0,Math.PI*2);
-  ctx.strokeStyle='#1a0c0c';ctx.lineWidth=6;ctx.stroke();
-  // arc track
-  var startA=0.75*Math.PI,endA=2.25*Math.PI;
-  ctx.beginPath();ctx.arc(cx,cy,radius-8,startA,endA);
-  ctx.strokeStyle='#2a1515';ctx.lineWidth=10;ctx.lineCap='round';ctx.stroke();
+  var startA=0.75*Math.PI, endA=2.25*Math.PI, span=endA-startA;
+  // soft outer glow disc
+  var og=ctx.createRadialGradient(cx,cy,radius*0.55,cx,cy,radius*1.15);
+  og.addColorStop(0,'rgba(192,57,43,0.07)');
+  og.addColorStop(1,'transparent');
+  ctx.fillStyle=og;ctx.beginPath();ctx.arc(cx,cy,radius*1.15,0,Math.PI*2);ctx.fill();
+  // track
+  ctx.beginPath();ctx.arc(cx,cy,radius,startA,endA);
+  ctx.strokeStyle='rgba(60,25,25,0.9)';ctx.lineWidth=14;ctx.lineCap='round';ctx.stroke();
   // value arc
   var clamped=Math.min(80,Math.max(0,speed));
   var frac=clamped/80;
-  var valA=startA+(endA-startA)*frac;
-  if(frac>0){
-    var grad=ctx.createLinearGradient(0,0,w,h);
-    grad.addColorStop(0,'#8b0000');grad.addColorStop(1,'#e84030');
-    ctx.beginPath();ctx.arc(cx,cy,radius-8,startA,valA);
-    ctx.strokeStyle=grad;ctx.lineWidth=10;ctx.lineCap='round';ctx.stroke();
+  if(frac>0.001){
+    var grd=ctx.createLinearGradient(cx-radius,cy,cx+radius,cy);
+    grd.addColorStop(0,'#6b0000');grd.addColorStop(0.45,'#c0392b');grd.addColorStop(1,'#ff4a30');
+    ctx.beginPath();ctx.arc(cx,cy,radius,startA,startA+span*frac);
+    ctx.strokeStyle=grd;ctx.lineWidth=14;ctx.lineCap='round';
+    ctx.shadowColor='rgba(232,64,48,0.55)';ctx.shadowBlur=18;ctx.stroke();ctx.shadowBlur=0;
   }
   // ticks
   for(var i=0;i<=80;i+=5){
-    var ang=(i/80)*Math.PI*1.5+0.75*Math.PI;
+    var ang=startA+span*(i/80);
     var major=i%20===0;
     var inner=major?radius-28:radius-20;
-    var outer=radius-12;
+    var outer=radius-16;
     ctx.beginPath();
     ctx.moveTo(cx+Math.cos(ang)*inner,cy+Math.sin(ang)*inner);
     ctx.lineTo(cx+Math.cos(ang)*outer,cy+Math.sin(ang)*outer);
-    ctx.strokeStyle=major?'#c0392b':'#3a2020';
-    ctx.lineWidth=major?2:1;ctx.stroke();
+    ctx.strokeStyle=major?'rgba(232,64,48,0.85)':'rgba(100,50,50,0.55)';
+    ctx.lineWidth=major?2.2:1;ctx.stroke();
     if(major){
-      ctx.fillStyle='#7a5a5a';ctx.font='11px system-ui,sans-serif';
+      ctx.fillStyle='rgba(200,160,160,0.7)';
+      ctx.font='600 12px system-ui,sans-serif';
       ctx.textAlign='center';ctx.textBaseline='middle';
-      ctx.fillText(String(i),cx+Math.cos(ang)*(radius-40),cy+Math.sin(ang)*(radius-40));
+      ctx.fillText(String(i),cx+Math.cos(ang)*(radius-42),cy+Math.sin(ang)*(radius-42));
     }
   }
   // needle
-  var nang=(clamped/80)*Math.PI*1.5+0.75*Math.PI;
-  var len=radius-32;
-  ctx.beginPath();ctx.moveTo(cx-Math.cos(nang)*8,cy-Math.sin(nang)*8);
-  ctx.lineTo(cx+Math.cos(nang)*len,cy+Math.sin(nang)*len);
-  ctx.strokeStyle='#ff3a20';ctx.lineWidth=2.5;ctx.shadowColor='#c0392b';ctx.shadowBlur=12;ctx.stroke();
-  ctx.shadowBlur=0;
-  ctx.beginPath();ctx.arc(cx,cy,7,0,Math.PI*2);
-  ctx.fillStyle='#e84030';ctx.shadowColor='#c0392b';ctx.shadowBlur=10;ctx.fill();ctx.shadowBlur=0;
-  ctx.beginPath();ctx.arc(cx,cy,3,0,Math.PI*2);ctx.fillStyle='#1a0808';ctx.fill();
+  var nang=startA+span*(clamped/80);
+  var len=radius-36;
+  ctx.save();
+  ctx.translate(cx,cy);
+  ctx.rotate(nang);
+  ctx.beginPath();
+  ctx.moveTo(-10,0);ctx.lineTo(len,0);
+  ctx.strokeStyle='#ff3a20';ctx.lineWidth=2.8;
+  ctx.shadowColor='#c0392b';ctx.shadowBlur=14;ctx.stroke();
+  ctx.restore();
+  // hub
+  ctx.beginPath();ctx.arc(cx,cy,9,0,Math.PI*2);
+  ctx.fillStyle='#e84030';ctx.shadowColor='#c0392b';ctx.shadowBlur=12;ctx.fill();ctx.shadowBlur=0;
+  ctx.beginPath();ctx.arc(cx,cy,4,0,Math.PI*2);ctx.fillStyle='#1a0606';ctx.fill();
 }
 
 function animateGauge(){
   displaySpeed+=(targetSpeedAnim-displaySpeed)*0.18;
   if(Math.abs(displaySpeed-targetSpeedAnim)<0.05)displaySpeed=targetSpeedAnim;
-  speedDisplay.innerHTML=Math.round(displaySpeed)+' <small>km/h</small>';
+  speedDisplay.textContent=String(Math.round(displaySpeed));
   drawSpeedometer(displaySpeed);
   if(Math.abs(displaySpeed-targetSpeedAnim)>0.05)rafId=requestAnimationFrame(animateGauge);
   else rafId=0;
@@ -951,24 +990,47 @@ async function readSpeed(){
 }
 async function readLiveData(){
   if(!nbcSession)return;
-  try{var soc=await nbcSession.readRegister(X.VCU,85,2,900);document.getElementById('liveSoc').textContent=(soc[0]|(soc[1]<<8))+' %'}catch(e){}
-  try{var t=await nbcSession.readRegister(X.VCU,107,2,900);document.getElementById('liveTemp').textContent=((t[0]|(t[1]<<8))/10).toFixed(1)+' °C'}catch(e){}
+  try{var soc=await nbcSession.readRegister(X.VCU,85,2,700);document.getElementById('liveSoc').textContent=(soc[0]|(soc[1]<<8))+' %'}catch(e){}
+  try{var t=await nbcSession.readRegister(X.VCU,107,2,700);document.getElementById('liveTemp').textContent=((t[0]|(t[1]<<8))/10).toFixed(1)+' °C'}catch(e){}
+  // Leistung (W): Strom × Spannung — soft-fail
+  try{
+    var curB=await nbcSession.readRegister(X.VCU,80,2,700);
+    var cur=((curB[0]|(curB[1]<<8))<<16>>16)/100; // signed 0.01A
+    var voltB=await nbcSession.readRegister(X.VCU,81,2,700);
+    var volt=(voltB[0]|(voltB[1]<<8))/100;
+    var watts=Math.round(Math.abs(cur*volt));
+    var el=document.getElementById('liveWatts');
+    if(el) el.textContent=watts+' W';
+  }catch(e){
+    try{
+      // Fallback: manchen CFW liegt Power direkt an Reg. 82
+      var pw=await nbcSession.readRegister(X.VCU,82,2,700);
+      var w=(pw[0]|(pw[1]<<8));
+      var el2=document.getElementById('liveWatts');
+      if(el2) el2.textContent=w+' W';
+    }catch(e2){}
+  }
 }
 
 var pollBusy=false;
 function startKeepalive(){
   if(keepaliveInterval)clearInterval(keepaliveInterval);
+  var liveEvery=0;
   var tick=async()=>{
     if(!nbcSession||pollBusy)return;
     pollBusy=true;
     try{
       var spd=await readSpeed();
-      if(spd!==null){setSpeed(spd);pollHint.textContent='Live · '+(spd>1?'Fahrt':'Stillstand')}
-      await readLiveData();
+      if(spd!==null){
+        setSpeed(spd);
+        pollHint.textContent='Live · '+(spd>0.5?'Fahrt':'Stillstand')+' · 0.7s';
+      }
+      liveEvery++;
+      if(liveEvery%2===0) await readLiveData();
     }finally{pollBusy=false}
   };
   tick();
-  keepaliveInterval=setInterval(tick,1800);
+  keepaliveInterval=setInterval(tick,650);
 }
 
 async function saveProfile(){
@@ -1078,13 +1140,17 @@ document.getElementById('tunSpeedSlider').addEventListener('input',function(){do
 
 
 document.querySelectorAll('.tab').forEach(tab=>{
-  tab.addEventListener('click',()=>{
+  tab.addEventListener('click',(ev)=>{
+    ev.preventDefault();
+    var name=tab.getAttribute('data-tab');
     document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
     tab.classList.add('active');
     document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
-    document.getElementById('panel-'+tab.dataset.tab).classList.add('active');
-    if(nbcSession&&tab.dataset.tab==='sak')readSakSettings();
-    if(nbcSession&&tab.dataset.tab==='motor')readMotorSettings();
+    var panel=document.getElementById('panel-'+name);
+    if(panel) panel.classList.add('active');
+    else console.warn('panel missing', name);
+    if(nbcSession&&name==='sak') readSakSettings();
+    if(nbcSession&&name==='motor') readMotorSettings();
   });
 });
 
