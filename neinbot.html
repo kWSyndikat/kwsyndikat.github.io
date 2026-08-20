@@ -647,17 +647,54 @@ class Nbc {
   }
 }
 
-// NbcSession (1:1 aus HAR)
+// Frame-Reassembler (1:1 aus web-B3jc2H5K.js / zo()).
+// WICHTIG: BLE-Notifications kommen in ~20-Byte-MTU-Häppchen an. Ohne diesen
+// Reassembler bekommt decrypt() nur Bruchstücke und der Handshake/Register-Read
+// schlägt fehl -> genau das Verbindungsabbruch-Symptom.
+function createFrameAssembler(ble, overheadFn) {
+  var listeners = new Set();
+  var buf = new Uint8Array(0);
+  var unsub = ble.onTx(function (chunk) {
+    var merged = new Uint8Array(buf.length + chunk.length);
+    merged.set(buf, 0);
+    merged.set(chunk, buf.length);
+    buf = merged;
+    while (buf.length >= 3) {
+      var start = -1;
+      for (var i = 0; i <= buf.length - 2; i++) {
+        if (buf[i] === 0x5A && buf[i + 1] === 0xA5) { start = i; break; }
+      }
+      if (start < 0) { buf = buf.subarray(buf.length - 1); break; }
+      if (start > 0) buf = buf.subarray(start);
+      if (buf.length < 3) break;
+      var frameLen = 3 + buf[2] + overheadFn();
+      if (buf.length < frameLen) break;
+      var frame = buf.subarray(0, frameLen).slice();
+      buf = buf.subarray(frameLen);
+      listeners.forEach(function (cb) { cb(frame); });
+    }
+  });
+  return {
+    onFrame: function (cb) { listeners.add(cb); return function () { listeners.delete(cb); }; },
+    stop: function () { unsub(); listeners.clear(); buf = new Uint8Array(0); }
+  };
+}
+
+// NbcSession (portiert aus web-B3jc2H5K.js, inkl. Reassembler + korrektem
+// Antwort-Matching per response.src statt response.dst)
 class NbcSession {
   constructor(ble, bleName, store) {
     this.ble = ble;
     this.bleName = bleName;
     this.store = store || { load: async () => null, save: async () => {}, delete: async () => {} };
     this.pending = [];
+    this.dstTails = new Map(); // pro Zieladresse serialisierte Requests
     this.phase = 'connecting';
     this.nbc = null;
     this._disconnectCb = null;
     this._powerHintCb = null;
+    this.assembler = createFrameAssembler(this.ble, function () { return 10; });
+    this._unsubFrame = this.assembler.onFrame((raw) => this._handleIncoming(raw));
   }
   getPhase() { return this.phase; }
   setPhase(p) { this.phase = p; }
@@ -747,35 +784,56 @@ class NbcSession {
     }
   }
 
-  // Wird von der BLE-Schicht aufgerufen
-  handleFrame(raw) {
+  // Wird intern vom Frame-Assembler mit einem bereits vollständigen,
+  // rohen (noch verschlüsselten) Frame aufgerufen.
+  async _handleIncoming(raw) {
     if (!this.nbc) return;
-    this.nbc.decrypt(raw).then(dec => {
-      if (!dec) return;
-      var frame = La(dec);
-      if (!frame) return;
-      var idx = this.pending.findIndex(e => e.target === frame.dst && (!e.expectedCmd || e.expectedCmd.includes(frame.cmd)));
-      if (idx >= 0) {
-        var entry = this.pending.splice(idx, 1)[0];
-        clearTimeout(entry.timer);
-        entry.resolve(frame);
-      }
-    }).catch(() => {});
+    var dec;
+    try { dec = await this.nbc.decrypt(raw); } catch (e) { return; }
+    if (!dec) return;
+    var frame = La(dec);
+    if (!frame) return;
+    // Handshake-Antworten (INITIAL_KEY/SAVE_APP_KEY/CONFIRM_READY) vom Pairing-
+    // Peer sollen nicht versehentlich als Register-Antwort durchgehen.
+    if (frame.src === this.nbc.peerAddr && (frame.cmd === 91 || frame.cmd === 92 || frame.cmd === 93)) return;
+    // WICHTIG: Matching läuft über frame.src (wer geantwortet hat), NICHT
+    // frame.dst (das ist immer der Host) - das war der Kernbug.
+    var idx = this.pending.findIndex(e => e.target === frame.src && (!e.expectedCmd || e.expectedCmd.has(frame.cmd)));
+    if (idx >= 0) {
+      var entry = this.pending.splice(idx, 1)[0];
+      clearTimeout(entry.timer);
+      entry.resolve(frame);
+    }
   }
 
+  // Requests an dieselbe Zieladresse werden serialisiert, damit sich z.B.
+  // Keepalive-Speed-Read und readAllSettings() nicht gegenseitig die
+  // Antworten wegschnappen.
   async request(frame, timeout, opts) {
+    var dst = frame.dst;
+    var prev = this.dstTails.get(dst) || Promise.resolve();
+    var run = prev.then(() => this._doRequest(frame, timeout, opts), () => this._doRequest(frame, timeout, opts));
+    var tailGuard = run.then(() => undefined, () => undefined);
+    this.dstTails.set(dst, tailGuard);
+    tailGuard.then(() => { if (this.dstTails.get(dst) === tailGuard) this.dstTails.delete(dst); });
+    return run;
+  }
+
+  async _doRequest(frame, timeout, opts) {
     return new Promise((resolve, reject) => {
       var data = Ia(frame);
-      var expected = (opts && opts.expectedCmd) ? (Array.isArray(opts.expectedCmd) ? opts.expectedCmd : [opts.expectedCmd]) : null;
+      var expected = (opts && opts.expectedCmd) ? new Set(Array.isArray(opts.expectedCmd) ? opts.expectedCmd : [opts.expectedCmd]) : null;
       var entry = { target: frame.dst, expectedCmd: expected, resolve: resolve, reject: reject };
       var timer = setTimeout(() => {
         var idx = this.pending.indexOf(entry);
         if (idx >= 0) this.pending.splice(idx, 1);
-        reject(new Error('timeout waiting for response'));
-      }, timeout || 2000);
+        reject(new Error('timeout waiting for response from 0x' + frame.dst.toString(16) + ' cmd=0x' + frame.cmd.toString(16) + ' arg=0x' + frame.arg.toString(16)));
+      }, timeout || 10000);
       entry.timer = timer;
       this.pending.push(entry);
-      this.ble.write(data, true).catch(err => {
+      this.nbc.encrypt(data).then(enc => {
+        return this.ble.write(enc, true);
+      }).catch(err => {
         clearTimeout(timer);
         var idx = this.pending.indexOf(entry);
         if (idx >= 0) this.pending.splice(idx, 1);
@@ -787,24 +845,30 @@ class NbcSession {
   async readRegister(dst, reg, len, timeout) {
     var f = { src: X.HOST, dst: dst, cmd: 1, arg: reg, data: Uint8Array.of(len & 255, (len >> 8) & 255) };
     var resp = await this.request(f, timeout || 1500, { expectedCmd: 4 });
-    if (resp.arg !== reg) throw new Error('readRegister arg mismatch');
-    if (resp.data.length !== len) throw new Error('readRegister length mismatch');
+    if (resp.arg !== reg) throw new Error('readRegister arg mismatch: reg=0x' + reg.toString(16) + ' got arg=0x' + resp.arg.toString(16));
+    if (resp.data.length !== len) throw new Error('readRegister length mismatch: reg=0x' + reg.toString(16) + ' expected ' + len + ' got ' + resp.data.length);
     return resp.data;
   }
 
   async writeRegister(dst, reg, data, timeout) {
     var f = { src: X.HOST, dst: dst, cmd: 2, arg: reg, data: data };
     var resp = await this.request(f, timeout || 1500, { expectedCmd: 5 });
-    if (resp.arg !== reg) throw new Error('writeRegister arg mismatch');
+    if (resp.cmd !== 5 || resp.arg !== reg) throw new Error('writeRegister reg=0x' + reg.toString(16) + ' unexpected ack: cmd=0x' + resp.cmd.toString(16) + ' arg=0x' + resp.arg.toString(16));
+    if (resp.data.length >= 2 && (resp.data[0] | (resp.data[1] << 8))) {
+      var code = resp.data[0] | (resp.data[1] << 8);
+      throw new Error('writeRegister reg=0x' + reg.toString(16) + ' rejected with code 0x' + code.toString(16));
+    }
   }
 
-  async writeRegisterFlash(dst, reg, data, timeout) {
+  async writeRegisterFlash(dst, reg, data) {
     var f = { src: X.HOST, dst: dst, cmd: 3, arg: reg, data: data };
-    // Wichtig: OHNE Response (wie im Original)
-    await this.ble.write(Ia(f), false);
+    // Wichtig: OHNE Response (wie im Original) - aber trotzdem über nbc.encrypt()!
+    var enc = await this.nbc.encrypt(Ia(f));
+    await this.ble.write(enc, false);
   }
 
   async close() {
+    this.assembler.stop();
     this.pending.forEach(e => { clearTimeout(e.timer); e.reject(new Error('session closed')); });
     this.pending = [];
     await this.ble.disconnect();
@@ -828,6 +892,7 @@ class BleDevice {
     this._listeners = [];
     this._disconnectCbs = [];
     this._connected = false;
+    this._writeChain = Promise.resolve(); // serialisiert Writes (wie im Original)
   }
   async connect() {
     var server = await this.device.gatt.connect();
@@ -842,7 +907,7 @@ class BleDevice {
   _onValue(ev) {
     var val = ev.target.value;
     if (val) {
-      var data = new Uint8Array(val.buffer, val.byteOffset, val.byteLength);
+      var data = new Uint8Array(val.buffer, val.byteOffset, val.byteLength).slice();
       for (var cb of this._listeners) cb(data);
     }
   }
@@ -850,11 +915,24 @@ class BleDevice {
     this._connected = false;
     for (var cb of this._disconnectCbs) cb();
   }
+  // onTx = Alias für den Frame-Assembler (Original nennt es so)
+  onTx(cb) { return this.onData(cb); }
   onData(cb) { this._listeners.push(cb); return () => { var i = this._listeners.indexOf(cb); if (i >= 0) this._listeners.splice(i, 1); }; }
   onDisconnect(cb) { this._disconnectCbs.push(cb); return () => { var i = this._disconnectCbs.indexOf(cb); if (i >= 0) this._disconnectCbs.splice(i, 1); }; }
-  async write(data, withResponse) {
-    if (withResponse) await this._rxChar.writeValueWithResponse(data);
-    else await this._rxChar.writeValue(data);
+  // Writes werden serialisiert (nächster Write wartet auf vorherigen) und
+  // fallen bei writeValueWithResponse-Fehlern auf writeValueWithoutResponse
+  // zurück - genau wie im Original-Bundle.
+  write(data, withResponse) {
+    var buf = new Uint8Array(data).buffer;
+    var run = this._writeChain.then(async () => {
+      if (withResponse && this._rxChar.writeValueWithResponse) {
+        try { await this._rxChar.writeValueWithResponse(buf); return; } catch (e) {}
+      }
+      if (this._rxChar.writeValueWithoutResponse) await this._rxChar.writeValueWithoutResponse(buf);
+      else await this._rxChar.writeValue(buf);
+    });
+    this._writeChain = run.then(() => undefined, () => undefined);
+    return run;
   }
   async disconnect() {
     try { await this._txChar.stopNotifications(); } catch (e) {}
