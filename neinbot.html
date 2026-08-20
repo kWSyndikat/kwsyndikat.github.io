@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Neinbot CFW · Tuning</title>
   <style>
     * { box-sizing: border-box; margin: 0; }
@@ -10,19 +10,21 @@
       background: #1a1c1e;
       color: #c8ccd0;
       font-family: 'Helvetica Neue', 'Segoe UI', sans-serif;
-      padding: 20px;
+      padding: 16px;
       min-height: 100vh;
     }
-    #app { max-width: 780px; margin: 0 auto; }
+    #app { max-width: 760px; margin: 0 auto; }
+
     .header {
       display: flex;
       align-items: center;
-      gap: 18px;
+      gap: 16px;
       border-bottom: 1px solid #2a2c2e;
-      padding-bottom: 14px;
-      margin-bottom: 20px;
+      padding-bottom: 12px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
     }
-    .header img { height: 42px; width: auto; }
+    .header img { height: 40px; width: auto; }
     .header h1 {
       font-weight: 300;
       letter-spacing: 4px;
@@ -30,87 +32,95 @@
       color: #8a8e92;
       text-transform: uppercase;
     }
+
     .status-bar {
       display: flex;
       justify-content: space-between;
+      align-items: center;
       font-size: 13px;
       color: #6a6e72;
-      margin-bottom: 18px;
+      margin-bottom: 16px;
       flex-wrap: wrap;
-      gap: 6px;
+      gap: 8px;
     }
     #connectBtn {
       background: #2a2c2e;
       border: 1px solid #3a3c3e;
       color: #c8ccd0;
-      padding: 8px 22px;
-      font-size: 13px;
-      letter-spacing: 1.5px;
-      cursor: pointer;
+      padding: 7px 20px;
       border-radius: 30px;
+      font-size: 13px;
+      cursor: pointer;
       transition: 0.2s;
+      letter-spacing: 1px;
       white-space: nowrap;
     }
     #connectBtn:hover { background: #3a3c3e; }
     #connectBtn:disabled { opacity: 0.4; cursor: default; }
+    #powerHint {
+      background: #2a1c1c;
+      border: 1px solid #5a3a3a;
+      color: #e8b0b0;
+      padding: 10px 14px;
+      border-radius: 6px;
+      margin-bottom: 14px;
+      font-size: 14px;
+      display: none;
+    }
+    #powerHint.active { display: block; }
 
-    /* Tabs */
     .tabs {
       display: flex;
       gap: 2px;
-      margin-bottom: 20px;
       border-bottom: 1px solid #2a2c2e;
+      margin-bottom: 16px;
       flex-wrap: wrap;
     }
     .tab {
-      padding: 8px 16px;
       background: transparent;
       border: none;
       color: #6a6e72;
+      padding: 8px 16px;
       font-size: 13px;
       cursor: pointer;
-      letter-spacing: 0.5px;
       border-bottom: 2px solid transparent;
       transition: 0.2s;
+      letter-spacing: 0.5px;
     }
-    .tab.active {
-      color: #c8ccd0;
-      border-bottom-color: #8a8e92;
-    }
+    .tab.active { color: #c8ccd0; border-bottom-color: #8a8e92; }
     .tab:hover { color: #c8ccd0; }
 
     .panel { display: none; }
     .panel.active { display: block; }
 
-    /* Karten */
     .card {
       background: #1e2022;
       border: 1px solid #2a2c2e;
       border-radius: 8px;
-      padding: 16px 18px;
-      margin-bottom: 16px;
+      padding: 14px 16px;
+      margin-bottom: 14px;
     }
     .card-title {
-      font-size: 14px;
+      font-size: 13px;
       font-weight: 400;
       letter-spacing: 1px;
       color: #8a8e92;
-      margin-bottom: 12px;
-      border-bottom: 1px solid #2a2c2e;
-      padding-bottom: 8px;
       text-transform: uppercase;
+      border-bottom: 1px solid #2a2c2e;
+      padding-bottom: 7px;
+      margin-bottom: 10px;
     }
     .row {
       display: flex;
       flex-wrap: wrap;
       align-items: center;
-      gap: 12px 16px;
-      padding: 8px 0;
+      gap: 10px 14px;
+      padding: 7px 0;
       border-bottom: 1px solid #242628;
     }
     .row:last-child { border-bottom: none; }
     .row label {
-      flex: 0 0 140px;
+      flex: 0 0 130px;
       font-size: 13px;
       color: #b0b4b8;
     }
@@ -122,13 +132,13 @@
     }
     .row input[type="range"] {
       flex: 1;
-      min-width: 100px;
-      background: #2a2c2e;
+      min-width: 80px;
       height: 4px;
       -webkit-appearance: none;
       appearance: none;
-      outline: none;
+      background: #2a2c2e;
       border-radius: 2px;
+      outline: none;
     }
     .row input[type="range"]::-webkit-slider-thumb {
       -webkit-appearance: none;
@@ -160,7 +170,7 @@
       background: #2a2c2e;
       border: 1px solid #3a3c3e;
       color: #c8ccd0;
-      padding: 6px 16px;
+      padding: 5px 14px;
       border-radius: 20px;
       font-size: 12px;
       cursor: pointer;
@@ -172,63 +182,53 @@
     .btn-primary { background: #3a3c3e; border-color: #5a5c5e; }
     .btn-primary:hover { background: #4a4c4e; }
 
-    .dpad {
-      display: grid;
-      grid-template-columns: repeat(3, 60px);
-      grid-template-rows: repeat(3, 60px);
-      gap: 6px;
-      justify-content: center;
-      margin: 12px 0;
-    }
-    .dpad button {
-      background: #2a2c2e;
-      border: 1px solid #3a3c3e;
-      border-radius: 6px;
-      color: #c8ccd0;
-      font-size: 18px;
-      cursor: pointer;
-      transition: 0.2s;
+    .pattern-buttons {
       display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .dpad button:hover { background: #3a3c3e; }
-    .dpad button:disabled { opacity: 0.3; cursor: default; }
-    .dpad .center { background: transparent; border: none; cursor: default; }
-    .pattern-display {
-      display: flex;
+      flex-wrap: wrap;
       gap: 8px;
       justify-content: center;
       margin: 8px 0;
+    }
+    .pattern-buttons button {
+      background: #2a2c2e;
+      border: 1px solid #3a3c3e;
+      color: #c8ccd0;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+    .pattern-buttons button:hover { background: #3a3c3e; }
+    .pattern-buttons button:disabled { opacity: 0.3; cursor: default; }
+    .pattern-display {
+      display: flex;
+      gap: 6px;
+      justify-content: center;
+      flex-wrap: wrap;
       min-height: 30px;
+      margin: 6px 0;
     }
     .pattern-display span {
       background: #2a2c2e;
-      padding: 4px 10px;
+      padding: 3px 10px;
       border-radius: 4px;
       font-size: 13px;
       border: 1px solid #3a3c3e;
     }
     .pattern-display .empty { color: #4a4c4e; }
 
-    .toggle-group {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-    .toggle-group label {
-      display: flex;
-      align-items: center;
-      gap: 6px;
+    .status-msg {
       font-size: 13px;
-      color: #b0b4b8;
-      cursor: pointer;
+      color: #6a6e72;
+      margin-left: 10px;
     }
+    .status-msg.ok { color: #8ab88a; }
+    .status-msg.err { color: #d08a8a; }
 
-    /* Tacho Canvas */
     canvas#speedometer {
       display: block;
-      margin: 0 auto 8px;
+      margin: 0 auto 6px;
       width: 100%;
       max-width: 300px;
       height: auto;
@@ -238,7 +238,7 @@
     }
     #speedDisplay {
       text-align: center;
-      font-size: 32px;
+      font-size: 30px;
       font-weight: 300;
       letter-spacing: 2px;
       color: #e8eaee;
@@ -253,21 +253,20 @@
       font-size: 11px;
       color: #4a4c4e;
       text-align: center;
-      margin-top: 10px;
+      margin-top: 8px;
     }
 
     @media (max-width: 600px) {
       .row label { flex-basis: 100%; }
       .row .value { flex-basis: 100%; }
       .header { flex-wrap: wrap; }
-      .header img { height: 32px; }
     }
   </style>
 </head>
 <body>
 <div id="app">
   <div class="header">
-    <img src="https://files.catbox.moe/mzhr5b.jpg" alt="Neinbot CFW Logo" height="42">
+    <img src="https://files.catbox.moe/mzhr5b.jpg" alt="Neinbot CFW" height="40" />
     <h1>Neinbot CFW</h1>
   </div>
 
@@ -276,6 +275,9 @@
     <button id="connectBtn">Verbinden</button>
   </div>
 
+  <!-- Power‑Button Aufforderung -->
+  <div id="powerHint">🔘 Bitte drücken Sie jetzt den <strong>Power‑Button</strong> am Scooter, um die Kopplung zu autorisieren.</div>
+
   <!-- Tabs -->
   <div class="tabs" id="tabContainer">
     <button class="tab active" data-tab="dash">Tacho</button>
@@ -283,16 +285,15 @@
     <button class="tab" data-tab="motor">Motor</button>
   </div>
 
-  <!-- Panel: Tacho -->
+  <!-- Panel Tacho -->
   <div class="panel active" id="panel-dash">
     <canvas id="speedometer" width="300" height="300"></canvas>
     <div id="speedDisplay">0 <small>km/h</small></div>
-    <div class="hint">Live über Bluetooth</div>
+    <div class="hint">Live über Bluetooth · Keepalive aktiv</div>
   </div>
 
-  <!-- Panel: CFW -->
+  <!-- Panel CFW -->
   <div class="panel" id="panel-cfw">
-    <!-- Profilauswahl -->
     <div class="card">
       <div class="card-title">Profil</div>
       <div class="row">
@@ -302,81 +303,56 @@
       </div>
     </div>
 
-    <!-- Standard-Profil -->
     <div class="card">
-      <div class="card-title">Standard-Profil</div>
+      <div class="card-title">Standard‑Profil</div>
       <div class="row">
         <label>Geschwindigkeit (km/h)</label>
-        <input type="range" id="stdSpeed" min="10" max="45" value="22">
+        <input type="range" id="stdSpeed" min="10" max="45" value="22" />
         <span class="value" id="stdSpeedVal">22</span>
       </div>
-      <div class="row">
-        <label>Underglow</label>
-        <input type="checkbox" id="stdUnderglow">
-      </div>
-      <div class="row">
-        <label>Frontlichtleiste</label>
-        <input type="checkbox" id="stdFrontBar">
-      </div>
-      <div class="row">
-        <label>Tempomat</label>
-        <input type="checkbox" id="stdCruise">
-      </div>
+      <div class="row"><label>Underglow</label><input type="checkbox" id="stdUnderglow" /></div>
+      <div class="row"><label>Frontlichtleiste</label><input type="checkbox" id="stdFrontBar" /></div>
+      <div class="row"><label>Tempomat</label><input type="checkbox" id="stdCruise" /></div>
     </div>
 
-    <!-- Tuning-Profil -->
     <div class="card">
-      <div class="card-title">Tuning-Profil</div>
+      <div class="card-title">Tuning‑Profil</div>
       <div class="row">
         <label>Geschwindigkeit (km/h)</label>
-        <input type="range" id="tunSpeed" min="10" max="100" value="45">
+        <input type="range" id="tunSpeed" min="10" max="100" value="45" />
         <span class="value" id="tunSpeedVal">45</span>
       </div>
-      <div class="row">
-        <label>Underglow</label>
-        <input type="checkbox" id="tunUnderglow" checked>
-      </div>
-      <div class="row">
-        <label>Frontlichtleiste</label>
-        <input type="checkbox" id="tunFrontBar" checked>
-      </div>
-      <div class="row">
-        <label>Tempomat</label>
-        <input type="checkbox" id="tunCruise" checked>
-      </div>
+      <div class="row"><label>Underglow</label><input type="checkbox" id="tunUnderglow" checked /></div>
+      <div class="row"><label>Frontlichtleiste</label><input type="checkbox" id="tunFrontBar" checked /></div>
+      <div class="row"><label>Tempomat</label><input type="checkbox" id="tunCruise" checked /></div>
     </div>
 
-    <!-- Unlock Pattern -->
     <div class="card">
       <div class="card-title">Unlock Pattern (max. 6)</div>
-      <div class="pattern-display" id="patternDisplay">
-        <span class="empty">—</span>
+      <div class="pattern-display" id="patternDisplay"><span class="empty">—</span></div>
+      <div class="pattern-buttons" id="patternButtons">
+        <button data-key="1">Left Brake</button>
+        <button data-key="2">Right Brake</button>
+        <button data-key="3">Left Blinker</button>
+        <button data-key="4">Right Blinker</button>
+        <button data-key="5">Mode</button>
+        <button data-key="6">Power</button>
       </div>
-      <div class="dpad">
-        <button data-dir="up">▲</button>
-        <button class="center"></button>
-        <button data-dir="right">▶</button>
-        <button data-dir="left">◀</button>
-        <button class="center"></button>
-        <button data-dir="down">▼</button>
-      </div>
-      <div style="display:flex; gap:10px; justify-content:center; margin-top:8px;">
+      <div style="display:flex; gap:10px; justify-content:center; margin-top:6px;">
         <button class="btn" id="clearPattern">Löschen</button>
-        <button class="btn btn-primary" id="savePattern">Pattern speichern</button>
+        <button class="btn btn-primary" id="savePatternBtn">Pattern speichern</button>
       </div>
     </div>
 
-    <!-- Save to Scooter -->
     <div class="card">
       <div class="card-title">CFW speichern</div>
       <button class="btn btn-primary" id="saveCfwBtn">Alle CFW-Einstellungen speichern</button>
-      <span id="cfwSaveStatus" style="margin-left:12px; font-size:13px; color:#6a6e72;"></span>
+      <span class="status-msg" id="cfwSaveStatus"></span>
     </div>
   </div>
 
-  <!-- Panel: Motor -->
+  <!-- Panel Motor -->
   <div class="panel" id="panel-motor">
-    <!-- Throttle -->
     <div class="card">
       <div class="card-title">Throttle Response</div>
       <div class="row">
@@ -389,451 +365,992 @@
       </div>
     </div>
 
-    <!-- Performance -->
     <div class="card">
       <div class="card-title">Performance</div>
       <div class="row">
         <label>Target Top Speed (km/h)</label>
-        <input type="range" id="targetSpeed" min="0" max="100" value="50">
+        <input type="range" id="targetSpeed" min="0" max="100" value="50" />
         <span class="value" id="targetSpeedVal">50</span>
       </div>
-      <div class="row">
-        <label>Overdrive</label>
-        <input type="checkbox" id="overdriveToggle">
-      </div>
+      <div class="row"><label>Overdrive</label><input type="checkbox" id="overdriveToggle" /></div>
       <div class="row">
         <label>Pulling Power (%)</label>
-        <input type="range" id="pullingPower" min="0" max="50" value="0">
+        <input type="range" id="pullingPower" min="0" max="50" value="0" />
         <span class="value" id="pullingPowerVal">0</span>
       </div>
     </div>
 
-    <!-- Field Weakening -->
     <div class="card">
       <div class="card-title">Field Weakening</div>
-      <div class="row">
-        <label>Aktiv</label>
-        <input type="checkbox" id="fwEnable">
-      </div>
+      <div class="row"><label>Aktiv</label><input type="checkbox" id="fwEnable" /></div>
       <div class="row">
         <label>Ampere (A)</label>
-        <input type="range" id="fwAmpere" min="0" max="80" value="40">
+        <input type="range" id="fwAmpere" min="0" max="80" value="40" />
         <span class="value" id="fwAmpereVal">40</span>
       </div>
       <div class="row">
         <label>Engage Speed (km/h)</label>
-        <input type="range" id="fwEngageSpeed" min="30" max="45" value="35">
+        <input type="range" id="fwEngageSpeed" min="30" max="45" value="35" />
         <span class="value" id="fwEngageSpeedVal">35</span>
       </div>
-      <div class="row">
-        <label>Engage earlier on low batt.</label>
-        <input type="checkbox" id="fwLowBattEnable">
-      </div>
+      <div class="row"><label>Engage earlier on low batt.</label><input type="checkbox" id="fwLowBattEnable" /></div>
       <div class="row">
         <label>Kicks in below (V)</label>
-        <input type="range" id="fwLowBattVoltage" min="42" max="50" value="47">
+        <input type="range" id="fwLowBattVoltage" min="42" max="50" value="47" />
         <span class="value" id="fwLowBattVoltageVal">47</span>
       </div>
     </div>
 
-    <!-- Motor speichern -->
     <div class="card">
       <div class="card-title">Motor-Tuning speichern</div>
       <button class="btn btn-primary" id="saveMotorBtn">Motor-Einstellungen speichern</button>
-      <span id="motorSaveStatus" style="margin-left:12px; font-size:13px; color:#6a6e72;"></span>
+      <span class="status-msg" id="motorSaveStatus"></span>
     </div>
   </div>
 </div>
 
 <script>
 // ============================================================
-// 1. TEA‑Kryptographie (identisch zur Vorgänger‑App)
+// 1. TEA‑Kryptographie (aus N‑SAK‑Protokoll, aber eigenständig)
 // ============================================================
 var Tp = 2654435769, Ep = 32;
-function Dp(e,t){return(e[t]|e[t+1]<<8|e[t+2]<<16|e[t+3]<<24)>>>0}
-function Op(e,t,n){e[t]=n&255;e[t+1]=(n>>>8)&255;e[t+2]=(n>>>16)&255;e[t+3]=(n>>>24)&255}
-function kp(e){if(e.length!==16)throw Error('key 16 bytes');return[Dp(e,0),Dp(e,4),Dp(e,8),Dp(e,12)]}
-function Ap(e){var t=new Uint8Array(16);Op(t,0,e[0]);Op(t,4,e[1]);Op(t,8,e[2]);Op(t,12,e[3]);return t}
-function jp(e){var t=Ap(e);for(var n=0;n<16;n++)t[n]=(t[n]+n)&255;return kp(t)}
-function Mp(e,t,n){var r=e>>>0,i=t>>>0,a=0;for(var o=0;o<Ep;o++){a=(a+Tp)>>>0;r=(r+(((i<<4)>>>0)+n[0]>>>0^i+a>>>0^((i>>>5)+n[1])>>>0))>>>0;i=(i+(((r<<4)>>>0)+n[2]>>>0^r+a>>>0^((r>>>5)+n[3])>>>0))>>>0}return[r,i]}
-function Np(e,t,n){var r=e>>>0,i=t>>>0,a=(Tp*Ep)>>>0;for(var o=0;o<Ep;o++){i=(i-(((r<<4)>>>0)+n[2]>>>0^r+a>>>0^((r>>>5)+n[3])>>>0))>>>0;r=(r-(((i<<4)>>>0)+n[0]>>>0^i+a>>>0^((i>>>5)+n[1])>>>0))>>>0;a=(a-Tp)>>>0}return[r,i]}
-function Pp(e){if(e.length%4)throw Error('4-byte alignment');var t=0;for(var n=0;n<e.length;n+=4)t=(t+Dp(e,n))>>>0;return(((t>>>16)&0xFFFF|(t&0xFFFF)<<16)>>>0^0xFFFFFFFF)>>>0}
-function Fp(e){var t=(4-e.length%4)%4,n=new Uint8Array(e.length+t);n.set(e);if(n.length%8===0){var r=new Uint8Array(n.length+4);r.set(n);n=r}var i=new Uint8Array(n.length+4);i.set(n);Op(i,n.length,Pp(n));return i}
-function Ip(e){if(e.length<4)throw Error('short');var t=e.subarray(0,e.length-4),n=Dp(e,e.length-4);if(Pp(t)!==n)throw Error('TEA checksum mismatch');return t.slice()}
-function Lp(e,t){t=t||{};var n=t.key||new Uint8Array([254,128,28,178,209,239,65,166,164,23,49,245,160,104,36,240]);var r=t.iv||new Uint8Array(8);if(r.length!==8)throw Error('iv 8 bytes');var i=kp(n),a=Dp(r,0)>>>0,o=Dp(r,4)>>>0;var s=Fp(e),c=new Uint8Array(s.length),l=0;for(var u=0;u<s.length;u+=8){if(l===1024){i=jp(i);l=0}var d=Mp((Dp(s,u)^a)>>>0,(Dp(s,u+4)^o)>>>0,i);Op(c,u,d[0]);Op(c,u+4,d[1]);a=d[0];o=d[1];l+=8}return c}
-function Rp(e,t){t=t||{};var n=t.key||new Uint8Array([254,128,28,178,209,239,65,166,164,23,49,245,160,104,36,240]);var r=t.iv||new Uint8Array(8);if(r.length!==8)throw Error('iv 8 bytes');if(e.length%8)throw Error('ciphertext multiple of 8');var i=kp(n),a=Dp(r,0)>>>0,o=Dp(r,4)>>>0;var s=new Uint8Array(e.length),c=0;for(var l=0;l<e.length;l+=8){if(c===1024){i=jp(i);c=0}var u=Dp(e,l)>>>0,d=Dp(e,l+4)>>>0;var f=Np(u,d,i);Op(s,l,(f[0]^a)>>>0);Op(s,l+4,(f[1]^o)>>>0);a=u;o=d;c+=8}return Ip(s)}
+function Dp(e, t) { return (e[t] | e[t + 1] << 8 | e[t + 2] << 16 | e[t + 3] << 24) >>> 0; }
+function Op(e, t, n) { e[t] = n & 255; e[t + 1] = (n >>> 8) & 255; e[t + 2] = (n >>> 16) & 255; e[t + 3] = (n >>> 24) & 255; }
+function kp(e) { if (e.length !== 16) throw Error('key must be 16 bytes'); return [Dp(e, 0), Dp(e, 4), Dp(e, 8), Dp(e, 12)]; }
+function Ap(e) { var t = new Uint8Array(16); Op(t, 0, e[0]); Op(t, 4, e[1]); Op(t, 8, e[2]); Op(t, 12, e[3]); return t; }
+function jp(e) { var t = Ap(e); for (var n = 0; n < 16; n++) t[n] = (t[n] + n) & 255; return kp(t); }
+function Mp(e, t, n) {
+  var r = e >>> 0, i = t >>> 0, a = 0;
+  for (var o = 0; o < Ep; o++) {
+    a = (a + Tp) >>> 0;
+    r = (r + (((i << 4) >>> 0) + n[0] >>> 0 ^ i + a >>> 0 ^ ((i >>> 5) + n[1]) >>> 0)) >>> 0;
+    i = (i + (((r << 4) >>> 0) + n[2] >>> 0 ^ r + a >>> 0 ^ ((r >>> 5) + n[3]) >>> 0)) >>> 0;
+  }
+  return [r, i];
+}
+function Np(e, t, n) {
+  var r = e >>> 0, i = t >>> 0, a = (Tp * Ep) >>> 0;
+  for (var o = 0; o < Ep; o++) {
+    i = (i - (((r << 4) >>> 0) + n[2] >>> 0 ^ r + a >>> 0 ^ ((r >>> 5) + n[3]) >>> 0)) >>> 0;
+    r = (r - (((i << 4) >>> 0) + n[0] >>> 0 ^ i + a >>> 0 ^ ((i >>> 5) + n[1]) >>> 0)) >>> 0;
+    a = (a - Tp) >>> 0;
+  }
+  return [r, i];
+}
+function Pp(e) { if (e.length % 4) throw Error('4‑byte alignment'); var t = 0; for (var n = 0; n < e.length; n += 4) t = (t + Dp(e, n)) >>> 0; return (((t >>> 16) & 0xFFFF | (t & 0xFFFF) << 16) >>> 0 ^ 0xFFFFFFFF) >>> 0; }
+function Fp(e) { var t = (4 - e.length % 4) % 4, n = new Uint8Array(e.length + t); n.set(e); if (n.length % 8 === 0) { var r = new Uint8Array(n.length + 4); r.set(n); n = r; } var i = new Uint8Array(n.length + 4); i.set(n); Op(i, n.length, Pp(n)); return i; }
+function Ip(e) { if (e.length < 4) throw Error('too short'); var t = e.subarray(0, e.length - 4), n = Dp(e, e.length - 4); if (Pp(t) !== n) throw Error('TEA checksum mismatch'); return t.slice(); }
+function Lp(e, t) {
+  t = t || {};
+  var n = t.key || new Uint8Array([254, 128, 28, 178, 209, 239, 65, 166, 164, 23, 49, 245, 160, 104, 36, 240]);
+  var r = t.iv || new Uint8Array(8);
+  if (r.length !== 8) throw Error('iv must be 8 bytes');
+  var i = kp(n), a = Dp(r, 0) >>> 0, o = Dp(r, 4) >>> 0;
+  var s = Fp(e), c = new Uint8Array(s.length), l = 0;
+  for (var u = 0; u < s.length; u += 8) {
+    if (l === 1024) { i = jp(i); l = 0; }
+    var d = Mp((Dp(s, u) ^ a) >>> 0, (Dp(s, u + 4) ^ o) >>> 0, i);
+    Op(c, u, d[0]); Op(c, u + 4, d[1]);
+    a = d[0]; o = d[1]; l += 8;
+  }
+  return c;
+}
+function Rp(e, t) {
+  t = t || {};
+  var n = t.key || new Uint8Array([254, 128, 28, 178, 209, 239, 65, 166, 164, 23, 49, 245, 160, 104, 36, 240]);
+  var r = t.iv || new Uint8Array(8);
+  if (r.length !== 8) throw Error('iv must be 8 bytes');
+  if (e.length % 8) throw Error('ciphertext must be multiple of 8');
+  var i = kp(n), a = Dp(r, 0) >>> 0, o = Dp(r, 4) >>> 0;
+  var s = new Uint8Array(e.length), c = 0;
+  for (var l = 0; l < e.length; l += 8) {
+    if (c === 1024) { i = jp(i); c = 0; }
+    var u = Dp(e, l) >>> 0, d = Dp(e, l + 4) >>> 0;
+    var f = Np(u, d, i);
+    Op(s, l, (f[0] ^ a) >>> 0); Op(s, l + 4, (f[1] ^ o) >>> 0);
+    a = u; o = d; c += 8;
+  }
+  return Ip(s);
+}
 
 // ============================================================
 // 2. BLE‑Hilfsfunktionen
 // ============================================================
-var X={HOST:62,VCU:22,MCU:2,BLE:4,BMS:7};
-function Ia(e){if(e.data.length>255)throw RangeError('frame too long');var t=new Uint8Array(7+e.data.length);t[0]=0x5A;t[1]=0xA5;t[2]=e.data.length;t[3]=e.src;t[4]=e.dst;t[5]=e.cmd;t[6]=e.arg;t.set(e.data,7);return t}
-function La(e){if(e.length<7||e[0]!==0x5A||e[1]!==0xA5)return null;var t=e[2];if(e.length<7+t)return null;return{src:e[3],dst:e[4],cmd:e[5],arg:e[6],data:e.slice(7,7+t)}}
+var X = { HOST: 62, VCU: 22, MCU: 2, BLE: 4, BMS: 7 };
+function Ia(e) {
+  if (e.data.length > 255) throw RangeError('frame too long');
+  var t = new Uint8Array(7 + e.data.length);
+  t[0] = 0x5A; t[1] = 0xA5; t[2] = e.data.length;
+  t[3] = e.src; t[4] = e.dst; t[5] = e.cmd; t[6] = e.arg;
+  t.set(e.data, 7);
+  return t;
+}
+function La(e) {
+  if (e.length < 7 || e[0] !== 0x5A || e[1] !== 0xA5) return null;
+  var t = e[2];
+  if (e.length < 7 + t) return null;
+  return { src: e[3], dst: e[4], cmd: e[5], arg: e[6], data: e.slice(7, 7 + t) };
+}
 
 // ============================================================
-// 3. Nbc (Handshake) – vereinfacht aber voll funktionsfähig
+// 3. Nbc (Handshake) – vollständig, mit Power‑Button‑Warteschleife
 // ============================================================
-var Bo = Uint8Array.of(151,207,184,2,132,65,67,222,86,0,43,59,52,120,10,93);
-async function Uo(e,t){if(e.length!==16||t.length!==16)throw Error('16 bytes');var n=new Uint8Array(32);n.set(e,0);n.set(t,16);var r=await crypto.subtle.digest('SHA-1',n);return new Uint8Array(r).slice(0,16)}
-async function Vo(e,t){var n=await crypto.subtle.importKey('raw',e,{name:'AES-CBC'},false,['encrypt']);var r=new Uint8Array(16);var i=await crypto.subtle.encrypt({name:'AES-CBC',iv:r},n,t);return new Uint8Array(i).slice(0,16)}
+var Bo = Uint8Array.of(151, 207, 184, 2, 132, 65, 67, 222, 86, 0, 43, 59, 52, 120, 10, 93);
+
+async function Uo(e, t) {
+  if (e.length !== 16 || t.length !== 16) throw Error('16 bytes');
+  var n = new Uint8Array(32);
+  n.set(e, 0);
+  n.set(t, 16);
+  var r = await crypto.subtle.digest('SHA-1', n);
+  return new Uint8Array(r).slice(0, 16);
+}
+async function Vo(e, t) {
+  var n = await crypto.subtle.importKey('raw', e, { name: 'AES-CBC' }, false, ['encrypt']);
+  var r = new Uint8Array(16);
+  var i = await crypto.subtle.encrypt({ name: 'AES-CBC', iv: r }, n, t);
+  return new Uint8Array(i).slice(0, 16);
+}
 
 class Nbc {
-  constructor(name){var enc=new TextEncoder();var d=typeof name==='string'?enc.encode(name):name;this.nameData=new Uint8Array(16);this.nameData.set(d.subarray(0,Math.min(16,d.length)));this.bleData=new Uint8Array(16);this.appData=new Uint8Array(16);this.sha1=null;this.msgIt=0;this.peerAddr=0;this.initialKeyTail=new Uint8Array(14);this.initialKeyReceived=false;this.recalcReceived=false;this.pairedReceived=false}
-  async init(){this.sha1=await Uo(this.nameData,Bo)}
-  setAppData(d){if(d.length!==16)throw Error('app_data 16 bytes');this.appData=d.slice()}
-  async cryptoFirst(e){var t=await Vo(this.sha1,Bo);var n=new Uint8Array(e.length);for(var r=0;r<e.length;r+=16){var i=Math.min(16,e.length-r);for(var a=0;a<i;a++)n[r+a]=e[r+a]^t[a]}return n}
-  async cryptoNext(e,t){var n=new Uint8Array(16);n[0]=1;n[1]=(t>>>24)&255;n[2]=(t>>>16)&255;n[3]=(t>>>8)&255;n[4]=t&255;n.set(this.bleData.subarray(0,8),5);var r=new Uint8Array(e.length),i=0;for(var a=0;a<e.length;a+=16){i+=1;n[15]=i&255;var o=await Vo(this.sha1,n);var s=Math.min(16,e.length-a);for(var c=0;c<s;c++)r[a+c]=e[a+c]^o[c]}return r}
-  async computeMac(e,t){var n=e.length-3,r=new Uint8Array(16);r[0]=89;r[1]=(t>>>24)&255;r[2]=(t>>>16)&255;r[3]=(t>>>8)&255;r[4]=t&255;r.set(this.bleData.subarray(0,8),5);r[15]=n&255;var i=await Vo(this.sha1,r);var a=new Uint8Array(16);a.set(e.subarray(0,3),0);i=await Vo(this.sha1,(function(b,c){var d=new Uint8Array(16);for(var f=0;f<16;f++)d[f]=b[f]^c[f];return d})(a,i));for(var o=0;o<n;o+=16){var s=new Uint8Array(16);var l=Math.min(16,n-o);s.set(e.subarray(3+o,3+o+l),0);i=await Vo(this.sha1,(function(b,c){var d=new Uint8Array(16);for(var f=0;f<16;f++)d[f]=b[f]^c[f];return d})(s,i))}var u=new Uint8Array(16);u[0]=1;u[1]=(t>>>24)&255;u[2]=(t>>>16)&255;u[3]=(t>>>8)&255;u[4]=t&255;u.set(this.bleData.subarray(0,8),5);var p=await Vo(this.sha1,u);return Uint8Array.of(p[0]^i[0],p[1]^i[1],p[2]^i[2],p[3]^i[3])}
-  async decrypt(e){if(e.length<9||e[0]!==0x5A||e[1]!==0xA5)return null;var t=this.msgIt,n=(e[e.length-2]<<8|e[e.length-1])&0xFFFF;if((t&0x8000)&&!(e[e.length-2]>>7))t+=0x10000;var r=(t&0xFFFF0000)|n;var i=e.length-9,a=e.slice(3,3+i),o=e.slice(0,3);var s=new Uint8Array(3+i);s.set(o,0);if(r===0){var c=await this.cryptoFirst(a);s.set(c,3);if(s.length>=23&&s[2]>=22&&s[4]===62&&s[5]===91&&s[6]===1){this.bleData=s.slice(7,23);this.peerAddr=s[3];if(s.length>=37)this.initialKeyTail=s.slice(23,37);this.sha1=this.appData.some(e=>e!==0)?await Uo(this.appData,this.bleData):await Uo(this.nameData,this.bleData);this.initialKeyReceived=true}return s}var l=await this.cryptoNext(a,r);s.set(l,3);if(s.length>=23&&s[2]===16&&s[3]===62&&s[5]===92&&s[6]===0){this.appData=s.slice(7,23)}if(s.length>=7&&s[2]===0&&s[4]===62&&s[5]===92&&s[6]===1){this.sha1=await Uo(this.appData,this.bleData);this.recalcReceived=true}if(s.length>=7&&s[2]===0&&s[4]===62&&s[5]===93&&s[6]===1){this.pairedReceived=true}this.msgIt=r;return s}
-  async encrypt(e){if(e[0]!==0x5A||e[1]!==0xA5)throw Error('frame start 5A A5');var t=e.slice(0,3),n=e.slice(3);if(this.msgIt===0){var r=0;for(var o of n)r=(r+o)&0xFFFF;var i=((r^0xFFFF)&0xFFFF);var a=await this.cryptoFirst(n);var s=new Uint8Array(3+a.length+6);s.set(t,0);s.set(a,3);s[3+a.length+2]=i&255;s[3+a.length+3]=(i>>>8)&255;return s}this.msgIt+=1;var c=await this.computeMac(e,this.msgIt);var l=await this.cryptoNext(n,this.msgIt);var u=new Uint8Array(3+l.length+6);u.set(t,0);u.set(l,3);u.set(c,3+l.length);u[3+l.length+4]=(this.msgIt>>>8)&255;u[3+l.length+5]=this.msgIt&255;return u}
+  constructor(name) {
+    var enc = new TextEncoder();
+    var d = typeof name === 'string' ? enc.encode(name) : name;
+    this.nameData = new Uint8Array(16);
+    this.nameData.set(d.subarray(0, Math.min(16, d.length)));
+    this.bleData = new Uint8Array(16);
+    this.appData = new Uint8Array(16);
+    this.sha1 = null;
+    this.msgIt = 0;
+    this.peerAddr = 0;
+    this.initialKeyTail = new Uint8Array(14);
+    this.initialKeyReceived = false;
+    this.recalcReceived = false;
+    this.pairedReceived = false;
+  }
+  async init() { this.sha1 = await Uo(this.nameData, Bo); }
+  setAppData(d) { if (d.length !== 16) throw Error('app_data must be 16 bytes'); this.appData = d.slice(); }
+  async cryptoFirst(e) {
+    var t = await Vo(this.sha1, Bo);
+    var n = new Uint8Array(e.length);
+    for (var r = 0; r < e.length; r += 16) {
+      var i = Math.min(16, e.length - r);
+      for (var a = 0; a < i; a++) n[r + a] = e[r + a] ^ t[a];
+    }
+    return n;
+  }
+  async cryptoNext(e, t) {
+    var n = new Uint8Array(16);
+    n[0] = 1;
+    n[1] = (t >>> 24) & 255;
+    n[2] = (t >>> 16) & 255;
+    n[3] = (t >>> 8) & 255;
+    n[4] = t & 255;
+    n.set(this.bleData.subarray(0, 8), 5);
+    var r = new Uint8Array(e.length), i = 0;
+    for (var a = 0; a < e.length; a += 16) {
+      i += 1;
+      n[15] = i & 255;
+      var o = await Vo(this.sha1, n);
+      var s = Math.min(16, e.length - a);
+      for (var c = 0; c < s; c++) r[a + c] = e[a + c] ^ o[c];
+    }
+    return r;
+  }
+  async computeMac(e, t) {
+    var n = e.length - 3, r = new Uint8Array(16);
+    r[0] = 89;
+    r[1] = (t >>> 24) & 255;
+    r[2] = (t >>> 16) & 255;
+    r[3] = (t >>> 8) & 255;
+    r[4] = t & 255;
+    r.set(this.bleData.subarray(0, 8), 5);
+    r[15] = n & 255;
+    var i = await Vo(this.sha1, r);
+    var a = new Uint8Array(16);
+    a.set(e.subarray(0, 3), 0);
+    i = await Vo(this.sha1, (function(b, c) { var d = new Uint8Array(16); for (var f = 0; f < 16; f++) d[f] = b[f] ^ c[f]; return d; })(a, i));
+    for (var o = 0; o < n; o += 16) {
+      var s = new Uint8Array(16);
+      var l = Math.min(16, n - o);
+      s.set(e.subarray(3 + o, 3 + o + l), 0);
+      i = await Vo(this.sha1, (function(b, c) { var d = new Uint8Array(16); for (var f = 0; f < 16; f++) d[f] = b[f] ^ c[f]; return d; })(s, i));
+    }
+    var u = new Uint8Array(16);
+    u[0] = 1;
+    u[1] = (t >>> 24) & 255;
+    u[2] = (t >>> 16) & 255;
+    u[3] = (t >>> 8) & 255;
+    u[4] = t & 255;
+    u.set(this.bleData.subarray(0, 8), 5);
+    var p = await Vo(this.sha1, u);
+    return Uint8Array.of(p[0] ^ i[0], p[1] ^ i[1], p[2] ^ i[2], p[3] ^ i[3]);
+  }
+  async decrypt(e) {
+    if (e.length < 9 || e[0] !== 0x5A || e[1] !== 0xA5) return null;
+    var t = this.msgIt, n = (e[e.length - 2] << 8 | e[e.length - 1]) & 0xFFFF;
+    if ((t & 0x8000) && !(e[e.length - 2] >> 7)) t += 0x10000;
+    var r = (t & 0xFFFF0000) | n;
+    var i = e.length - 9, a = e.slice(3, 3 + i), o = e.slice(0, 3);
+    var s = new Uint8Array(3 + i);
+    s.set(o, 0);
+    if (r === 0) {
+      var c = await this.cryptoFirst(a);
+      s.set(c, 3);
+      if (s.length >= 23 && s[2] >= 22 && s[4] === 62 && s[5] === 91 && s[6] === 1) {
+        this.bleData = s.slice(7, 23);
+        this.peerAddr = s[3];
+        if (s.length >= 37) this.initialKeyTail = s.slice(23, 37);
+        this.sha1 = this.appData.some(e => e !== 0) ? await Uo(this.appData, this.bleData) : await Uo(this.nameData, this.bleData);
+        this.initialKeyReceived = true;
+      }
+      return s;
+    }
+    var l = await this.cryptoNext(a, r);
+    s.set(l, 3);
+    if (s.length >= 23 && s[2] === 16 && s[3] === 62 && s[5] === 92 && s[6] === 0) {
+      this.appData = s.slice(7, 23);
+    }
+    if (s.length >= 7 && s[2] === 0 && s[4] === 62 && s[5] === 92 && s[6] === 1) {
+      this.sha1 = await Uo(this.appData, this.bleData);
+      this.recalcReceived = true;
+    }
+    if (s.length >= 7 && s[2] === 0 && s[4] === 62 && s[5] === 93 && s[6] === 1) {
+      this.pairedReceived = true;
+    }
+    this.msgIt = r;
+    return s;
+  }
+  async encrypt(e) {
+    if (e[0] !== 0x5A || e[1] !== 0xA5) throw Error('frame must start with 5A A5');
+    var t = e.slice(0, 3), n = e.slice(3);
+    if (this.msgIt === 0) {
+      var r = 0;
+      for (var o of n) r = (r + o) & 0xFFFF;
+      var i = ((r ^ 0xFFFF) & 0xFFFF);
+      var a = await this.cryptoFirst(n);
+      var s = new Uint8Array(3 + a.length + 6);
+      s.set(t, 0);
+      s.set(a, 3);
+      s[3 + a.length + 2] = i & 255;
+      s[3 + a.length + 3] = (i >>> 8) & 255;
+      return s;
+    }
+    this.msgIt += 1;
+    var c = await this.computeMac(e, this.msgIt);
+    var l = await this.cryptoNext(n, this.msgIt);
+    var u = new Uint8Array(3 + l.length + 6);
+    u.set(t, 0);
+    u.set(l, 3);
+    u.set(c, 3 + l.length);
+    u[3 + l.length + 4] = (this.msgIt >>> 8) & 255;
+    u[3 + l.length + 5] = this.msgIt & 255;
+    return u;
+  }
 }
 
 // ============================================================
-// 4. NbcSession (Sitzung)
+// 4. NbcSession (Sitzung) – mit Power‑Button‑Aufforderung
 // ============================================================
 class NbcSession {
-  constructor(ble, bleName, store){this.ble=ble;this.bleName=bleName;this.store=store||{load:async()=>null,save:async()=>{},delete:async()=>{}};this.pending=[];this.phase='connecting';this.nbc=null;this._disconnectCb=null}
-  getPhase(){return this.phase}
-  setPhase(p){this.phase=p}
-  onDisconnect(cb){this._disconnectCb=cb;return()=>{if(this._disconnectCb===cb)this._disconnectCb=null}}
-  async start(){this.setPhase('connecting');this.nbc=new Nbc(this.bleName);await this.nbc.init();var cached=await this.store.load(this.ble.id);if(cached&&cached.length===16){this.nbc.setAppData(cached);try{await this._requestInitialKeyWithFallback();await this._waitForConfirmReady();this.setPhase('ready');return}catch(e){await this.store.delete(this.ble.id)}}await this._requestInitialKeyWithFallback();this.setPhase('awaiting-power-button');for(var i=0;i<4;i++)await this._sendSaveAppKey();await this._waitForRecalcKey();this.setPhase('saving-app-key');await this._waitForConfirmReady();this.setPhase('ready')}
-  async _requestInitialKeyWithFallback(){await this._sendRequestInitialKey(X.BLE);try{await this._waitForInitialKey(4000,false);return}catch(e){}await this._sendRequestInitialKey(33);await this._waitForInitialKey(6000)}
-  async _sendRequestInitialKey(dst){var f=Uint8Array.of(0x5A,0xA5,0,62,dst,91,0);var enc=await this.nbc.encrypt(f);await this.ble.write(enc,true)}
-  async _waitForInitialKey(timeout,throwOnFail){var t=Date.now();while(!this.nbc.initialKeyReceived){if(Date.now()-t>timeout)throw Error('INITIAL_KEY not received');await new Promise(r=>setTimeout(r,100))}}
-  async _sendSaveAppKey(){var app=crypto.getRandomValues(new Uint8Array(16));this.nbc.setAppData(app);var dst=this.nbc.peerAddr||X.BLE;var f=new Uint8Array(23);f.set([0x5A,0xA5,16,62,dst,92,0],0);f.set(app,7);var enc=await this.nbc.encrypt(f);await this.ble.write(enc,true)}
-  async _waitForRecalcKey(timeout){timeout=timeout||60000;var t=Date.now(),last=Date.now();while(!this.nbc.recalcReceived){if(Date.now()-t>timeout)throw Error('RECALC_KEY not received – power button not pressed');if(Date.now()-last>500){await this._sendSaveAppKey();last=Date.now()}await new Promise(r=>setTimeout(r,50))}}
-  async _sendConfirmReady(){var dst=this.nbc.peerAddr||X.BLE;var f=new Uint8Array(21);f.set([0x5A,0xA5,14,62,dst,93,0],0);f.set(this.nbc.initialKeyTail,7);var enc=await this.nbc.encrypt(f);await this.ble.write(enc,true)}
-  async _waitForConfirmReady(timeout){timeout=timeout||10000;var t=Date.now(),last=Date.now();while(!this.nbc.pairedReceived){if(Date.now()-t>timeout)throw Error('D0 confirm not acked');if(Date.now()-last>500){await this._sendConfirmReady();last=Date.now()}await new Promise(r=>setTimeout(r,50))}}
-  async request(frame,timeout,opts){return new Promise((resolve,reject)=>{var data=Ia(frame);var expected=(opts&&opts.expectedCmd)?(Array.isArray(opts.expectedCmd)?opts.expectedCmd:[opts.expectedCmd]):null;var entry={target:frame.dst,expectedCmd:expected,resolve:resolve,reject:reject};var timer=setTimeout(()=>{var idx=this.pending.indexOf(entry);if(idx>=0)this.pending.splice(idx,1);reject(Error('timeout'))},timeout||2000);entry.timer=timer;this.pending.push(entry);this.ble.write(data,true).catch(err=>{clearTimeout(timer);var idx=this.pending.indexOf(entry);if(idx>=0)this.pending.splice(idx,1);reject(err)})})}
-  async readRegister(dst,reg,len,timeout){var f={src:X.HOST,dst:dst,cmd:1,arg:reg,data:Uint8Array.of(len&255,(len>>8)&255)};var resp=await this.request(f,timeout,{expectedCmd:4});if(resp.arg!==reg)throw Error('readRegister arg mismatch');if(resp.data.length!==len)throw Error('readRegister length mismatch');return resp.data}
-  async writeRegister(dst,reg,data,timeout){var f={src:X.HOST,dst:dst,cmd:2,arg:reg,data:data};var resp=await this.request(f,timeout,{expectedCmd:5});if(resp.arg!==reg)throw Error('writeRegister arg mismatch');}
-  async writeRegisterFlash(dst,reg,data,timeout){var f={src:X.HOST,dst:dst,cmd:3,arg:reg,data:data};await this.ble.write(Ia(f),true)}
-  async close(){this.pending.forEach(e=>{clearTimeout(e.timer);e.reject(Error('session closed'))});this.pending=[];await this.ble.disconnect()}
+  constructor(ble, bleName, store) {
+    this.ble = ble;
+    this.bleName = bleName;
+    this.store = store || { load: async () => null, save: async () => {}, delete: async () => {} };
+    this.pending = [];
+    this.phase = 'connecting';
+    this.nbc = null;
+    this._disconnectCb = null;
+    this._powerHintCb = null;
+  }
+  getPhase() { return this.phase; }
+  setPhase(p) { this.phase = p; }
+  onPowerHint(cb) { this._powerHintCb = cb; }
+  onDisconnect(cb) { this._disconnectCb = cb; return () => { if (this._disconnectCb === cb) this._disconnectCb = null; }; }
+
+  async start() {
+    this.setPhase('connecting');
+    this.nbc = new Nbc(this.bleName);
+    await this.nbc.init();
+    var cached = await this.store.load(this.ble.id);
+    if (cached && cached.length === 16) {
+      this.nbc.setAppData(cached);
+      try {
+        await this._requestInitialKeyWithFallback();
+        await this._waitForConfirmReady();
+        this.setPhase('ready');
+        return;
+      } catch (e) {
+        await this.store.delete(this.ble.id);
+        // fall through – neu koppeln
+      }
+    }
+    await this._requestInitialKeyWithFallback();
+    this.setPhase('awaiting-power-button');
+    if (this._powerHintCb) this._powerHintCb(true);
+    for (var i = 0; i < 4; i++) await this._sendSaveAppKey();
+    await this._waitForRecalcKey();
+    if (this._powerHintCb) this._powerHintCb(false);
+    this.setPhase('saving-app-key');
+    await this._waitForConfirmReady();
+    this.setPhase('ready');
+  }
+
+  async _requestInitialKeyWithFallback() {
+    await this._sendRequestInitialKey(X.BLE);
+    try { await this._waitForInitialKey(4000, false); return; } catch (e) {}
+    await this._sendRequestInitialKey(33);
+    await this._waitForInitialKey(6000);
+  }
+  async _sendRequestInitialKey(dst) {
+    var f = Uint8Array.of(0x5A, 0xA5, 0, 62, dst, 91, 0);
+    var enc = await this.nbc.encrypt(f);
+    await this.ble.write(enc, true);
+  }
+  async _waitForInitialKey(timeout, throwOnFail) {
+    var t = Date.now();
+    while (!this.nbc.initialKeyReceived) {
+      if (Date.now() - t > timeout) throw new Error('INITIAL_KEY not received');
+      await new Promise(r => setTimeout(r, 100));
+    }
+  }
+  async _sendSaveAppKey() {
+    var app = crypto.getRandomValues(new Uint8Array(16));
+    this.nbc.setAppData(app);
+    var dst = this.nbc.peerAddr || X.BLE;
+    var f = new Uint8Array(23);
+    f.set([0x5A, 0xA5, 16, 62, dst, 92, 0], 0);
+    f.set(app, 7);
+    var enc = await this.nbc.encrypt(f);
+    await this.ble.write(enc, true);
+  }
+  async _waitForRecalcKey(timeout) {
+    timeout = timeout || 60000;
+    var t = Date.now(), last = Date.now();
+    while (!this.nbc.recalcReceived) {
+      if (Date.now() - t > timeout) throw new Error('RECALC_KEY not received – power button not pressed');
+      if (Date.now() - last > 500) { await this._sendSaveAppKey(); last = Date.now(); }
+      await new Promise(r => setTimeout(r, 50));
+    }
+  }
+  async _sendConfirmReady() {
+    var dst = this.nbc.peerAddr || X.BLE;
+    var f = new Uint8Array(21);
+    f.set([0x5A, 0xA5, 14, 62, dst, 93, 0], 0);
+    f.set(this.nbc.initialKeyTail, 7);
+    var enc = await this.nbc.encrypt(f);
+    await this.ble.write(enc, true);
+  }
+  async _waitForConfirmReady(timeout) {
+    timeout = timeout || 10000;
+    var t = Date.now(), last = Date.now();
+    while (!this.nbc.pairedReceived) {
+      if (Date.now() - t > timeout) throw new Error('D0 confirm not acked');
+      if (Date.now() - last > 500) { await this._sendConfirmReady(); last = Date.now(); }
+      await new Promise(r => setTimeout(r, 50));
+    }
+  }
+
+  // Frame‑Verarbeitung – von der BLE‑Schicht aufgerufen
+  handleFrame(raw) {
+    if (!this.nbc) return;
+    this.nbc.decrypt(raw).then(dec => {
+      if (!dec) return;
+      var frame = La(dec);
+      if (!frame) return;
+      var idx = this.pending.findIndex(e => e.target === frame.dst && (!e.expectedCmd || e.expectedCmd.includes(frame.cmd)));
+      if (idx >= 0) {
+        var entry = this.pending.splice(idx, 1)[0];
+        clearTimeout(entry.timer);
+        entry.resolve(frame);
+      }
+    }).catch(() => {});
+  }
+
+  async request(frame, timeout, opts) {
+    return new Promise((resolve, reject) => {
+      var data = Ia(frame);
+      var expected = (opts && opts.expectedCmd) ? (Array.isArray(opts.expectedCmd) ? opts.expectedCmd : [opts.expectedCmd]) : null;
+      var entry = { target: frame.dst, expectedCmd: expected, resolve: resolve, reject: reject };
+      var timer = setTimeout(() => {
+        var idx = this.pending.indexOf(entry);
+        if (idx >= 0) this.pending.splice(idx, 1);
+        reject(new Error('timeout waiting for response'));
+      }, timeout || 2000);
+      entry.timer = timer;
+      this.pending.push(entry);
+      this.ble.write(data, true).catch(err => {
+        clearTimeout(timer);
+        var idx = this.pending.indexOf(entry);
+        if (idx >= 0) this.pending.splice(idx, 1);
+        reject(err);
+      });
+    });
+  }
+
+  async readRegister(dst, reg, len, timeout) {
+    var f = { src: X.HOST, dst: dst, cmd: 1, arg: reg, data: Uint8Array.of(len & 255, (len >> 8) & 255) };
+    var resp = await this.request(f, timeout || 1500, { expectedCmd: 4 });
+    if (resp.arg !== reg) throw new Error('readRegister arg mismatch');
+    if (resp.data.length !== len) throw new Error('readRegister length mismatch');
+    return resp.data;
+  }
+
+  async writeRegister(dst, reg, data, timeout) {
+    var f = { src: X.HOST, dst: dst, cmd: 2, arg: reg, data: data };
+    var resp = await this.request(f, timeout || 1500, { expectedCmd: 5 });
+    if (resp.arg !== reg) throw new Error('writeRegister arg mismatch');
+  }
+
+  async writeRegisterFlash(dst, reg, data, timeout) {
+    var f = { src: X.HOST, dst: dst, cmd: 3, arg: reg, data: data };
+    await this.ble.write(Ia(f), true);
+  }
+
+  async close() {
+    this.pending.forEach(e => { clearTimeout(e.timer); e.reject(new Error('session closed')); });
+    this.pending = [];
+    await this.ble.disconnect();
+  }
 }
 
 // ============================================================
-// 5. Web Bluetooth Client
+// 5. Web Bluetooth Client (korrekt)
 // ============================================================
-const SERVICE_UUID='6e400001-b5a3-f393-e0a9-e50e24dcca9e';
-const RX_UUID='6e400002-b5a3-f393-e0a9-e50e24dcca9e';
-const TX_UUID='6e400003-b5a3-f393-e0a9-e50e24dcca9e';
+const SERVICE_UUID = '6e400001-b5a3-f393-e0a9-e50e24dcca9e';
+const RX_UUID = '6e400002-b5a3-f393-e0a9-e50e24dcca9e';
+const TX_UUID = '6e400003-b5a3-f393-e0a9-e50e24dcca9e';
 
 class BleDevice {
-  constructor(device){this.device=device;this.id=device.id;this.name=device.name||'Scooter';this._txChar=null;this._rxChar=null;this._listeners=[];this._disconnectCbs=[]}
-  async connect(){var server=await this.device.gatt.connect();var svc=await server.getPrimaryService(SERVICE_UUID);this._rxChar=await svc.getCharacteristic(RX_UUID);this._txChar=await svc.getCharacteristic(TX_UUID);await this._txChar.startNotifications();this._txChar.addEventListener('characteristicvaluechanged',this._onValue.bind(this));this.device.addEventListener('gattserverdisconnected',this._onDisconnect.bind(this))}
-  _onValue(ev){var val=ev.target.value;if(val){var data=new Uint8Array(val.buffer,val.byteOffset,val.byteLength);for(var cb of this._listeners)cb(data)}}
-  _onDisconnect(){for(var cb of this._disconnectCbs)cb()}
-  onData(cb){this._listeners.push(cb);return()=>{var i=this._listeners.indexOf(cb);if(i>=0)this._listeners.splice(i,1)}}
-  onDisconnect(cb){this._disconnectCbs.push(cb);return()=>{var i=this._disconnectCbs.indexOf(cb);if(i>=0)this._disconnectCbs.splice(i,1)}}
-  async write(data,withResponse){if(withResponse)await this._rxChar.writeValueWithResponse(data);else await this._rxChar.writeValue(data)}
-  async disconnect(){try{await this._txChar.stopNotifications()}catch(e){}if(this.device.gatt&&this.device.gatt.connected)this.device.gatt.disconnect()}
+  constructor(device) {
+    this.device = device;
+    this.id = device.id;
+    this.name = device.name || 'Scooter';
+    this._txChar = null;
+    this._rxChar = null;
+    this._listeners = [];
+    this._disconnectCbs = [];
+    this._connected = false;
+  }
+  async connect() {
+    var server = await this.device.gatt.connect();
+    var svc = await server.getPrimaryService(SERVICE_UUID);
+    this._rxChar = await svc.getCharacteristic(RX_UUID);
+    this._txChar = await svc.getCharacteristic(TX_UUID);
+    await this._txChar.startNotifications();
+    this._txChar.addEventListener('characteristicvaluechanged', this._onValue.bind(this));
+    this.device.addEventListener('gattserverdisconnected', this._onDisconnect.bind(this));
+    this._connected = true;
+  }
+  _onValue(ev) {
+    var val = ev.target.value;
+    if (val) {
+      var data = new Uint8Array(val.buffer, val.byteOffset, val.byteLength);
+      for (var cb of this._listeners) cb(data);
+    }
+  }
+  _onDisconnect() {
+    this._connected = false;
+    for (var cb of this._disconnectCbs) cb();
+  }
+  onData(cb) { this._listeners.push(cb); return () => { var i = this._listeners.indexOf(cb); if (i >= 0) this._listeners.splice(i, 1); }; }
+  onDisconnect(cb) { this._disconnectCbs.push(cb); return () => { var i = this._disconnectCbs.indexOf(cb); if (i >= 0) this._disconnectCbs.splice(i, 1); }; }
+  async write(data, withResponse) {
+    if (withResponse) await this._rxChar.writeValueWithResponse(data);
+    else await this._rxChar.writeValue(data);
+  }
+  async disconnect() {
+    try { await this._txChar.stopNotifications(); } catch (e) {}
+    if (this.device.gatt && this.device.gatt.connected) this.device.gatt.disconnect();
+    this._connected = false;
+  }
+  isConnected() { return this._connected; }
 }
 
 // ============================================================
-// 6. App‑Zustand und UI‑Logik
+// 6. App‑Zustand und UI‑Steuerung
 // ============================================================
-var session=null;          // BleDevice
-var nbcSession=null;       // NbcSession
-var speedValue=0;
-var running=false;
+var session = null;          // BleDevice
+var nbcSession = null;       // NbcSession
+var speedValue = 0;
+var running = false;
+var keepaliveInterval = null;
 
-// DOM-Referenzen
-var connectBtn=document.getElementById('connectBtn');
-var statusEl=document.getElementById('status');
-var speedDisplay=document.getElementById('speedDisplay');
-var canvas=document.getElementById('speedometer');
-var ctx=canvas.getContext('2d');
+// DOM
+var connectBtn = document.getElementById('connectBtn');
+var statusEl = document.getElementById('status');
+var speedDisplay = document.getElementById('speedDisplay');
+var canvas = document.getElementById('speedometer');
+var ctx = canvas.getContext('2d');
+var powerHint = document.getElementById('powerHint');
 
 // Tabs
-var tabs=document.querySelectorAll('.tab');
-var panels=document.querySelectorAll('.panel');
-tabs.forEach(tab=>{
-  tab.addEventListener('click',()=>{
-    tabs.forEach(t=>t.classList.remove('active'));
+var tabs = document.querySelectorAll('.tab');
+var panels = document.querySelectorAll('.panel');
+tabs.forEach(tab => {
+  tab.addEventListener('click', () => {
+    tabs.forEach(t => t.classList.remove('active'));
     tab.classList.add('active');
-    panels.forEach(p=>p.classList.remove('active'));
-    document.getElementById('panel-'+tab.dataset.tab).classList.add('active');
+    panels.forEach(p => p.classList.remove('active'));
+    document.getElementById('panel-' + tab.dataset.tab).classList.add('active');
+    // Beim Wechsel zum CFW‑ oder Motor‑Tab Werte neu lesen
+    if (nbcSession && (tab.dataset.tab === 'cfw' || tab.dataset.tab === 'motor')) {
+      readAllSettings();
+    }
   });
 });
 
 // Tacho zeichnen
-function drawSpeedometer(speed){
-  var w=canvas.width,h=canvas.height,cx=w/2,cy=h/2,radius=130;
-  ctx.clearRect(0,0,w,h);
-  ctx.beginPath();ctx.arc(cx,cy,radius,0,2*Math.PI);ctx.strokeStyle='#2a2c2e';ctx.lineWidth=4;ctx.stroke();
-  for(var i=0;i<=80;i+=10){
-    var angle=(i/80)*Math.PI*0.75+0.625*Math.PI;
-    var inner=i%20===0?radius-18:radius-10;
-    var outer=radius-4;
-    var x1=cx+Math.cos(angle)*inner,y1=cy+Math.sin(angle)*inner;
-    var x2=cx+Math.cos(angle)*outer,y2=cy+Math.sin(angle)*outer;
-    ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);
-    ctx.strokeStyle=i%20===0?'#8a8e92':'#4a4c4e';
-    ctx.lineWidth=i%20===0?2:1;ctx.stroke();
-    if(i%20===0){
-      ctx.fillStyle='#6a6e72';ctx.font='12px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
-      var tx=cx+Math.cos(angle)*(radius-28),ty=cy+Math.sin(angle)*(radius-28);
-      ctx.fillText(i,tx,ty);
+function drawSpeedometer(speed) {
+  var w = canvas.width, h = canvas.height, cx = w/2, cy = h/2, radius = 130;
+  ctx.clearRect(0, 0, w, h);
+  ctx.beginPath(); ctx.arc(cx, cy, radius, 0, 2 * Math.PI);
+  ctx.strokeStyle = '#2a2c2e'; ctx.lineWidth = 4; ctx.stroke();
+  for (var i = 0; i <= 80; i += 10) {
+    var angle = (i / 80) * Math.PI * 0.75 + 0.625 * Math.PI;
+    var inner = i % 20 === 0 ? radius - 18 : radius - 10;
+    var outer = radius - 4;
+    var x1 = cx + Math.cos(angle) * inner, y1 = cy + Math.sin(angle) * inner;
+    var x2 = cx + Math.cos(angle) * outer, y2 = cy + Math.sin(angle) * outer;
+    ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2);
+    ctx.strokeStyle = i % 20 === 0 ? '#8a8e92' : '#4a4c4e';
+    ctx.lineWidth = i % 20 === 0 ? 2 : 1; ctx.stroke();
+    if (i % 20 === 0) {
+      ctx.fillStyle = '#6a6e72'; ctx.font = '12px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      var tx = cx + Math.cos(angle) * (radius - 28), ty = cy + Math.sin(angle) * (radius - 28);
+      ctx.fillText(i, tx, ty);
     }
   }
-  var speedClamped=Math.min(80,Math.max(0,speed));
-  var angle=(speedClamped/80)*Math.PI*0.75+0.625*Math.PI;
-  var len=radius-24;
-  var px=cx+Math.cos(angle)*len,py=cy+Math.sin(angle)*len;
-  ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(px,py);ctx.strokeStyle='#e8eaee';ctx.lineWidth=3;ctx.stroke();
-  ctx.beginPath();ctx.arc(cx,cy,6,0,2*Math.PI);ctx.fillStyle='#e8eaee';ctx.fill();
+  var speedClamped = Math.min(80, Math.max(0, speed));
+  var angle = (speedClamped / 80) * Math.PI * 0.75 + 0.625 * Math.PI;
+  var len = radius - 24;
+  var px = cx + Math.cos(angle) * len, py = cy + Math.sin(angle) * len;
+  ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(px, py);
+  ctx.strokeStyle = '#e8eaee'; ctx.lineWidth = 3; ctx.stroke();
+  ctx.beginPath(); ctx.arc(cx, cy, 6, 0, 2 * Math.PI);
+  ctx.fillStyle = '#e8eaee'; ctx.fill();
 }
 
-// Geschwindigkeit lesen
-async function readSpeed(session){
-  try{var data=await session.readRegister(X.VCU,87,2,1500);return (data[0]|(data[1]<<8))/10;}catch(e){return null;}
-}
-
-// Hauptschleife
-async function startDashboard(){
-  if(!nbcSession)return;
-  running=true;
-  while(running&&nbcSession){
-    var spd=await readSpeed(nbcSession);
-    if(spd!==null){speedValue=spd;speedDisplay.innerHTML=Math.round(spd)+' <small>km/h</small>';drawSpeedometer(spd);}
-    await new Promise(r=>setTimeout(r,300));
+// Geschwindigkeit lesen (für Tacho und Keepalive)
+async function readSpeed() {
+  if (!nbcSession) return null;
+  try {
+    var data = await nbcSession.readRegister(X.VCU, 87, 2, 1200);
+    return (data[0] | (data[1] << 8)) / 10;
+  } catch (e) {
+    return null;
   }
 }
 
+// Keepalive – alle 3 Sekunden Geschwindigkeit lesen
+function startKeepalive() {
+  if (keepaliveInterval) clearInterval(keepaliveInterval);
+  keepaliveInterval = setInterval(async () => {
+    if (nbcSession) {
+      var spd = await readSpeed();
+      if (spd !== null) {
+        speedValue = spd;
+        speedDisplay.innerHTML = Math.round(spd) + ' <small>km/h</small>';
+        drawSpeedometer(spd);
+      }
+    } else {
+      clearInterval(keepaliveInterval);
+      keepaliveInterval = null;
+    }
+  }, 3000);
+}
+
 // ============================================================
-// 7. CFW‑ und Motor‑Funktionen (basierend auf N‑SAK‑Registern)
+// 7. Register‑Auslesen und Anzeigen aller Einstellungen
 // ============================================================
-// Profil‑Struktur (Standard / Tuning)
-var profileStd={speed:22, underglow:false, frontBar:false, cruise:false};
-var profileTun={speed:45, underglow:true, frontBar:true, cruise:true};
-var activeProfile='std'; // 'std' oder 'tun'
+async function readAllSettings() {
+  if (!nbcSession) return;
+  try {
+    // 1. Profilblock (Slot 0)
+    var profileData = await nbcSession.readRegister(X.VCU, 0x01, 16, 1500);
+    if (profileData && profileData.length >= 16) {
+      var stdSpd = profileData[3];
+      var tunSpd = profileData[7];
+      var stdUg = !!(profileData[9] & 1);
+      var tunUg = !!(profileData[9] & 2);
+      var stdFb = !!(profileData[10] & 1);
+      var tunFb = !!(profileData[11] & 1);
+      var stdCru = !!(profileData[13] & 1);
+      var tunCru = !!(profileData[13] & 2);
 
-// Pattern (max 6)
-var pattern=[];
+      document.getElementById('stdSpeed').value = stdSpd;
+      document.getElementById('stdSpeedVal').textContent = stdSpd;
+      document.getElementById('stdUnderglow').checked = stdUg;
+      document.getElementById('stdFrontBar').checked = stdFb;
+      document.getElementById('stdCruise').checked = stdCru;
 
-// DOM‑Elemente für CFW
-var stdSpeed=document.getElementById('stdSpeed');
-var stdSpeedVal=document.getElementById('stdSpeedVal');
-var stdUnderglow=document.getElementById('stdUnderglow');
-var stdFrontBar=document.getElementById('stdFrontBar');
-var stdCruise=document.getElementById('stdCruise');
+      document.getElementById('tunSpeed').value = tunSpd;
+      document.getElementById('tunSpeedVal').textContent = tunSpd;
+      document.getElementById('tunUnderglow').checked = tunUg;
+      document.getElementById('tunFrontBar').checked = tunFb;
+      document.getElementById('tunCruise').checked = tunCru;
+    }
 
-var tunSpeed=document.getElementById('tunSpeed');
-var tunSpeedVal=document.getElementById('tunSpeedVal');
-var tunUnderglow=document.getElementById('tunUnderglow');
-var tunFrontBar=document.getElementById('tunFrontBar');
-var tunCruise=document.getElementById('tunCruise');
+    // 2. Pattern (Reg 0x71 + 0x72)
+    var loData = await nbcSession.readRegister(X.VCU, 0x71, 2, 1500);
+    var hiData = await nbcSession.readRegister(X.VCU, 0x72, 2, 1500);
+    if (loData && hiData) {
+      var lo = loData[0] | (loData[1] << 8);
+      var hi = hiData[0] | (hiData[1] << 8);
+      var pattern = [];
+      for (var i = 0; i < 4; i++) {
+        var v = (lo >> (4 * (3 - i))) & 0xF;
+        if (v >= 1 && v <= 6) pattern.push(v);
+      }
+      for (var j = 0; j < 4; j++) {
+        var v2 = (hi >> (4 * (3 - j))) & 0xF;
+        if (v2 >= 1 && v2 <= 6) pattern.push(v2);
+      }
+      displayPattern(pattern);
+    }
 
-var activeProfileDisplay=document.getElementById('activeProfileDisplay');
-var switchProfileBtn=document.getElementById('switchProfileBtn');
-var patternDisplay=document.getElementById('patternDisplay');
-var clearPatternBtn=document.getElementById('clearPattern');
-var savePatternBtn=document.getElementById('savePattern');
-var saveCfwBtn=document.getElementById('saveCfwBtn');
-var cfwSaveStatus=document.getElementById('cfwSaveStatus');
+    // 3. Motor‑Einstellungen
+    // Throttle Mode (0x6E)
+    var modeData = await nbcSession.readRegister(X.VCU, 0x6E, 1, 1500);
+    if (modeData) {
+      var modeMap = {1:'eco',2:'std',3:'max'};
+      var mode = modeMap[modeData[0]] || 'std';
+      document.getElementById('throttleMode').value = mode;
+    }
 
-// DOM für Motor
-var throttleMode=document.getElementById('throttleMode');
-var targetSpeed=document.getElementById('targetSpeed');
-var targetSpeedVal=document.getElementById('targetSpeedVal');
-var overdriveToggle=document.getElementById('overdriveToggle');
-var pullingPower=document.getElementById('pullingPower');
-var pullingPowerVal=document.getElementById('pullingPowerVal');
-var fwEnable=document.getElementById('fwEnable');
-var fwAmpere=document.getElementById('fwAmpere');
-var fwAmpereVal=document.getElementById('fwAmpereVal');
-var fwEngageSpeed=document.getElementById('fwEngageSpeed');
-var fwEngageSpeedVal=document.getElementById('fwEngageSpeedVal');
-var fwLowBattEnable=document.getElementById('fwLowBattEnable');
-var fwLowBattVoltage=document.getElementById('fwLowBattVoltage');
-var fwLowBattVoltageVal=document.getElementById('fwLowBattVoltageVal');
-var saveMotorBtn=document.getElementById('saveMotorBtn');
-var motorSaveStatus=document.getElementById('motorSaveStatus');
+    // Sports Max (0x48)
+    var spData = await nbcSession.readRegister(X.VCU, 0x48, 2, 1500);
+    if (spData) {
+      var top = spData[1]; // high byte
+      document.getElementById('targetSpeed').value = top;
+      document.getElementById('targetSpeedVal').textContent = top;
+    }
 
-// Update‑Listener für Slider
-stdSpeed.addEventListener('input',()=>{profileStd.speed=parseInt(stdSpeed.value);stdSpeedVal.textContent=profileStd.speed;});
-stdUnderglow.addEventListener('change',()=>{profileStd.underglow=stdUnderglow.checked;});
-stdFrontBar.addEventListener('change',()=>{profileStd.frontBar=stdFrontBar.checked;});
-stdCruise.addEventListener('change',()=>{profileStd.cruise=stdCruise.checked;});
+    // Overdrive (0x89)
+    var odData = await nbcSession.readRegister(X.VCU, 0x89, 1, 1500);
+    if (odData) {
+      document.getElementById('overdriveToggle').checked = odData[0] === 1;
+    }
 
-tunSpeed.addEventListener('input',()=>{profileTun.speed=parseInt(tunSpeed.value);tunSpeedVal.textContent=profileTun.speed;});
-tunUnderglow.addEventListener('change',()=>{profileTun.underglow=tunUnderglow.checked;});
-tunFrontBar.addEventListener('change',()=>{profileTun.frontBar=tunFrontBar.checked;});
-tunCruise.addEventListener('change',()=>{profileTun.cruise=tunCruise.checked;});
+    // MCU D3 (Pulling Power)
+    var d3Data = await nbcSession.readRegister(X.MCU, 0xD3, 2, 1500);
+    if (d3Data) {
+      var d3 = d3Data[0] | (d3Data[1] << 8);
+      var power = Math.round((d3 / 1280 - 1) * 100);
+      power = Math.max(0, Math.min(50, power));
+      document.getElementById('pullingPower').value = power;
+      document.getElementById('pullingPowerVal').textContent = power;
+    }
 
-targetSpeed.addEventListener('input',()=>{targetSpeedVal.textContent=targetSpeed.value;});
-pullingPower.addEventListener('input',()=>{pullingPowerVal.textContent=pullingPower.value;});
-fwAmpere.addEventListener('input',()=>{fwAmpereVal.textContent=fwAmpere.value;});
-fwEngageSpeed.addEventListener('input',()=>{fwEngageSpeedVal.textContent=fwEngageSpeed.value;});
-fwLowBattVoltage.addEventListener('input',()=>{fwLowBattVoltageVal.textContent=fwLowBattVoltage.value;});
+    // Field Weakening D5, D6
+    var d5Data = await nbcSession.readRegister(X.MCU, 0xD5, 2, 1500);
+    var d6Data = await nbcSession.readRegister(X.MCU, 0xD6, 2, 1500);
+    if (d5Data && d6Data) {
+      var d5 = d5Data[0] | (d5Data[1] << 8);
+      var d6 = d6Data[0] | (d6Data[1] << 8);
+      var fwOn = (d5 > 197 || d6 > 235);
+      document.getElementById('fwEnable').checked = fwOn;
+      var amp = Math.round((d5 - 197) / 197 * 80);
+      amp = Math.max(0, Math.min(80, amp));
+      document.getElementById('fwAmpere').value = amp;
+      document.getElementById('fwAmpereVal').textContent = amp;
+      var engage = Math.round(30 + ((d6 - 235) / (235 * 0.3)) * 15);
+      engage = Math.max(30, Math.min(45, engage));
+      document.getElementById('fwEngageSpeed').value = engage;
+      document.getElementById('fwEngageSpeedVal').textContent = engage;
+    }
 
-// Profil wechseln (nur UI)
-switchProfileBtn.addEventListener('click',()=>{
-  if(activeProfile==='std'){activeProfile='tun';activeProfileDisplay.textContent='Tuning';}else{activeProfile='std';activeProfileDisplay.textContent='Standard';}
-});
+    // Low Batt Toggle (0x8A) und Voltage (0x8B)
+    var lbData = await nbcSession.readRegister(X.VCU, 0x8A, 1, 1500);
+    if (lbData) {
+      document.getElementById('fwLowBattEnable').checked = lbData[0] === 1;
+    }
+    var voltData = await nbcSession.readRegister(X.VCU, 0x8B, 1, 1500);
+    if (voltData) {
+      var volt = voltData[0];
+      volt = Math.max(42, Math.min(50, volt));
+      document.getElementById('fwLowBattVoltage').value = volt;
+      document.getElementById('fwLowBattVoltageVal').textContent = volt;
+    }
 
-// Pattern‑Logik
-function updatePatternDisplay(){
-  patternDisplay.innerHTML='';
-  if(pattern.length===0){
-    var empty=document.createElement('span');
-    empty.className='empty';
-    empty.textContent='—';
-    patternDisplay.appendChild(empty);
-  }else{
-    pattern.forEach((step,idx)=>{
-      var span=document.createElement('span');
-      span.textContent=step;
-      patternDisplay.appendChild(span);
-    });
+  } catch (e) {
+    console.warn('Lesen der Einstellungen fehlgeschlagen:', e);
   }
 }
-document.querySelectorAll('.dpad button[data-dir]').forEach(btn=>{
-  btn.addEventListener('click',()=>{
-    if(pattern.length>=6)return;
-    var dir=btn.dataset.dir;
-    var label={up:'▲',down:'▼',left:'◀',right:'▶'}[dir];
-    if(label)pattern.push(label);
-    updatePatternDisplay();
-  });
-});
-clearPatternBtn.addEventListener('click',()=>{pattern=[];updatePatternDisplay();});
 
-// Pattern speichern (schreibt in Slot 0)
-async function savePatternToScooter(){
-  if(!nbcSession){cfwSaveStatus.textContent='Nicht verbunden';return;}
-  if(pattern.length<4){cfwSaveStatus.textContent='Mindestens 4 Tasten nötig';return;}
-  // Codierung: Up=1, Down=2, Left=3, Right=4
-  var code=pattern.map(p=>{if(p==='▲')return 1;if(p==='▼')return 2;if(p==='◀')return 3;if(p==='▶')return 4;return 0;});
-  var lo=0, hi=0;
-  code.forEach((v,idx)=>{
-    if(idx<4)lo|=v<<(4*(3-idx));
-    else hi|=v<<(4*(3-(idx-4)));
-  });
-  var loBytes=Uint8Array.of(lo&255,(lo>>8)&255);
-  var hiBytes=Uint8Array.of(hi&255,(hi>>8)&255);
-  try{
-    await nbcSession.writeRegisterFlash(X.VCU,0x71,loBytes);
-    await nbcSession.writeRegisterFlash(X.VCU,0x72,hiBytes);
-    // Aktivieren: Bit 2 im Register 0x1D setzen
-    var status=await nbcSession.readRegister(X.VCU,0x1D,2,1500);
-    var flags=status[0]|(status[1]<<8);
-    flags|=4; // Bit 2
-    var flagsBytes=Uint8Array.of(flags&255,(flags>>8)&255);
-    await nbcSession.writeRegisterFlash(X.VCU,0x1D,flagsBytes);
-    cfwSaveStatus.textContent='Pattern gespeichert ✓';
-  }catch(e){cfwSaveStatus.textContent='Fehler: '+e.message;}
-}
-
-// CFW‑Einstellungen speichern (Profile + Pattern)
-saveCfwBtn.addEventListener('click',async ()=>{
-  if(!nbcSession){cfwSaveStatus.textContent='Nicht verbunden';return;}
-  cfwSaveStatus.textContent='Speichere…';
-  try{
-    // Profilblock (Slot 1)
-    var block=new Uint8Array(16);
-    block[0]=22; block[1]=22; block[2]=0; block[3]=profileStd.speed;
-    block[4]=22; block[5]=22; block[6]=0; block[7]=profileTun.speed;
-    block[8]=0;
-    block[9]=profileTun.underglow?1:0;
-    block[10]=profileStd.frontBar?1:0;
-    block[11]=profileTun.frontBar?1:0;
-    block[12]=0;
-    block[13]=profileTun.cruise?1:0;
-    block[14]=0; // Panic
-    block[15]=0; // Beep
-    await nbcSession.writeRegisterFlash(X.VCU,0x01,block);
-    // Pattern speichern (auch)
-    await savePatternToScooter();
-    cfwSaveStatus.textContent='CFW gespeichert ✓';
-  }catch(e){cfwSaveStatus.textContent='Fehler: '+e.message;}
-});
-
-// Motor‑Tuning speichern
-saveMotorBtn.addEventListener('click',async ()=>{
-  if(!nbcSession){motorSaveStatus.textContent='Nicht verbunden';return;}
-  motorSaveStatus.textContent='Speichere Motor…';
-  try{
-    // 1. Throttle Mode (Register 0x6E)
-    var modeMap={eco:1,std:2,max:3};
-    var modeVal=modeMap[throttleMode.value]||2;
-    await nbcSession.writeRegister(X.VCU,0x6E,Uint8Array.of(modeVal));
-
-    // 2. Target Top Speed (Register 0x48 – Sports Max)
-    var top=parseInt(targetSpeed.value);
-    await nbcSession.writeRegister(X.VCU,0x48,Uint8Array.of(0,top));
-
-    // 3. Overdrive (Register 0x89 – wird als Flag interpretiert)
-    var od=overdriveToggle.checked?1:0;
-    await nbcSession.writeRegister(X.VCU,0x89,Uint8Array.of(od));
-
-    // 4. Pulling Power (D3 – Register 0xD3 im MCU)
-    var power=parseInt(pullingPower.value);
-    var d3=Math.round(1280*(1+power/100)); // Basis 1280
-    await nbcSession.writeRegister(X.MCU,0xD3,Uint8Array.of(d3&255,(d3>>8)&255));
-
-    // 5. Field Weakening (D5, D6)
-    var fwOn=fwEnable.checked;
-    var ampere=parseInt(fwAmpere.value);
-    var engage=parseInt(fwEngageSpeed.value);
-    var lowBatt=fwLowBattEnable.checked;
-    var voltage=parseInt(fwLowBattVoltage.value);
-
-    // D5 = Flux Koeffizient (abhängig von Ampere)
-    var d5=Math.round(197*(1+ampere/80));
-    // D6 = Flux Koeffizient (abhängig von Engage Speed)
-    var d6=Math.round(235*(1+(engage-30)/15*0.3));
-    if(!fwOn){d5=197; d6=235;} // Stock
-    await nbcSession.writeRegister(X.MCU,0xD5,Uint8Array.of(d5&255,(d5>>8)&255));
-    await nbcSession.writeRegister(X.MCU,0xD6,Uint8Array.of(d6&255,(d6>>8)&255));
-
-    // Low‑Batt‑Toggle (Register 0x8A – Beispiel)
-    await nbcSession.writeRegister(X.VCU,0x8A,Uint8Array.of(lowBatt?1:0));
-    // Low‑Batt Voltage (Register 0x8B)
-    await nbcSession.writeRegister(X.VCU,0x8B,Uint8Array.of(voltage));
-
-    motorSaveStatus.textContent='Motor gespeichert ✓';
-  }catch(e){motorSaveStatus.textContent='Fehler: '+e.message;}
-});
-
-// ============================================================
-// 8. Verbindungslogik (wie zuvor)
-// ============================================================
-connectBtn.addEventListener('click',async ()=>{
-  if(nbcSession){
-    await nbcSession.close(); nbcSession=null; session=null; running=false;
-    connectBtn.textContent='Verbinden'; statusEl.textContent='⏻ getrennt';
-    speedDisplay.innerHTML='0 <small>km/h</small>'; drawSpeedometer(0);
+// Pattern anzeigen
+var currentPattern = [];
+function displayPattern(pattern) {
+  currentPattern = pattern;
+  var container = document.getElementById('patternDisplay');
+  container.innerHTML = '';
+  if (!pattern || pattern.length === 0) {
+    var empty = document.createElement('span');
+    empty.className = 'empty';
+    empty.textContent = '—';
+    container.appendChild(empty);
     return;
   }
-  try{
-    statusEl.textContent='🔍 Suche…'; connectBtn.disabled=true;
-    var device=await navigator.bluetooth.requestDevice({
-      filters:[{namePrefix:'1CG'},{namePrefix:'1K1'}],
-      optionalServices:[SERVICE_UUID]
+  var names = ['', 'Left Brake', 'Right Brake', 'Left Blinker', 'Right Blinker', 'Mode', 'Power'];
+  pattern.forEach((key, idx) => {
+    var span = document.createElement('span');
+    span.textContent = names[key] || key;
+    container.appendChild(span);
+  });
+}
+
+// Pattern speichern
+async function savePattern() {
+  if (!nbcSession) { showStatus('cfwSaveStatus', 'Nicht verbunden', 'err'); return; }
+  if (currentPattern.length < 4) { showStatus('cfwSaveStatus', 'Mindestens 4 Tasten nötig', 'err'); return; }
+  var lo = 0, hi = 0;
+  currentPattern.forEach((v, idx) => {
+    if (idx < 4) lo |= v << (4 * (3 - idx));
+    else hi |= v << (4 * (3 - (idx - 4)));
+  });
+  var loBytes = Uint8Array.of(lo & 255, (lo >> 8) & 255);
+  var hiBytes = Uint8Array.of(hi & 255, (hi >> 8) & 255);
+  try {
+    await nbcSession.writeRegisterFlash(X.VCU, 0x71, loBytes);
+    await nbcSession.writeRegisterFlash(X.VCU, 0x72, hiBytes);
+    // Lock aktivieren (Bit 2 in 0x1D)
+    var status = await nbcSession.readRegister(X.VCU, 0x1D, 2, 1500);
+    var flags = status[0] | (status[1] << 8);
+    flags |= 4;
+    var flagsBytes = Uint8Array.of(flags & 255, (flags >> 8) & 255);
+    await nbcSession.writeRegisterFlash(X.VCU, 0x1D, flagsBytes);
+    showStatus('cfwSaveStatus', 'Pattern gespeichert ✓', 'ok');
+  } catch (e) {
+    showStatus('cfwSaveStatus', 'Fehler: ' + e.message, 'err');
+  }
+}
+
+// CFW speichern (Profil + Pattern)
+async function saveCfw() {
+  if (!nbcSession) { showStatus('cfwSaveStatus', 'Nicht verbunden', 'err'); return; }
+  showStatus('cfwSaveStatus', 'Speichere CFW…', '');
+  try {
+    // Profilblock
+    var block = new Uint8Array(16);
+    block[0] = 22; block[1] = 22; block[2] = 0;
+    block[3] = parseInt(document.getElementById('stdSpeed').value);
+    block[4] = 22; block[5] = 22; block[6] = 0;
+    block[7] = parseInt(document.getElementById('tunSpeed').value);
+    block[8] = 0;
+    block[9] = (document.getElementById('stdUnderglow').checked ? 1 : 0) | (document.getElementById('tunUnderglow').checked ? 2 : 0);
+    block[10] = (document.getElementById('stdFrontBar').checked ? 1 : 0) | (document.getElementById('tunFrontBar').checked ? 2 : 0);
+    block[11] = 0;
+    block[12] = 0;
+    block[13] = (document.getElementById('stdCruise').checked ? 1 : 0) | (document.getElementById('tunCruise').checked ? 2 : 0);
+    block[14] = 0;
+    block[15] = 0;
+    await nbcSession.writeRegisterFlash(X.VCU, 0x01, block);
+    // Pattern ebenfalls speichern
+    await savePattern();
+    // Erfolg
+    showStatus('cfwSaveStatus', 'CFW gespeichert ✓', 'ok');
+    // Neu einlesen
+    await readAllSettings();
+  } catch (e) {
+    showStatus('cfwSaveStatus', 'Fehler: ' + e.message, 'err');
+  }
+}
+
+// Motor speichern
+async function saveMotor() {
+  if (!nbcSession) { showStatus('motorSaveStatus', 'Nicht verbunden', 'err'); return; }
+  showStatus('motorSaveStatus', 'Speichere Motor…', '');
+  try {
+    // Throttle Mode
+    var modeMap = { eco: 1, std: 2, max: 3 };
+    var mode = modeMap[document.getElementById('throttleMode').value] || 2;
+    await nbcSession.writeRegister(X.VCU, 0x6E, Uint8Array.of(mode));
+
+    // Sports Max
+    var top = parseInt(document.getElementById('targetSpeed').value);
+    await nbcSession.writeRegister(X.VCU, 0x48, Uint8Array.of(0, top));
+
+    // Overdrive
+    var od = document.getElementById('overdriveToggle').checked ? 1 : 0;
+    await nbcSession.writeRegister(X.VCU, 0x89, Uint8Array.of(od));
+
+    // Pulling Power (D3)
+    var power = parseInt(document.getElementById('pullingPower').value);
+    var d3 = Math.round(1280 * (1 + power / 100));
+    await nbcSession.writeRegister(X.MCU, 0xD3, Uint8Array.of(d3 & 255, (d3 >> 8) & 255));
+
+    // Field Weakening D5, D6
+    var fwOn = document.getElementById('fwEnable').checked;
+    var amp = parseInt(document.getElementById('fwAmpere').value);
+    var engage = parseInt(document.getElementById('fwEngageSpeed').value);
+    var d5 = fwOn ? Math.round(197 * (1 + amp / 80)) : 197;
+    var d6 = fwOn ? Math.round(235 * (1 + (engage - 30) / 15 * 0.3)) : 235;
+    await nbcSession.writeRegister(X.MCU, 0xD5, Uint8Array.of(d5 & 255, (d5 >> 8) & 255));
+    await nbcSession.writeRegister(X.MCU, 0xD6, Uint8Array.of(d6 & 255, (d6 >> 8) & 255));
+
+    // Low Batt Toggle
+    var lb = document.getElementById('fwLowBattEnable').checked ? 1 : 0;
+    await nbcSession.writeRegister(X.VCU, 0x8A, Uint8Array.of(lb));
+
+    // Low Batt Voltage
+    var volt = parseInt(document.getElementById('fwLowBattVoltage').value);
+    await nbcSession.writeRegister(X.VCU, 0x8B, Uint8Array.of(volt));
+
+    showStatus('motorSaveStatus', 'Motor gespeichert ✓', 'ok');
+    await readAllSettings();
+  } catch (e) {
+    showStatus('motorSaveStatus', 'Fehler: ' + e.message, 'err');
+  }
+}
+
+function showStatus(id, msg, type) {
+  var el = document.getElementById(id);
+  el.textContent = msg;
+  el.className = 'status-msg' + (type ? ' ' + type : '');
+}
+
+// ============================================================
+// 8. Verbinden / Trennen
+// ============================================================
+connectBtn.addEventListener('click', async () => {
+  if (nbcSession) {
+    // Trennen
+    if (keepaliveInterval) { clearInterval(keepaliveInterval); keepaliveInterval = null; }
+    await nbcSession.close();
+    nbcSession = null;
+    session = null;
+    running = false;
+    connectBtn.textContent = 'Verbinden';
+    statusEl.textContent = '⏻ getrennt';
+    speedDisplay.innerHTML = '0 <small>km/h</small>';
+    drawSpeedometer(0);
+    powerHint.classList.remove('active');
+    return;
+  }
+
+  try {
+    statusEl.textContent = '🔍 Suche…';
+    connectBtn.disabled = true;
+
+    var device = await navigator.bluetooth.requestDevice({
+      filters: [{ namePrefix: '1CG' }, { namePrefix: '1K1' }],
+      optionalServices: [SERVICE_UUID]
     });
-    statusEl.textContent='🔗 Verbinde…';
-    var ble=new BleDevice(device); await ble.connect();
-    statusEl.textContent='🔑 Handshake…';
-    var store={
-      load:async(id)=>{var raw=localStorage.getItem('nbc_'+id);return raw?new Uint8Array(JSON.parse(raw)):null;},
-      save:async(id,data)=>{localStorage.setItem('nbc_'+id,JSON.stringify(Array.from(data)));},
-      delete:async(id)=>{localStorage.removeItem('nbc_'+id);}
-    };
-    nbcSession=new NbcSession(ble,device.name,store);
-    ble.onData((data)=>{
-      if(nbcSession&&nbcSession.nbc){
-        nbcSession.nbc.decrypt(data).then(dec=>{
-          if(dec){var frame=La(dec); if(frame){var idx=nbcSession.pending.findIndex(e=>e.target===frame.dst&&(!e.expectedCmd||e.expectedCmd.includes(frame.cmd))); if(idx>=0){var entry=nbcSession.pending.splice(idx,1)[0]; clearTimeout(entry.timer); entry.resolve(frame);}}}
-        }).catch(console.warn);
+
+    statusEl.textContent = '🔗 Verbinde…';
+    session = new BleDevice(device);
+    await session.connect();
+
+    statusEl.textContent = '🔑 Handshake…';
+    var store = {
+      load: async (id) => {
+        var raw = localStorage.getItem('nbc_' + id);
+        return raw ? new Uint8Array(JSON.parse(raw)) : null;
+      },
+      save: async (id, data) => {
+        localStorage.setItem('nbc_' + id, JSON.stringify(Array.from(data)));
+      },
+      delete: async (id) => {
+        localStorage.removeItem('nbc_' + id);
       }
+    };
+
+    nbcSession = new NbcSession(session, device.name, store);
+    nbcSession.onPowerHint((show) => {
+      if (show) powerHint.classList.add('active');
+      else powerHint.classList.remove('active');
     });
+
+    // Daten von BLE an Session weiterleiten
+    session.onData((data) => {
+      if (nbcSession) nbcSession.handleFrame(data);
+    });
+
+    session.onDisconnect(() => {
+      statusEl.textContent = '⏻ getrennt';
+      connectBtn.textContent = 'Verbinden';
+      if (keepaliveInterval) { clearInterval(keepaliveInterval); keepaliveInterval = null; }
+    });
+
     await nbcSession.start();
-    statusEl.textContent='✅ Verbunden'; connectBtn.textContent='Trennen'; connectBtn.disabled=false;
-    startDashboard();
-  }catch(err){statusEl.textContent='❌ '+err.message; connectBtn.disabled=false; if(nbcSession){await nbcSession.close();nbcSession=null;}}
+
+    statusEl.textContent = '✅ Verbunden';
+    connectBtn.textContent = 'Trennen';
+    connectBtn.disabled = false;
+    powerHint.classList.remove('active');
+
+    // Einstellungen lesen
+    await readAllSettings();
+
+    // Keepalive starten
+    startKeepalive();
+
+  } catch (err) {
+    statusEl.textContent = '❌ ' + err.message;
+    connectBtn.disabled = false;
+    if (nbcSession) {
+      await nbcSession.close();
+      nbcSession = null;
+      session = null;
+    }
+    powerHint.classList.remove('active');
+  }
 });
 
+// ============================================================
+// 9. Event‑Listener für Buttons
+// ============================================================
+// Pattern‑Buttons
+document.querySelectorAll('#patternButtons button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    var key = parseInt(btn.dataset.key);
+    if (currentPattern.length >= 6) return;
+    if (currentPattern.indexOf(key) === -1) { // keine Duplikate erlaubt
+      currentPattern.push(key);
+      displayPattern(currentPattern);
+    }
+  });
+});
+
+document.getElementById('clearPattern').addEventListener('click', () => {
+  currentPattern = [];
+  displayPattern(currentPattern);
+});
+
+document.getElementById('savePatternBtn').addEventListener('click', savePattern);
+document.getElementById('saveCfwBtn').addEventListener('click', saveCfw);
+document.getElementById('saveMotorBtn').addEventListener('click', saveMotor);
+
+// Profil wechseln (nur UI)
+document.getElementById('switchProfileBtn').addEventListener('click', () => {
+  var display = document.getElementById('activeProfileDisplay');
+  display.textContent = display.textContent === 'Standard' ? 'Tuning' : 'Standard';
+});
+
+// Slider‑Werte aktualisieren
+document.getElementById('stdSpeed').addEventListener('input', function() {
+  document.getElementById('stdSpeedVal').textContent = this.value;
+});
+document.getElementById('tunSpeed').addEventListener('input', function() {
+  document.getElementById('tunSpeedVal').textContent = this.value;
+});
+document.getElementById('targetSpeed').addEventListener('input', function() {
+  document.getElementById('targetSpeedVal').textContent = this.value;
+});
+document.getElementById('pullingPower').addEventListener('input', function() {
+  document.getElementById('pullingPowerVal').textContent = this.value;
+});
+document.getElementById('fwAmpere').addEventListener('input', function() {
+  document.getElementById('fwAmpereVal').textContent = this.value;
+});
+document.getElementById('fwEngageSpeed').addEventListener('input', function() {
+  document.getElementById('fwEngageSpeedVal').textContent = this.value;
+});
+document.getElementById('fwLowBattVoltage').addEventListener('input', function() {
+  document.getElementById('fwLowBattVoltageVal').textContent = this.value;
+});
+
+// Initialer Tacho
 drawSpeedometer(0);
 </script>
 </body>
