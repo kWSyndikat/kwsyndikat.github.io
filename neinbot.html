@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Neinbot CFW · Tuning</title>
   <style>
     * { box-sizing: border-box; margin: 0; }
@@ -411,8 +411,27 @@
 
 <script>
 // ============================================================
-// 1. TEA‑Kryptographie (aus N‑SAK‑Protokoll, aber eigenständig)
+// 1. 100% originaler Code aus der HAR-Datei (TEA, Nbc, NbcSession)
 // ============================================================
+
+// Hilfsfunktionen (aus HAR)
+var X = { HOST: 62, VCU: 22, MCU: 2, BLE: 4, BMS: 7 };
+function Ia(e) {
+  if (e.data.length > 255) throw RangeError('frame too long');
+  var t = new Uint8Array(7 + e.data.length);
+  t[0] = 0x5A; t[1] = 0xA5; t[2] = e.data.length;
+  t[3] = e.src; t[4] = e.dst; t[5] = e.cmd; t[6] = e.arg;
+  t.set(e.data, 7);
+  return t;
+}
+function La(e) {
+  if (e.length < 7 || e[0] !== 0x5A || e[1] !== 0xA5) return null;
+  var t = e[2];
+  if (e.length < 7 + t) return null;
+  return { src: e[3], dst: e[4], cmd: e[5], arg: e[6], data: e.slice(7, 7 + t) };
+}
+
+// TEA-Krypto (aus HAR)
 var Tp = 2654435769, Ep = 32;
 function Dp(e, t) { return (e[t] | e[t + 1] << 8 | e[t + 2] << 16 | e[t + 3] << 24) >>> 0; }
 function Op(e, t, n) { e[t] = n & 255; e[t + 1] = (n >>> 8) & 255; e[t + 2] = (n >>> 16) & 255; e[t + 3] = (n >>> 24) & 255; }
@@ -437,7 +456,7 @@ function Np(e, t, n) {
   }
   return [r, i];
 }
-function Pp(e) { if (e.length % 4) throw Error('4‑byte alignment'); var t = 0; for (var n = 0; n < e.length; n += 4) t = (t + Dp(e, n)) >>> 0; return (((t >>> 16) & 0xFFFF | (t & 0xFFFF) << 16) >>> 0 ^ 0xFFFFFFFF) >>> 0; }
+function Pp(e) { if (e.length % 4) throw Error('4-byte alignment'); var t = 0; for (var n = 0; n < e.length; n += 4) t = (t + Dp(e, n)) >>> 0; return (((t >>> 16) & 0xFFFF | (t & 0xFFFF) << 16) >>> 0 ^ 0xFFFFFFFF) >>> 0; }
 function Fp(e) { var t = (4 - e.length % 4) % 4, n = new Uint8Array(e.length + t); n.set(e); if (n.length % 8 === 0) { var r = new Uint8Array(n.length + 4); r.set(n); n = r; } var i = new Uint8Array(n.length + 4); i.set(n); Op(i, n.length, Pp(n)); return i; }
 function Ip(e) { if (e.length < 4) throw Error('too short'); var t = e.subarray(0, e.length - 4), n = Dp(e, e.length - 4); if (Pp(t) !== n) throw Error('TEA checksum mismatch'); return t.slice(); }
 function Lp(e, t) {
@@ -473,30 +492,8 @@ function Rp(e, t) {
   return Ip(s);
 }
 
-// ============================================================
-// 2. BLE‑Hilfsfunktionen
-// ============================================================
-var X = { HOST: 62, VCU: 22, MCU: 2, BLE: 4, BMS: 7 };
-function Ia(e) {
-  if (e.data.length > 255) throw RangeError('frame too long');
-  var t = new Uint8Array(7 + e.data.length);
-  t[0] = 0x5A; t[1] = 0xA5; t[2] = e.data.length;
-  t[3] = e.src; t[4] = e.dst; t[5] = e.cmd; t[6] = e.arg;
-  t.set(e.data, 7);
-  return t;
-}
-function La(e) {
-  if (e.length < 7 || e[0] !== 0x5A || e[1] !== 0xA5) return null;
-  var t = e[2];
-  if (e.length < 7 + t) return null;
-  return { src: e[3], dst: e[4], cmd: e[5], arg: e[6], data: e.slice(7, 7 + t) };
-}
-
-// ============================================================
-// 3. Nbc (Handshake) – vollständig, mit Power‑Button‑Warteschleife
-// ============================================================
+// SHA1 + AES (aus HAR)
 var Bo = Uint8Array.of(151, 207, 184, 2, 132, 65, 67, 222, 86, 0, 43, 59, 52, 120, 10, 93);
-
 async function Uo(e, t) {
   if (e.length !== 16 || t.length !== 16) throw Error('16 bytes');
   var n = new Uint8Array(32);
@@ -512,6 +509,7 @@ async function Vo(e, t) {
   return new Uint8Array(i).slice(0, 16);
 }
 
+// Nbc-Klasse (1:1 aus HAR)
 class Nbc {
   constructor(name) {
     var enc = new TextEncoder();
@@ -649,9 +647,7 @@ class Nbc {
   }
 }
 
-// ============================================================
-// 4. NbcSession (Sitzung) – mit Power‑Button‑Aufforderung
-// ============================================================
+// NbcSession (1:1 aus HAR)
 class NbcSession {
   constructor(ble, bleName, store) {
     this.ble = ble;
@@ -682,7 +678,7 @@ class NbcSession {
         return;
       } catch (e) {
         await this.store.delete(this.ble.id);
-        // fall through – neu koppeln
+        // fall through
       }
     }
     await this._requestInitialKeyWithFallback();
@@ -751,7 +747,7 @@ class NbcSession {
     }
   }
 
-  // Frame‑Verarbeitung – von der BLE‑Schicht aufgerufen
+  // Wird von der BLE-Schicht aufgerufen
   handleFrame(raw) {
     if (!this.nbc) return;
     this.nbc.decrypt(raw).then(dec => {
@@ -804,7 +800,8 @@ class NbcSession {
 
   async writeRegisterFlash(dst, reg, data, timeout) {
     var f = { src: X.HOST, dst: dst, cmd: 3, arg: reg, data: data };
-    await this.ble.write(Ia(f), true);
+    // Wichtig: OHNE Response (wie im Original)
+    await this.ble.write(Ia(f), false);
   }
 
   async close() {
@@ -815,7 +812,7 @@ class NbcSession {
 }
 
 // ============================================================
-// 5. Web Bluetooth Client (korrekt)
+// 2. BLE-Client (exakt nach web-B3jc2H5K.js aus der HAR)
 // ============================================================
 const SERVICE_UUID = '6e400001-b5a3-f393-e0a9-e50e24dcca9e';
 const RX_UUID = '6e400002-b5a3-f393-e0a9-e50e24dcca9e';
@@ -868,10 +865,10 @@ class BleDevice {
 }
 
 // ============================================================
-// 6. App‑Zustand und UI‑Steuerung
+// 3. App-UI (wie gehabt)
 // ============================================================
-var session = null;          // BleDevice
-var nbcSession = null;       // NbcSession
+var session = null;
+var nbcSession = null;
 var speedValue = 0;
 var running = false;
 var keepaliveInterval = null;
@@ -893,7 +890,6 @@ tabs.forEach(tab => {
     tab.classList.add('active');
     panels.forEach(p => p.classList.remove('active'));
     document.getElementById('panel-' + tab.dataset.tab).classList.add('active');
-    // Beim Wechsel zum CFW‑ oder Motor‑Tab Werte neu lesen
     if (nbcSession && (tab.dataset.tab === 'cfw' || tab.dataset.tab === 'motor')) {
       readAllSettings();
     }
@@ -931,7 +927,7 @@ function drawSpeedometer(speed) {
   ctx.fillStyle = '#e8eaee'; ctx.fill();
 }
 
-// Geschwindigkeit lesen (für Tacho und Keepalive)
+// Geschwindigkeit lesen
 async function readSpeed() {
   if (!nbcSession) return null;
   try {
@@ -942,7 +938,7 @@ async function readSpeed() {
   }
 }
 
-// Keepalive – alle 3 Sekunden Geschwindigkeit lesen
+// Keepalive
 function startKeepalive() {
   if (keepaliveInterval) clearInterval(keepaliveInterval);
   keepaliveInterval = setInterval(async () => {
@@ -961,12 +957,12 @@ function startKeepalive() {
 }
 
 // ============================================================
-// 7. Register‑Auslesen und Anzeigen aller Einstellungen
+// 4. Einstellungen auslesen (wie gehabt)
 // ============================================================
 async function readAllSettings() {
   if (!nbcSession) return;
   try {
-    // 1. Profilblock (Slot 0)
+    // Profilblock
     var profileData = await nbcSession.readRegister(X.VCU, 0x01, 16, 1500);
     if (profileData && profileData.length >= 16) {
       var stdSpd = profileData[3];
@@ -977,13 +973,11 @@ async function readAllSettings() {
       var tunFb = !!(profileData[11] & 1);
       var stdCru = !!(profileData[13] & 1);
       var tunCru = !!(profileData[13] & 2);
-
       document.getElementById('stdSpeed').value = stdSpd;
       document.getElementById('stdSpeedVal').textContent = stdSpd;
       document.getElementById('stdUnderglow').checked = stdUg;
       document.getElementById('stdFrontBar').checked = stdFb;
       document.getElementById('stdCruise').checked = stdCru;
-
       document.getElementById('tunSpeed').value = tunSpd;
       document.getElementById('tunSpeedVal').textContent = tunSpd;
       document.getElementById('tunUnderglow').checked = tunUg;
@@ -991,7 +985,7 @@ async function readAllSettings() {
       document.getElementById('tunCruise').checked = tunCru;
     }
 
-    // 2. Pattern (Reg 0x71 + 0x72)
+    // Pattern
     var loData = await nbcSession.readRegister(X.VCU, 0x71, 2, 1500);
     var hiData = await nbcSession.readRegister(X.VCU, 0x72, 2, 1500);
     if (loData && hiData) {
@@ -1009,8 +1003,7 @@ async function readAllSettings() {
       displayPattern(pattern);
     }
 
-    // 3. Motor‑Einstellungen
-    // Throttle Mode (0x6E)
+    // Motor-Einstellungen
     var modeData = await nbcSession.readRegister(X.VCU, 0x6E, 1, 1500);
     if (modeData) {
       var modeMap = {1:'eco',2:'std',3:'max'};
@@ -1018,21 +1011,18 @@ async function readAllSettings() {
       document.getElementById('throttleMode').value = mode;
     }
 
-    // Sports Max (0x48)
     var spData = await nbcSession.readRegister(X.VCU, 0x48, 2, 1500);
     if (spData) {
-      var top = spData[1]; // high byte
+      var top = spData[1];
       document.getElementById('targetSpeed').value = top;
       document.getElementById('targetSpeedVal').textContent = top;
     }
 
-    // Overdrive (0x89)
     var odData = await nbcSession.readRegister(X.VCU, 0x89, 1, 1500);
     if (odData) {
       document.getElementById('overdriveToggle').checked = odData[0] === 1;
     }
 
-    // MCU D3 (Pulling Power)
     var d3Data = await nbcSession.readRegister(X.MCU, 0xD3, 2, 1500);
     if (d3Data) {
       var d3 = d3Data[0] | (d3Data[1] << 8);
@@ -1042,7 +1032,6 @@ async function readAllSettings() {
       document.getElementById('pullingPowerVal').textContent = power;
     }
 
-    // Field Weakening D5, D6
     var d5Data = await nbcSession.readRegister(X.MCU, 0xD5, 2, 1500);
     var d6Data = await nbcSession.readRegister(X.MCU, 0xD6, 2, 1500);
     if (d5Data && d6Data) {
@@ -1060,7 +1049,6 @@ async function readAllSettings() {
       document.getElementById('fwEngageSpeedVal').textContent = engage;
     }
 
-    // Low Batt Toggle (0x8A) und Voltage (0x8B)
     var lbData = await nbcSession.readRegister(X.VCU, 0x8A, 1, 1500);
     if (lbData) {
       document.getElementById('fwLowBattEnable').checked = lbData[0] === 1;
@@ -1099,7 +1087,7 @@ function displayPattern(pattern) {
   });
 }
 
-// Pattern speichern
+// Speicher-Funktionen (mit korrekten Flags)
 async function savePattern() {
   if (!nbcSession) { showStatus('cfwSaveStatus', 'Nicht verbunden', 'err'); return; }
   if (currentPattern.length < 4) { showStatus('cfwSaveStatus', 'Mindestens 4 Tasten nötig', 'err'); return; }
@@ -1113,7 +1101,6 @@ async function savePattern() {
   try {
     await nbcSession.writeRegisterFlash(X.VCU, 0x71, loBytes);
     await nbcSession.writeRegisterFlash(X.VCU, 0x72, hiBytes);
-    // Lock aktivieren (Bit 2 in 0x1D)
     var status = await nbcSession.readRegister(X.VCU, 0x1D, 2, 1500);
     var flags = status[0] | (status[1] << 8);
     flags |= 4;
@@ -1125,12 +1112,10 @@ async function savePattern() {
   }
 }
 
-// CFW speichern (Profil + Pattern)
 async function saveCfw() {
   if (!nbcSession) { showStatus('cfwSaveStatus', 'Nicht verbunden', 'err'); return; }
   showStatus('cfwSaveStatus', 'Speichere CFW…', '');
   try {
-    // Profilblock
     var block = new Uint8Array(16);
     block[0] = 22; block[1] = 22; block[2] = 0;
     block[3] = parseInt(document.getElementById('stdSpeed').value);
@@ -1145,41 +1130,32 @@ async function saveCfw() {
     block[14] = 0;
     block[15] = 0;
     await nbcSession.writeRegisterFlash(X.VCU, 0x01, block);
-    // Pattern ebenfalls speichern
     await savePattern();
-    // Erfolg
     showStatus('cfwSaveStatus', 'CFW gespeichert ✓', 'ok');
-    // Neu einlesen
     await readAllSettings();
   } catch (e) {
     showStatus('cfwSaveStatus', 'Fehler: ' + e.message, 'err');
   }
 }
 
-// Motor speichern
 async function saveMotor() {
   if (!nbcSession) { showStatus('motorSaveStatus', 'Nicht verbunden', 'err'); return; }
   showStatus('motorSaveStatus', 'Speichere Motor…', '');
   try {
-    // Throttle Mode
     var modeMap = { eco: 1, std: 2, max: 3 };
     var mode = modeMap[document.getElementById('throttleMode').value] || 2;
     await nbcSession.writeRegister(X.VCU, 0x6E, Uint8Array.of(mode));
 
-    // Sports Max
     var top = parseInt(document.getElementById('targetSpeed').value);
     await nbcSession.writeRegister(X.VCU, 0x48, Uint8Array.of(0, top));
 
-    // Overdrive
     var od = document.getElementById('overdriveToggle').checked ? 1 : 0;
     await nbcSession.writeRegister(X.VCU, 0x89, Uint8Array.of(od));
 
-    // Pulling Power (D3)
     var power = parseInt(document.getElementById('pullingPower').value);
     var d3 = Math.round(1280 * (1 + power / 100));
     await nbcSession.writeRegister(X.MCU, 0xD3, Uint8Array.of(d3 & 255, (d3 >> 8) & 255));
 
-    // Field Weakening D5, D6
     var fwOn = document.getElementById('fwEnable').checked;
     var amp = parseInt(document.getElementById('fwAmpere').value);
     var engage = parseInt(document.getElementById('fwEngageSpeed').value);
@@ -1188,11 +1164,9 @@ async function saveMotor() {
     await nbcSession.writeRegister(X.MCU, 0xD5, Uint8Array.of(d5 & 255, (d5 >> 8) & 255));
     await nbcSession.writeRegister(X.MCU, 0xD6, Uint8Array.of(d6 & 255, (d6 >> 8) & 255));
 
-    // Low Batt Toggle
     var lb = document.getElementById('fwLowBattEnable').checked ? 1 : 0;
     await nbcSession.writeRegister(X.VCU, 0x8A, Uint8Array.of(lb));
 
-    // Low Batt Voltage
     var volt = parseInt(document.getElementById('fwLowBattVoltage').value);
     await nbcSession.writeRegister(X.VCU, 0x8B, Uint8Array.of(volt));
 
@@ -1210,11 +1184,10 @@ function showStatus(id, msg, type) {
 }
 
 // ============================================================
-// 8. Verbinden / Trennen
+// 5. Verbinden / Trennen
 // ============================================================
 connectBtn.addEventListener('click', async () => {
   if (nbcSession) {
-    // Trennen
     if (keepaliveInterval) { clearInterval(keepaliveInterval); keepaliveInterval = null; }
     await nbcSession.close();
     nbcSession = null;
@@ -1261,7 +1234,6 @@ connectBtn.addEventListener('click', async () => {
       else powerHint.classList.remove('active');
     });
 
-    // Daten von BLE an Session weiterleiten
     session.onData((data) => {
       if (nbcSession) nbcSession.handleFrame(data);
     });
@@ -1279,10 +1251,7 @@ connectBtn.addEventListener('click', async () => {
     connectBtn.disabled = false;
     powerHint.classList.remove('active');
 
-    // Einstellungen lesen
     await readAllSettings();
-
-    // Keepalive starten
     startKeepalive();
 
   } catch (err) {
@@ -1298,14 +1267,13 @@ connectBtn.addEventListener('click', async () => {
 });
 
 // ============================================================
-// 9. Event‑Listener für Buttons
+// 6. Event-Listener für Buttons
 // ============================================================
-// Pattern‑Buttons
 document.querySelectorAll('#patternButtons button').forEach(btn => {
   btn.addEventListener('click', () => {
     var key = parseInt(btn.dataset.key);
     if (currentPattern.length >= 6) return;
-    if (currentPattern.indexOf(key) === -1) { // keine Duplikate erlaubt
+    if (currentPattern.indexOf(key) === -1) {
       currentPattern.push(key);
       displayPattern(currentPattern);
     }
@@ -1321,13 +1289,12 @@ document.getElementById('savePatternBtn').addEventListener('click', savePattern)
 document.getElementById('saveCfwBtn').addEventListener('click', saveCfw);
 document.getElementById('saveMotorBtn').addEventListener('click', saveMotor);
 
-// Profil wechseln (nur UI)
 document.getElementById('switchProfileBtn').addEventListener('click', () => {
   var display = document.getElementById('activeProfileDisplay');
   display.textContent = display.textContent === 'Standard' ? 'Tuning' : 'Standard';
 });
 
-// Slider‑Werte aktualisieren
+// Slider-Werte
 document.getElementById('stdSpeed').addEventListener('input', function() {
   document.getElementById('stdSpeedVal').textContent = this.value;
 });
@@ -1350,7 +1317,6 @@ document.getElementById('fwLowBattVoltage').addEventListener('input', function()
   document.getElementById('fwLowBattVoltageVal').textContent = this.value;
 });
 
-// Initialer Tacho
 drawSpeedometer(0);
 </script>
 </body>
