@@ -44,12 +44,12 @@ canvas#hellbg{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;
 .row:last-child{border-bottom:none}
 .row-label{font-size:.82rem;color:var(--text2);letter-spacing:.04em;min-width:120px;flex:0 0 auto}
 .row-value{font-family:var(--font);font-size:1rem;color:var(--text);font-variant-numeric:tabular-nums}
-.tabs{display:flex;gap:2px;background:var(--surface);border:1px solid var(--border);border-radius:var(--rad2);padding:4px;overflow-x:auto}
-.tab{flex:1;min-width:80px;padding:.6rem .8rem;text-align:center;background:transparent;border:none;border-radius:var(--rad3);color:var(--text2);font-family:var(--body);font-size:.78rem;letter-spacing:.06em;cursor:pointer;transition:.25s}
+.tabs{display:flex;gap:2px;background:var(--surface);border:1px solid var(--border);border-radius:var(--rad2);padding:4px;overflow-x:auto;position:relative;z-index:20;}
+.tab{flex:1;min-width:80px;padding:.6rem .8rem;text-align:center;background:transparent;border:none;border-radius:var(--rad3);color:var(--text2);font-family:var(--body);font-size:.78rem;letter-spacing:.06em;cursor:pointer;transition:.25s;position:relative;z-index:21;-webkit-tap-highlight-color:transparent;}
 .tab:hover{color:var(--text);background:rgba(192,57,43,.06)}
 .tab.active{color:var(--text);background:rgba(192,57,43,.12);box-shadow:inset 0 0 0 1px var(--border2)}
-.panel{display:none !important;animation:fadeIn .3s ease}
-.panel.active{display:block !important}
+.panel{display:none !important;}
+.panel.active{display:block !important;animation:fadeIn .3s ease;}
 @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
 .gauge-wrap{display:flex;flex-direction:column;align-items:center;padding:.3rem 0 .1rem}
 canvas#speedo{width:100%;max-width:320px;height:auto;aspect-ratio:1;display:block}
@@ -601,7 +601,11 @@ function encodePattern(arr){if(arr.length>4)throw Error('pattern too long');var 
 /* ============================================================
    3. UI state
    ============================================================ */
-var session=null,nbcSession=null,keepaliveInterval=null;
+var session=null,nbcSession=null,keepaliveInterval=null,settingsBusy=false;
+var IG={SPEED:87,SOC:85,RANGE:95,TEMP:107,MOTOR_TEMP:24,MILEAGE:98,VOLTAGE:140,CURRENT:141,MODE:90};
+function u16(b){return b[0]|b[1]<<8}
+function i16(b){var t=u16(b);return t>=32768?t-65536:t}
+
 var displaySpeed=0,targetSpeedAnim=0,rafId=0;
 
 var connectBtn=document.getElementById('connectBtn');
@@ -722,6 +726,7 @@ function setPill(id,msg,cls){
 
 async function readSakSettings(){
   if(!nbcSession)return;
+  settingsBusy=true; stopKeepalive();
   var load=document.getElementById('sakLoading');
   load.style.display='block';
   try{
@@ -733,14 +738,14 @@ async function readSakSettings(){
     displayPattern(decodePattern(patRaw));
     // Aktiver Modus (normal register 0x5A)
     try{
-      var md=await nbcSession.readRegister(X.VCU,0x5A,1,1200);
+      var md=await nbcSession.readRegister(X.VCU,IG.MODE,1,1200);
       document.getElementById('activeProfileDisplay').textContent=md[0]===1?'Tuning':'Standard';
     }catch(e){document.getElementById('activeProfileDisplay').textContent='—'}
     setPill('sakSaveStatus','✓ gelesen','ok');
   }catch(e){
     console.warn(e);
     setPill('sakSaveStatus','Fehler: '+e.message,'err');
-  }finally{load.style.display='none'}
+  }finally{load.style.display='none';settingsBusy=false;startKeepalive();}
 }
 
 
@@ -783,6 +788,7 @@ async function readFoc(){
 
 async function readMotorSettings(){
   if(!nbcSession)return;
+  settingsBusy=true; stopKeepalive();
   var load=document.getElementById('motorLoading');
   if(load)load.style.display='block';
   setPill('motorSaveStatus','Lese…','loading');
@@ -889,7 +895,7 @@ async function readMotorSettings(){
   }catch(e){
     console.warn(e);
     setPill('motorSaveStatus','Fehler: '+e.message,'err');
-  }finally{if(load)load.style.display='none'}
+  }finally{if(load)load.style.display='none';settingsBusy=false;startKeepalive();}
 }
 
 async function ensureStopped(){
@@ -986,51 +992,58 @@ async function motorAction(fn,label){
 
 async function readSpeed(){
   if(!nbcSession)return null;
-  try{var d=await nbcSession.readRegister(X.VCU,87,2,900);return(d[0]|(d[1]<<8))/10}catch(e){return null}
+  try{
+    var d=await nbcSession.readRegister(X.VCU,IG.SPEED,2,500);
+    return u16(d)/10;
+  }catch(e){return null}
 }
+
 async function readLiveData(){
   if(!nbcSession)return;
-  try{var soc=await nbcSession.readRegister(X.VCU,85,2,700);document.getElementById('liveSoc').textContent=(soc[0]|(soc[1]<<8))+' %'}catch(e){}
-  try{var t=await nbcSession.readRegister(X.VCU,107,2,700);document.getElementById('liveTemp').textContent=((t[0]|(t[1]<<8))/10).toFixed(1)+' °C'}catch(e){}
-  // Leistung (W): Strom × Spannung — soft-fail
-  try{
-    var curB=await nbcSession.readRegister(X.VCU,80,2,700);
-    var cur=((curB[0]|(curB[1]<<8))<<16>>16)/100; // signed 0.01A
-    var voltB=await nbcSession.readRegister(X.VCU,81,2,700);
-    var volt=(voltB[0]|(voltB[1]<<8))/100;
-    var watts=Math.round(Math.abs(cur*volt));
-    var el=document.getElementById('liveWatts');
-    if(el) el.textContent=watts+' W';
-  }catch(e){
-    try{
-      // Fallback: manchen CFW liegt Power direkt an Reg. 82
-      var pw=await nbcSession.readRegister(X.VCU,82,2,700);
-      var w=(pw[0]|(pw[1]<<8));
-      var el2=document.getElementById('liveWatts');
-      if(el2) el2.textContent=w+' W';
-    }catch(e2){}
+  var soft=async function(dst,reg,len){
+    try{return await nbcSession.readRegister(dst,reg,len,600)}catch(e){return null}
+  };
+  var soc=await soft(X.VCU,IG.SOC,2);
+  if(soc){var el=document.getElementById('liveSoc');if(el)el.textContent=u16(soc)+' %'}
+  var temp=await soft(X.VCU,IG.TEMP,2);
+  if(temp){var el2=document.getElementById('liveTemp');if(el2)el2.textContent=(u16(temp)/10).toFixed(1)+' °C'}
+  // N-SAK 1:1: Power = BMS voltage(140) * current(141)
+  var voltB=await soft(X.BMS,IG.VOLTAGE,2);
+  var curB=await soft(X.BMS,IG.CURRENT,2);
+  var wel=document.getElementById('liveWatts');
+  if(wel && voltB && curB){
+    var v=u16(voltB)/100;
+    var a=i16(curB)/100;
+    wel.textContent=Math.round(v*a)+' W';
   }
 }
 
-var pollBusy=false;
+function stopKeepalive(){
+  if(keepaliveInterval){clearInterval(keepaliveInterval);keepaliveInterval=null}
+}
+
 function startKeepalive(){
-  if(keepaliveInterval)clearInterval(keepaliveInterval);
-  var liveEvery=0;
-  var tick=async()=>{
-    if(!nbcSession||pollBusy)return;
-    pollBusy=true;
+  stopKeepalive();
+  var liveTick=0;
+  var tick=async function(){
+    if(!nbcSession || settingsBusy) return;
+    // Speed so schnell wie möglich — kein pollBusy-Lock über Live-Reads
     try{
       var spd=await readSpeed();
       if(spd!==null){
         setSpeed(spd);
-        pollHint.textContent='Live · '+(spd>0.5?'Fahrt':'Stillstand')+' · 0.7s';
+        var ph=document.getElementById('pollHint');
+        if(ph) ph.textContent='Live · '+(spd>0.3?'Fahrt':'Stillstand');
       }
-      liveEvery++;
-      if(liveEvery%2===0) await readLiveData();
-    }finally{pollBusy=false}
+    }catch(e){}
+    liveTick++;
+    // Live-Daten seltener (SOC/Temp/Watt), damit Speed-Poll nicht blockiert
+    if(liveTick%3===0){
+      try{await readLiveData()}catch(e){}
+    }
   };
   tick();
-  keepaliveInterval=setInterval(tick,650);
+  keepaliveInterval=setInterval(tick,350);
 }
 
 async function saveProfile(){
@@ -1140,20 +1153,28 @@ document.getElementById('tunSpeedSlider').addEventListener('input',function(){do
 
 
 document.querySelectorAll('.tab').forEach(tab=>{
-  tab.addEventListener('click',(ev)=>{
+  tab.addEventListener('click',function(ev){
     ev.preventDefault();
-    var name=tab.getAttribute('data-tab');
-    document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
-    tab.classList.add('active');
-    document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+    ev.stopPropagation();
+    var name=this.getAttribute('data-tab');
+    if(!name) return;
+    document.querySelectorAll('.tab').forEach(function(t){ t.classList.remove('active'); });
+    this.classList.add('active');
+    document.querySelectorAll('#dashboard > .panel').forEach(function(p){
+      p.classList.remove('active');
+      p.style.display='none';
+    });
     var panel=document.getElementById('panel-'+name);
-    if(panel) panel.classList.add('active');
-    else console.warn('panel missing', name);
-    if(nbcSession&&name==='sak') readSakSettings();
-    if(nbcSession&&name==='motor') readMotorSettings();
+    if(panel){
+      panel.classList.add('active');
+      panel.style.display='block';
+    } else {
+      console.warn('panel missing', name);
+    }
+    if(nbcSession && name==='sak') readSakSettings();
+    if(nbcSession && name==='motor') readMotorSettings();
   });
 });
-
 
 document.getElementById('pullingPowerSlider')?.addEventListener('input',function(){document.getElementById('pullingPowerVal').textContent=this.value+' %'});
 document.getElementById('fwAmpereSlider')?.addEventListener('input',function(){document.getElementById('fwAmpereVal').textContent=this.value+' A'});
