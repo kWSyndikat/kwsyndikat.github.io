@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>kWSyndikat · Tuning</title>
+<title>kWSyndikat · Ninebot UID & Tuning Reader</title>
 <style>
-@font-face{font-family:'DxrkFont';src:url('https://files.catbox.moe/u8vo6e.ttf') format('truetype');font-display:swap}
-@font-face{font-family:'DxrkBody';src:url('https://files.catbox.moe/4bsmy6.ttf') format('opentype');font-display:swap}
+@font-face{font-family:"DxrkFont";src:url("https://files.catbox.moe/u8vo6e.ttf") format("truetype");font-display:swap}
+@font-face{font-family:"DxrkBody";src:url("https://files.catbox.moe/4bsmy6.ttf") format("opentype");font-display:swap}
 *{margin:0;padding:0;box-sizing:border-box}
 :root{
   --r:#c0392b;--r2:#8b0000;--r3:#e84030;--bg:#060202;
@@ -15,7 +15,7 @@
   --border:rgba(192,57,43,.15);--border2:rgba(192,57,43,.38);
   --ok:#4caf50;--warn:#ffa726;
   --rad:16px;--rad2:12px;--rad3:8px;
-  --font:'DxrkFont',system-ui,sans-serif;--body:'DxrkBody',system-ui,sans-serif;
+  --font:"DxrkFont",system-ui,sans-serif;--body:"DxrkBody",system-ui,sans-serif;
 }
 html{scroll-behavior:smooth;-webkit-font-smoothing:antialiased}
 body{background:var(--bg);color:var(--text);font-family:var(--body);overflow-x:hidden;min-height:100vh}
@@ -44,35 +44,6 @@ canvas#hellbg{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;
 .row:last-child{border-bottom:none}
 .row-label{font-size:.82rem;color:var(--text2);letter-spacing:.04em;min-width:120px;flex:0 0 auto}
 .row-value{font-family:var(--font);font-size:1rem;color:var(--text);font-variant-numeric:tabular-nums}
-.tabs{display:flex;gap:2px;background:var(--surface);border:1px solid var(--border);border-radius:var(--rad2);padding:4px;overflow-x:auto;position:relative;z-index:20;}
-.tab{flex:1;min-width:80px;padding:.6rem .8rem;text-align:center;background:transparent;border:none;border-radius:var(--rad3);color:var(--text2);font-family:var(--body);font-size:.78rem;letter-spacing:.06em;cursor:pointer;transition:.25s;position:relative;z-index:21;-webkit-tap-highlight-color:transparent;}
-.tab:hover{color:var(--text);background:rgba(192,57,43,.06)}
-.tab.active{color:var(--text);background:rgba(192,57,43,.12);box-shadow:inset 0 0 0 1px var(--border2)}
-.panel{display:none !important;}
-.panel.active{display:block !important;animation:fadeIn .3s ease;}
-@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
-.gauge-wrap{display:flex;flex-direction:column;align-items:center;padding:.3rem 0 .1rem}
-canvas#speedo{width:100%;max-width:320px;height:auto;aspect-ratio:1;display:block}
-.speed-readout{font-family:var(--font);font-size:3rem;color:var(--text);letter-spacing:.04em;margin-top:-.4rem;line-height:1}
-.speed-readout small{font-size:.95rem;color:var(--text2);letter-spacing:.14em}
-.speed-hint{font-size:.62rem;color:var(--text3);letter-spacing:.14em;margin-top:.25rem}
-.live-grid{display:grid;grid-template-columns:1fr 1fr;gap:.8rem;margin-top:.8rem}
-.live-tile{background:var(--surface);border:1px solid var(--border);border-radius:var(--rad2);padding:1rem 1.1rem;text-align:center}
-.live-tile .lbl{font-size:.65rem;letter-spacing:.12em;color:var(--text3);text-transform:uppercase;margin-bottom:.25rem}
-.live-tile .val{font-family:var(--font);font-size:1.35rem;color:var(--text)}
-.pattern-strip{display:flex;gap:.5rem;flex-wrap:wrap;padding:.6rem .8rem;background:rgba(0,0,0,.3);border-radius:var(--rad3);border:1px solid var(--border);min-height:44px;align-items:center}
-.pattern-chip{background:rgba(192,57,43,.12);border:1px solid var(--border2);border-radius:6px;padding:.25rem .7rem;font-size:.72rem;color:var(--text2);letter-spacing:.04em}
-.pattern-chip .idx{color:var(--r);margin-right:.3rem;font-weight:600}
-.pattern-empty{color:var(--text3);font-size:.75rem;letter-spacing:.06em}
-.dpad{display:grid;grid-template-columns:repeat(3,56px);grid-template-rows:repeat(3,48px);gap:6px;justify-content:center;margin:1rem 0 .6rem}
-.dpad button{background:rgba(192,57,43,.1);border:1px solid var(--border2);color:var(--text2);border-radius:10px;font-family:var(--body);font-size:.7rem;letter-spacing:.04em;cursor:pointer;transition:.2s}
-.dpad button:hover{background:rgba(192,57,43,.22);color:var(--text);border-color:var(--r)}
-.dpad button:disabled{opacity:.3;pointer-events:none}
-.dpad .hub{grid-column:2;grid-row:2;display:flex;align-items:center;justify-content:center;color:var(--text3);font-size:.65rem;letter-spacing:.08em}
-.dpad .up{grid-column:2;grid-row:1}
-.dpad .left{grid-column:1;grid-row:2}
-.dpad .right{grid-column:3;grid-row:2}
-.dpad .down{grid-column:2;grid-row:3}
 .btn{display:inline-flex;align-items:center;gap:.4rem;font-family:var(--body);font-size:.78rem;letter-spacing:.06em;border-radius:var(--rad3);padding:.55rem 1.3rem;cursor:pointer;transition:.22s;border:1px solid transparent;background:transparent;color:var(--text2)}
 .btn:active{transform:scale(.97)}
 .btn-red{background:var(--r);color:#fff;border-color:var(--r)}
@@ -87,58 +58,13 @@ canvas#speedo{width:100%;max-width:320px;height:auto;aspect-ratio:1;display:bloc
 .unlock-page h1{font-family:var(--font);font-size:clamp(2rem,6vw,3.2rem);color:#ff1800;letter-spacing:.04em}
 .unlock-page p{max-width:420px;color:var(--text2);font-size:.92rem;line-height:1.7}
 .unlock-page .btn{font-size:.9rem;padding:.8rem 2.2rem}
-#powerHint{background:rgba(42,28,28,.95);border:1px solid #5a3a3a;color:#e8b0b0;padding:12px 16px;border-radius:10px;font-size:.88rem;display:none;text-align:center}
+#powerHint{background:rgba(42,28,28,.95);border:1px solid #ff4a30;color:#ffdede;padding:14px 18px;border-radius:10px;font-size:1rem;display:none;text-align:center;font-weight:700;animation:pulse 1.5s infinite;}
 #powerHint.active{display:block}
-.loading-bar{height:3px;background:var(--border);border-radius:2px;overflow:hidden;margin:.5rem 0 1rem}
-.loading-bar>i{display:block;height:100%;width:30%;background:var(--r);border-radius:2px;animation:loadSlide 1.1s ease-in-out infinite}
-@keyframes loadSlide{0%{transform:translateX(-100%)}100%{transform:translateX(400%)}}
+@keyframes pulse{0%{opacity:.85;transform:scale(.99)}50%{opacity:1;transform:scale(1.01)}100%{opacity:.85;transform:scale(.99)}}
 .status-pill{font-size:.68rem;letter-spacing:.06em;padding:.2rem .6rem;border-radius:12px;border:1px solid var(--border2);color:var(--text2)}
 .status-pill.ok{border-color:var(--ok);color:var(--ok)}
 .status-pill.err{border-color:var(--r);color:var(--r)}
 .status-pill.loading{border-color:var(--warn);color:var(--warn)}
-.toggle-row input[type=checkbox]{width:18px;height:18px;accent-color:var(--r)}
-input[type=range]{flex:1;min-width:80px;height:4px;border-radius:4px;appearance:none;-webkit-appearance:none;background:var(--border);accent-color:var(--r)}
-input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--r);cursor:pointer;border:none}
-select{background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:var(--rad3);padding:.3rem .6rem;font-family:var(--body);font-size:.78rem}
-.locked-hint{font-size:.68rem;color:var(--text3);letter-spacing:.04em;margin-top:.15rem}
-.section-mark{font-size:.62rem;letter-spacing:.16em;color:var(--r);margin-bottom:.3rem}
-@media(max-width:640px){
-  .row{flex-direction:column;align-items:stretch;gap:.3rem}
-  .row-label{min-width:0}
-  .card{padding:1.2rem 1rem}
-  .nav{margin:-80px -1rem 0;padding:.6rem 1rem}
-  #app{padding:80px 1rem 2rem}
-  .live-grid{grid-template-columns:1fr}
-  .dpad{grid-template-columns:repeat(3,48px);grid-template-rows:repeat(3,42px)}
-}
-::-webkit-scrollbar{width:4px;height:4px}
-::-webkit-scrollbar-track{background:var(--bg)}
-::-webkit-scrollbar-thumb{background:var(--border2);border-radius:4px}
-
-.gauge-card{padding:1.2rem 1rem 1.4rem !important;overflow:hidden}
-.gauge-ring{position:relative;width:min(100%,320px);aspect-ratio:1;margin:0 auto}
-.gauge-ring canvas{width:100%;height:100%;display:block}
-.gauge-center{
-  position:absolute;inset:0;display:flex;flex-direction:column;
-  align-items:center;justify-content:center;pointer-events:none;
-  padding-top:8%;
-}
-.gauge-center .speed-readout{
-  font-family:var(--font);font-size:clamp(2.8rem,12vw,3.6rem);
-  color:#fff;letter-spacing:.02em;line-height:1;text-shadow:0 0 24px rgba(232,64,48,.45);
-  margin:0;
-}
-.gauge-center .speed-unit{
-  font-size:.72rem;letter-spacing:.2em;color:var(--text2);text-transform:uppercase;margin-top:.15rem;
-}
-.gauge-center .watt-readout{
-  margin-top:.55rem;font-family:var(--font);font-size:1.05rem;
-  color:var(--r3);letter-spacing:.06em;
-  padding:.2rem .7rem;border-radius:20px;
-  background:rgba(192,57,43,.12);border:1px solid rgba(192,57,43,.28);
-}
-.speed-hint{margin-top:.85rem !important}
-
 </style>
 </head>
 <body>
@@ -147,287 +73,86 @@ select{background:var(--surface);border:1px solid var(--border);color:var(--text
 <div class="heat-top"></div>
 <div id="app">
   <nav class="nav">
-    <span class="nav-logo">kWSyndikat</span>
+    <span class="nav-logo">kWSyndikat · UID Reader</span>
     <div class="nav-status">
       <span class="nav-dot" id="navDot"></span>
       <span id="navLabel">offline</span>
       <button class="nav-btn" id="connectBtn">Verbinden</button>
     </div>
   </nav>
-  <div id="powerHint">🔘 Bitte drücke jetzt den <strong>Power-Button</strong> am Scooter, um die Kopplung zu autorisieren.</div>
+  <div id="powerHint">🚨 SCOOTER PIEPT: Bitte jetzt den <strong>Power-Button</strong> am E-Scooter drücken!</div>
   <div id="content">
     <div id="unlockPage" class="unlock-page">
       <div class="hero-icon">⚡</div>
-      <h1>kWSyndikat · Tuning</h1>
-      <p>Verbinde deinen Scooter. Nach dem Handshake werden Profil, Unlock-Pattern und Motor-Parameter über die N-SAK Flash-Slots gelesen.</p>
-      <button class="btn btn-red" id="unlockConnectBtn">🔌 Scooter verbinden</button>
-      <div style="font-size:.7rem;color:var(--text3)">Ninebot Max G3 · Segway ZT3 Pro · N-SAK CFW</div>
+      <h1>Ninebot G3 & ZT3 Pro UID Reader</h1>
+      <p>Verbinde deinen echten Scooter. Nach dem Handshake mit Power-Button-Bestätigung wird die originale Controller MCU-UID (Reg 218) ausgelesen.</p>
+      <button class="btn btn-red" id="unlockConnectBtn">🔌 Scooter verbinden & koppeln</button>
+      <div style="font-size:.7rem;color:var(--text3)">Kompatibel mit Ninebot G3 (1CG...), ZT3 Pro (1K1...), Max G2 (N2G...)</div>
     </div>
     <div id="dashboard" style="display:none">
-      <div class="tabs">
-        <button class="tab active" data-tab="tacho">Tacho</button>
-        <button class="tab" data-tab="sak">Profile</button>
-        <button class="tab" data-tab="motor">Motor</button>
-      </div>
-
-      <!-- TACHO -->
-      <div class="panel active" id="panel-tacho">
-        <div class="card gauge-card">
-          <div class="gauge-wrap">
-            <div class="gauge-ring">
-              <canvas id="speedo" width="360" height="360"></canvas>
-              <div class="gauge-center">
-                <div class="speed-readout" id="speedDisplay">0</div>
-                <div class="speed-unit">km/h</div>
-                <div class="watt-readout" id="liveWatts">— W</div>
-              </div>
-            </div>
-            <div class="speed-hint" id="pollHint">Live · Polling</div>
-          </div>
+      
+      <!-- HAUPT-CARD: 1DRAGON CONTROLLER MCU-UID -->
+      <div class="card" style="border: 2px solid #238636; background: rgba(20, 35, 20, 0.95); margin-bottom: 1rem;">
+        <div style="font-size:.65rem; letter-spacing:.16em; color:#3FB950; font-weight:700; margin-bottom:.3rem;">1DRAGON · CONTROLLER HARDWARE-UID</div>
+        <div class="card-title" style="color:#FFF; font-size:1.2rem;">Controller MCU-UID (Register 218)</div>
+        <div class="card-sub" style="color:#A1D8A1;">Diese 12-Byte Hardware-UID ist das Gegenstück zu deiner 1Dragon-Lizenz. Kopiere sie und füge sie im Emulator ein.</div>
+        
+        <div class="row">
+          <span class="row-label">Controller UID (Hex):</span>
+          <span class="row-value" id="dispUidHex" style="color:#58A6FF; font-family:monospace; font-size:1.15rem; font-weight:700; word-break:break-all;">Lese aus…</span>
         </div>
-        <div class="live-grid">
-          <div class="live-tile"><div class="lbl">Akku</div><div class="val" id="liveSoc">— %</div></div>
-          <div class="live-tile"><div class="lbl">Temp VCU</div><div class="val" id="liveTemp">— °C</div></div>
+        <div class="row">
+          <span class="row-label">Seriennummer (Reg 16):</span>
+          <span class="row-value" id="dispSn" style="color:#7EE787; font-family:monospace;">—</span>
         </div>
-      </div>
-
-      <!-- SAK / PROFILE (1:1 Logik aus /sak) -->
-      <div class="panel" id="panel-sak">
-        <div id="sakLoading" style="display:none">
-          <div class="loading-bar"><i></i></div>
-          <div style="font-size:.75rem;color:var(--text3);text-align:center">Lese Flash-Slots (Profil + Pattern)…</div>
+        <div class="row">
+          <span class="row-label">Hardware-Status (Reg 23):</span>
+          <span class="row-value" id="dispHw" style="color:#79C0FF; font-family:monospace;">—</span>
         </div>
-        <div class="card">
-          <div class="section-mark">01 · PROFIL</div>
-          <div class="card-title">Standard / Tuning</div>
-          <div class="card-sub">Standard ist firmware-seitig auf 22 km/h fixiert. Tuning behält konfigurierbare Speed und Features. Unlock-Pattern wechselt am Roller zwischen den Slots.</div>
-          <div class="row">
-            <span class="row-label">Aktiver Slot</span>
-            <span class="row-value" id="activeProfileDisplay">—</span>
-          </div>
-          <div class="card-divider"></div>
-          <div class="row">
-            <span class="row-label">Standard Speed</span>
-            <span class="row-value">22 km/h <span class="locked-hint">(gesperrt)</span></span>
-          </div>
-          <div class="row">
-            <span class="row-label">Tuning Speed</span>
-            <span class="row-value" id="tunSpeedVal">45 km/h</span>
-            <input type="range" id="tunSpeedSlider" min="10" max="100" value="45">
-          </div>
-          <div class="row toggle-row">
-            <span class="row-label">Tuning Underglow</span>
-            <span class="row-value" id="tunUgVal">aus</span>
-            <input type="checkbox" id="tunUgToggle">
-          </div>
-          <div class="row toggle-row">
-            <span class="row-label">Std. Frontleiste</span>
-            <span class="row-value" id="stdFbVal">aus</span>
-            <input type="checkbox" id="stdFbToggle">
-          </div>
-          <div class="row toggle-row">
-            <span class="row-label">Tun. Frontleiste</span>
-            <span class="row-value" id="tunFbVal">aus</span>
-            <input type="checkbox" id="tunFbToggle">
-          </div>
-          <div class="row toggle-row">
-            <span class="row-label">Tuning Tempomat</span>
-            <span class="row-value" id="tunCruiseVal">aus</span>
-            <input type="checkbox" id="tunCruiseToggle">
-          </div>
-          <div class="row toggle-row">
-            <span class="row-label">Panic Button</span>
-            <span class="row-value" id="panicVal">an</span>
-            <input type="checkbox" id="panicToggle" checked>
-          </div>
-          <div class="row toggle-row">
-            <span class="row-label">Beep bei Tuning</span>
-            <span class="row-value" id="beepVal">an</span>
-            <input type="checkbox" id="beepToggle" checked>
-          </div>
-          <div class="btn-group">
-            <button class="btn btn-red" id="saveProfileBtn">Profil speichern</button>
-            <span class="status-pill" id="sakSaveStatus"></span>
-          </div>
+        <div class="row">
+          <span class="row-label">Erkannter ESC-Node:</span>
+          <span class="row-value" id="dispNode" style="color:var(--text2); font-family:monospace;">—</span>
         </div>
-
-        <div class="card">
-          <div class="section-mark">02 · UNLOCK PATTERN</div>
-          <div class="card-title">On-Scooter Unlock-Muster</div>
-          <div class="card-sub">D-Pad-Sequenz (max. 4 Schritte). Am Roller: Up=Mode, Down=Power, Left=Blinker L, Right=Blinker R. Schaltet in den Tuning-Slot.</div>
-          <div class="pattern-strip" id="patternDisplay"><span class="pattern-empty">— kein Pattern</span></div>
-          <div class="dpad">
-            <button class="up" data-key="1">▲ Mode</button>
-            <button class="left" data-key="3">◀ L</button>
-            <div class="hub">D-PAD</div>
-            <button class="right" data-key="4">R ▶</button>
-            <button class="down" data-key="2">▼ Power</button>
-          </div>
-          <div class="btn-group">
-            <button class="btn btn-outline btn-sm" id="clearPatternBtn">Löschen</button>
-            <button class="btn btn-red btn-sm" id="savePatternBtn">Pattern speichern</button>
-          </div>
+        
+        <div class="btn-group" style="margin-top:1.2rem;">
+          <button class="btn btn-red" id="copyUidBtn" style="background:#238636; border-color:#2ea043; font-size:.9rem; padding:.7rem 1.6rem;">📋 UID in Zwischenablage kopieren</button>
+          <button class="btn btn-outline" id="rereadUidBtn">🔄 Neu auslesen</button>
+          <span class="status-pill ok" id="uidPill">Bereit</span>
         </div>
       </div>
 
-      <!-- MOTOR -->
-      <div class="panel" id="panel-motor">
-        <div id="motorLoading" style="display:none">
-          <div class="loading-bar"><i></i></div>
-          <div style="font-size:.75rem;color:var(--text3);text-align:center">Lese Motor-Parameter (Calib + FOC)…</div>
-        </div>
-
-        <div class="card" id="motorStatusCard">
-          <div class="section-mark">STATUS</div>
-          <div class="card-title">Live-Motor-Tuning</div>
-          <div class="card-sub">Nur im Stillstand. Änderungen sind RAM-only — Aus-/Einschalten oder „Auf Stock“ setzt zurück. Foldback bei hoher FET-Temp.</div>
-          <div class="row"><span class="row-label">MCU</span><span class="row-value" id="mcuVerDisplay">—</span></div>
-          <div class="row"><span class="row-label">FOC-Modell</span><span class="row-value" id="focStateDisplay">—</span></div>
-          <div class="row"><span class="row-label">Schreiben</span><span class="row-value" id="motorWriteStatus">—</span></div>
-          <div class="btn-group">
-            <button class="btn btn-outline btn-sm" id="motorRereadBtn">Neu lesen</button>
-            <button class="btn btn-outline btn-sm" id="motorStockBtn">Auf Stock zurücksetzen</button>
-            <span class="status-pill" id="motorSaveStatus"></span>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="section-mark">01 · THROTTLE</div>
-          <div class="card-title">Throttle Response</div>
-          <div class="card-sub">Beschleunigungs-Boost (Calib Offset 4). Stock = 140.</div>
-          <div class="row">
-            <span class="row-label">Accel Boost</span>
-            <span class="row-value" id="accelBoostVal">140</span>
-            <input type="range" id="accelBoostSlider" min="80" max="150" value="140">
-          </div>
-          <div class="btn-group">
-            <button class="btn btn-outline btn-sm" data-accel="140">Stock 140</button>
-            <button class="btn btn-red btn-sm" id="saveAccelBtn">Boost anwenden</button>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="section-mark">02 · PERFORMANCE</div>
-          <div class="card-title">Performance</div>
-          <div class="card-sub">Top-Speed über Isense-Limit, Pulling Power über FOC D3, Overdrive & Park.</div>
-          <div class="row">
-            <span class="row-label">Top-Speed Level</span>
-            <span class="row-value" id="topSpeedLevelVal">0 %</span>
-            <input type="range" id="topSpeedLevelSlider" min="0" max="100" value="0">
-          </div>
-          <div class="row">
-            <span class="row-label">Isense (live)</span>
-            <span class="row-value mono" id="isenseLiveVal">—</span>
-          </div>
-          <div class="btn-group">
-            <button class="btn btn-outline btn-sm" id="topSpeedStockBtn">Standard</button>
-            <button class="btn btn-red btn-sm" id="saveTopSpeedBtn">Top-Speed anwenden</button>
-          </div>
-          <div class="card-divider"></div>
-          <div class="row">
-            <span class="row-label">Pulling Power</span>
-            <span class="row-value" id="pullingPowerVal">0 %</span>
-            <input type="range" id="pullingPowerSlider" min="0" max="50" value="0">
-          </div>
-          <div class="btn-group">
-            <button class="btn btn-outline btn-sm" data-pull="0">0 %</button>
-            <button class="btn btn-outline btn-sm" data-pull="15">+15 %</button>
-            <button class="btn btn-red btn-sm" id="savePullBtn">Power anwenden</button>
-          </div>
-          <div class="card-divider"></div>
-          <div class="row toggle-row">
-            <span class="row-label">Overdrive</span>
-            <span class="row-value" id="overdriveVal">aus</span>
-            <input type="checkbox" id="overdriveToggle">
-          </div>
-          <div class="row toggle-row">
-            <span class="row-label">Throttle ab Stand</span>
-            <span class="row-value" id="parkVal">aus</span>
-            <input type="checkbox" id="parkToggle">
-          </div>
-          <div class="btn-group">
-            <button class="btn btn-red btn-sm" id="saveOdParkBtn">OD / Park speichern</button>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="section-mark">03 · FIELD WEAKENING</div>
-          <div class="card-title">Field Weakening</div>
-          <div class="card-sub">Motor-CFW 2.4.0+. Engagiert früher bei leerem Akku optional.</div>
-          <div class="row toggle-row">
-            <span class="row-label">Aktiv</span>
-            <span class="row-value" id="fwEnableVal">aus</span>
-            <input type="checkbox" id="fwEnableToggle">
-          </div>
-          <div class="row">
-            <span class="row-label">Ampere</span>
-            <span class="row-value" id="fwAmpereVal">0 A</span>
-            <input type="range" id="fwAmpereSlider" min="0" max="80" value="0">
-          </div>
-          <div class="row">
-            <span class="row-label">Engage Speed</span>
-            <span class="row-value" id="fwEngageSpeedVal">50 km/h</span>
-            <input type="range" id="fwEngageSpeedSlider" min="35" max="65" value="50">
-          </div>
-          <div class="row toggle-row">
-            <span class="row-label">Low Batt. Engage</span>
-            <span class="row-value" id="fwLowBattVal">aus</span>
-            <input type="checkbox" id="fwLowBattToggle">
-          </div>
-          <div class="row">
-            <span class="row-label">Kicks in below</span>
-            <span class="row-value" id="fwLowBattVoltageVal">47 V</span>
-            <input type="range" id="fwLowBattVoltageSlider" min="42" max="50" value="47">
-          </div>
-          <div class="btn-group">
-            <button class="btn btn-red btn-sm" id="saveFwBtn">Field Weakening speichern</button>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="section-mark">04 · FOC RAW</div>
-          <div class="card-title">Motorkalibrierung (D0–D8)</div>
-          <div class="card-sub">Nur lesen / Stock-Vergleich. Schreiben über die Controls oben.</div>
-          <div id="focRegsDisplay" style="font-family:monospace;font-size:.72rem;color:var(--text2);line-height:1.7;letter-spacing:.02em;white-space:pre-wrap">—</div>
-        </div>
-      </div><!-- /panel-motor -->
     </div><!-- /dashboard -->
   </div><!-- /content -->
 </div><!-- /app -->
 
 <script>
 /* ============================================================
-   1. Nbc / TEA / Frame-Stack (HAR) + Flash-Slots (N-SAK)
+   1. Nbc / TEA / Frame-Stack (1:1 aus funktionierendem kWSyndikat)
    ============================================================ */
-var X={HOST:62,VCU:22,MCU:2,BLE:4,BMS:7};
-function Ia(e){if(e.data.length>255)throw RangeError('frame too long');var t=new Uint8Array(7+e.data.length);t[0]=0x5A;t[1]=0xA5;t[2]=e.data.length;t[3]=e.src;t[4]=e.dst;t[5]=e.cmd;t[6]=e.arg;t.set(e.data,7);return t}
+var X={HOST:62,ESC:32,VCU:22,MCU:2,BLE:4,BMS:7};
+function Ia(e){if(e.data.length>255)throw RangeError("frame too long");var t=new Uint8Array(7+e.data.length);t[0]=0x5A;t[1]=0xA5;t[2]=e.data.length;t[3]=e.src;t[4]=e.dst;t[5]=e.cmd;t[6]=e.arg;t.set(e.data,7);return t}
 function La(e){if(e.length<7||e[0]!==0x5A||e[1]!==0xA5)return null;var t=e[2];if(e.length<7+t)return null;return{src:e[3],dst:e[4],cmd:e[5],arg:e[6],data:e.slice(7,7+t)}}
 var Tp=2654435769,Ep=32;
 function Dp(e,t){return(e[t]|e[t+1]<<8|e[t+2]<<16|e[t+3]<<24)>>>0}
 function Op(e,t,n){e[t]=n&255;e[t+1]=(n>>>8)&255;e[t+2]=(n>>>16)&255;e[t+3]=(n>>>24)&255}
-function kp(e){if(e.length!==16)throw Error('key must be 16 bytes');return[Dp(e,0),Dp(e,4),Dp(e,8),Dp(e,12)]}
+function kp(e){if(e.length!==16)throw Error("key must be 16 bytes");return[Dp(e,0),Dp(e,4),Dp(e,8),Dp(e,12)]}
 function Ap(e){var t=new Uint8Array(16);Op(t,0,e[0]);Op(t,4,e[1]);Op(t,8,e[2]);Op(t,12,e[3]);return t}
 function jp(e){var t=Ap(e);for(var n=0;n<16;n++)t[n]=(t[n]+n)&255;return kp(t)}
 function Mp(e,t,n){var r=e>>>0,i=t>>>0,a=0;for(var o=0;o<Ep;o++){a=(a+Tp)>>>0;r=(r+(((i<<4)>>>0)+n[0]>>>0^i+a>>>0^((i>>>5)+n[1])>>>0))>>>0;i=(i+(((r<<4)>>>0)+n[2]>>>0^r+a>>>0^((r>>>5)+n[3])>>>0))>>>0}return[r,i]}
 function Np(e,t,n){var r=e>>>0,i=t>>>0,a=(Tp*Ep)>>>0;for(var o=0;o<Ep;o++){i=(i-(((r<<4)>>>0)+n[2]>>>0^r+a>>>0^((r>>>5)+n[3])>>>0))>>>0;r=(r-(((i<<4)>>>0)+n[0]>>>0^i+a>>>0^((i>>>5)+n[1])>>>0))>>>0;a=(a-Tp)>>>0}return[r,i]}
-function Pp(e){if(e.length%4)throw Error('4-byte alignment');var t=0;for(var n=0;n<e.length;n+=4)t=(t+Dp(e,n))>>>0;return(((t>>>16)&0xFFFF|(t&0xFFFF)<<16)>>>0^0xFFFFFFFF)>>>0}
-function Fp(e){var t=(4-e.length%4)%4,n=new Uint8Array(e.length+t);n.set(e);if(n.length%8===0){var r=new Uint8Array(n.length+4);r.set(n);n=r}var i=new Uint8Array(n.length+4);i.set(n);Op(i,n.length,Pp(n));return i}
-function Ip(e){if(e.length<4)throw Error('too short');var t=e.subarray(0,e.length-4),n=Dp(e,e.length-4);if(Pp(t)!==n)throw Error('TEA checksum mismatch');return t.slice()}
-function Lp(e,t){t=t||{};var n=t.key||new Uint8Array([254,128,28,178,209,239,65,166,164,23,49,245,160,104,36,240]);var r=t.iv||new Uint8Array(8);if(r.length!==8)throw Error('iv must be 8 bytes');var i=kp(n),a=Dp(r,0)>>>0,o=Dp(r,4)>>>0;var s=Fp(e),c=new Uint8Array(s.length),l=0;for(var u=0;u<s.length;u+=8){if(l===1024){i=jp(i);l=0}var d=Mp((Dp(s,u)^a)>>>0,(Dp(s,u+4)^o)>>>0,i);Op(c,u,d[0]);Op(c,u+4,d[1]);a=d[0];o=d[1];l+=8}return c}
-function Rp(e,t){t=t||{};var n=t.key||new Uint8Array([254,128,28,178,209,239,65,166,164,23,49,245,160,104,36,240]);var r=t.iv||new Uint8Array(8);if(r.length!==8)throw Error('iv must be 8 bytes');if(e.length%8)throw Error('ciphertext must be multiple of 8');var i=kp(n),a=Dp(r,0)>>>0,o=Dp(r,4)>>>0;var s=new Uint8Array(e.length),c=0;for(var l=0;l<e.length;l+=8){if(c===1024){i=jp(i);c=0}var u=Dp(e,l)>>>0,d=Dp(e,l+4)>>>0;var f=Np(u,d,i);Op(s,l,(f[0]^a)>>>0);Op(s,l+4,(f[1]^o)>>>0);a=u;o=d;c+=8}return Ip(s)}
 var Bo=Uint8Array.of(151,207,184,2,132,65,67,222,86,0,43,59,52,120,10,93);
-async function Uo(e,t){if(e.length!==16||t.length!==16)throw Error('16 bytes');var n=new Uint8Array(32);n.set(e,0);n.set(t,16);return new Uint8Array(await crypto.subtle.digest('SHA-1',n)).slice(0,16)}
-async function Vo(e,t){var n=await crypto.subtle.importKey('raw',e,{name:'AES-CBC'},false,['encrypt']);return new Uint8Array(await crypto.subtle.encrypt({name:'AES-CBC',iv:new Uint8Array(16)},n,t)).slice(0,16)}
+async function Uo(e,t){if(e.length!==16||t.length!==16)throw Error("16 bytes");var n=new Uint8Array(32);n.set(e,0);n.set(t,16);return new Uint8Array(await crypto.subtle.digest("SHA-1",n)).slice(0,16)}
+async function Vo(e,t){var n=await crypto.subtle.importKey("raw",e,{name:"AES-CBC"},false,["encrypt"]);return new Uint8Array(await crypto.subtle.encrypt({name:"AES-CBC",iv:new Uint8Array(16)},n,t)).slice(0,16)}
 
 class Nbc{
-  constructor(name){var enc=new TextEncoder();var d=typeof name==='string'?enc.encode(name):name;this.nameData=new Uint8Array(16);this.nameData.set(d.subarray(0,Math.min(16,d.length)));this.bleData=new Uint8Array(16);this.appData=new Uint8Array(16);this.sha1=null;this.msgIt=0;this.peerAddr=0;this.initialKeyTail=new Uint8Array(14);this.initialKeyReceived=false;this.recalcReceived=false;this.pairedReceived=false}
+  constructor(name){var enc=new TextEncoder();var d=typeof name==="string"?enc.encode(name):name;this.nameData=new Uint8Array(16);this.nameData.set(d.subarray(0,Math.min(16,d.length)));this.bleData=new Uint8Array(16);this.appData=new Uint8Array(16);this.sha1=null;this.msgIt=0;this.peerAddr=0;this.initialKeyTail=new Uint8Array(14);this.initialKeyReceived=false;this.recalcReceived=false;this.pairedReceived=false}
   async init(){this.sha1=await Uo(this.nameData,Bo)}
-  setAppData(d){if(d.length!==16)throw Error('app_data must be 16 bytes');this.appData=d.slice()}
+  setAppData(d){if(d.length!==16)throw Error("app_data must be 16 bytes");this.appData=d.slice()}
   async cryptoFirst(e){var t=await Vo(this.sha1,Bo);var n=new Uint8Array(e.length);for(var r=0;r<e.length;r+=16){var i=Math.min(16,e.length-r);for(var a=0;a<i;a++)n[r+a]=e[r+a]^t[a]}return n}
   async cryptoNext(e,t){var n=new Uint8Array(16);n[0]=1;n[1]=(t>>>24)&255;n[2]=(t>>>16)&255;n[3]=(t>>>8)&255;n[4]=t&255;n.set(this.bleData.subarray(0,8),5);var r=new Uint8Array(e.length),i=0;for(var a=0;a<e.length;a+=16){i+=1;n[15]=i&255;var o=await Vo(this.sha1,n);var s=Math.min(16,e.length-a);for(var c=0;c<s;c++)r[a+c]=e[a+c]^o[c]}return r}
   async computeMac(e,t){var n=e.length-3,r=new Uint8Array(16);r[0]=89;r[1]=(t>>>24)&255;r[2]=(t>>>16)&255;r[3]=(t>>>8)&255;r[4]=t&255;r.set(this.bleData.subarray(0,8),5);r[15]=n&255;var i=await Vo(this.sha1,r);var a=new Uint8Array(16);a.set(e.subarray(0,3),0);i=await Vo(this.sha1,(function(b,c){var d=new Uint8Array(16);for(var f=0;f<16;f++)d[f]=b[f]^c[f];return d})(a,i));for(var o=0;o<n;o+=16){var s=new Uint8Array(16);var l=Math.min(16,n-o);s.set(e.subarray(3+o,3+o+l),0);i=await Vo(this.sha1,(function(b,c){var d=new Uint8Array(16);for(var f=0;f<16;f++)d[f]=b[f]^c[f];return d})(s,i))}var u=new Uint8Array(16);u[0]=1;u[1]=(t>>>24)&255;u[2]=(t>>>16)&255;u[3]=(t>>>8)&255;u[4]=t&255;u.set(this.bleData.subarray(0,8),5);var p=await Vo(this.sha1,u);return Uint8Array.of(p[0]^i[0],p[1]^i[1],p[2]^i[2],p[3]^i[3])}
   async decrypt(e){if(e.length<9||e[0]!==0x5A||e[1]!==0xA5)return null;var t=this.msgIt,n=(e[e.length-2]<<8|e[e.length-1])&0xFFFF;if((t&0x8000)&&!(e[e.length-2]>>7))t+=0x10000;var r=(t&0xFFFF0000)|n;var i=e.length-9,a=e.slice(3,3+i),o=e.slice(0,3);var s=new Uint8Array(3+i);s.set(o,0);if(r===0){var c=await this.cryptoFirst(a);s.set(c,3);if(s.length>=23&&s[2]>=22&&s[4]===62&&s[5]===91&&s[6]===1){this.bleData=s.slice(7,23);this.peerAddr=s[3];if(s.length>=37)this.initialKeyTail=s.slice(23,37);this.sha1=this.appData.some(e=>e!==0)?await Uo(this.appData,this.bleData):await Uo(this.nameData,this.bleData);this.initialKeyReceived=true}return s}var l=await this.cryptoNext(a,r);s.set(l,3);if(s.length>=23&&s[2]===16&&s[3]===62&&s[5]===92&&s[6]===0)this.appData=s.slice(7,23);if(s.length>=7&&s[2]===0&&s[4]===62&&s[5]===92&&s[6]===1){this.sha1=await Uo(this.appData,this.bleData);this.recalcReceived=true}if(s.length>=7&&s[2]===0&&s[4]===62&&s[5]===93&&s[6]===1)this.pairedReceived=true;this.msgIt=r;return s}
-  async encrypt(e){if(e[0]!==0x5A||e[1]!==0xA5)throw Error('frame must start with 5A A5');var t=e.slice(0,3),n=e.slice(3);if(this.msgIt===0){var r=0;for(var o of n)r=(r+o)&0xFFFF;var i=((r^0xFFFF)&0xFFFF);var a=await this.cryptoFirst(n);var s=new Uint8Array(3+a.length+6);s.set(t,0);s.set(a,3);s[3+a.length+2]=i&255;s[3+a.length+3]=(i>>>8)&255;return s}this.msgIt+=1;var c=await this.computeMac(e,this.msgIt);var l=await this.cryptoNext(n,this.msgIt);var u=new Uint8Array(3+l.length+6);u.set(t,0);u.set(l,3);u.set(c,3+l.length);u[3+l.length+4]=(this.msgIt>>>8)&255;u[3+l.length+5]=this.msgIt&255;return u}
+  async encrypt(e){if(e[0]!==0x5A||e[1]!==0xA5)throw Error("frame must start with 5A A5");var t=e.slice(0,3),n=e.slice(3);if(this.msgIt===0){var r=0;for(var o of n)r=(r+o)&0xFFFF;var i=((r^0xFFFF)&0xFFFF);var a=await this.cryptoFirst(n);var s=new Uint8Array(3+a.length+6);s.set(t,0);s.set(a,3);s[3+a.length+2]=i&255;s[3+a.length+3]=(i>>>8)&255;return s}this.msgIt+=1;var c=await this.computeMac(e,this.msgIt);var l=await this.cryptoNext(n,this.msgIt);var u=new Uint8Array(3+l.length+6);u.set(t,0);u.set(l,3);u.set(c,3+l.length);u[3+l.length+4]=(this.msgIt>>>8)&255;u[3+l.length+5]=this.msgIt&255;return u}
 }
 
 function createFrameAssembler(ble,overheadFn){
@@ -452,29 +177,29 @@ class NbcSession{
   constructor(ble,bleName,store){
     this.ble=ble;this.bleName=bleName;
     this.store=store||{load:async()=>null,save:async()=>{},delete:async()=>{}};
-    this.pending=[];this.dstTails=new Map();this.phase='connecting';this.nbc=null;
+    this.pending=[];this.dstTails=new Map();this.phase="connecting";this.nbc=null;
     this._powerHintCb=null;
     this.assembler=createFrameAssembler(this.ble,function(){return 10});
     this._unsubFrame=this.assembler.onFrame((raw)=>this._handleIncoming(raw));
   }
   onPowerHint(cb){this._powerHintCb=cb}
   async start(){
-    this.phase='connecting';this.nbc=new Nbc(this.bleName);await this.nbc.init();
+    this.phase="connecting";this.nbc=new Nbc(this.bleName);await this.nbc.init();
     var cached=await this.store.load(this.ble.id);
     if(cached&&cached.length===16){
       this.nbc.setAppData(cached);
-      try{await this._requestInitialKeyWithFallback();await this._waitForConfirmReady();this.phase='ready';return}catch(e){await this.store.delete(this.ble.id)}
+      try{await this._requestInitialKeyWithFallback();await this._waitForConfirmReady();this.phase="ready";return}catch(e){await this.store.delete(this.ble.id)}
     }
     await this._requestInitialKeyWithFallback();
-    this.phase='awaiting-power-button';
+    this.phase="awaiting-power-button";
     if(this._powerHintCb)this._powerHintCb(true);
     for(var i=0;i<4;i++)await this._sendSaveAppKey();
     await this._waitForRecalcKey();
     if(this._powerHintCb)this._powerHintCb(false);
-    this.phase='saving-app-key';
+    this.phase="saving-app-key";
     await this._waitForConfirmReady();
     try{await this.store.save(this.ble.id,this.nbc.appData)}catch(e){}
-    this.phase='ready';
+    this.phase="ready";
   }
   async _requestInitialKeyWithFallback(){
     await this._sendRequestInitialKey(X.BLE);
@@ -483,11 +208,11 @@ class NbcSession{
     await this._waitForInitialKey(6000);
   }
   async _sendRequestInitialKey(dst){var f=Uint8Array.of(0x5A,0xA5,0,62,dst,91,0);await this.ble.write(await this.nbc.encrypt(f),true)}
-  async _waitForInitialKey(timeout){var t=Date.now();while(!this.nbc.initialKeyReceived){if(Date.now()-t>timeout)throw new Error('INITIAL_KEY not received');await new Promise(r=>setTimeout(r,100))}}
+  async _waitForInitialKey(timeout){var t=Date.now();while(!this.nbc.initialKeyReceived){if(Date.now()-t>timeout)throw new Error("INITIAL_KEY not received");await new Promise(r=>setTimeout(r,100))}}
   async _sendSaveAppKey(){var app=crypto.getRandomValues(new Uint8Array(16));this.nbc.setAppData(app);var dst=this.nbc.peerAddr||X.BLE;var f=new Uint8Array(23);f.set([0x5A,0xA5,16,62,dst,92,0],0);f.set(app,7);await this.ble.write(await this.nbc.encrypt(f),true)}
-  async _waitForRecalcKey(timeout){timeout=timeout||60000;var t=Date.now(),last=Date.now();while(!this.nbc.recalcReceived){if(Date.now()-t>timeout)throw new Error('RECALC_KEY not received – power button not pressed');if(Date.now()-last>500){await this._sendSaveAppKey();last=Date.now()}await new Promise(r=>setTimeout(r,50))}}
+  async _waitForRecalcKey(timeout){timeout=timeout||60000;var t=Date.now(),last=Date.now();while(!this.nbc.recalcReceived){if(Date.now()-t>timeout)throw new Error("RECALC_KEY not received – power button not pressed");if(Date.now()-last>500){await this._sendSaveAppKey();last=Date.now()}await new Promise(r=>setTimeout(r,50))}}
   async _sendConfirmReady(){var dst=this.nbc.peerAddr||X.BLE;var f=new Uint8Array(21);f.set([0x5A,0xA5,14,62,dst,93,0],0);f.set(this.nbc.initialKeyTail,7);await this.ble.write(await this.nbc.encrypt(f),true)}
-  async _waitForConfirmReady(timeout){timeout=timeout||10000;var t=Date.now(),last=Date.now();while(!this.nbc.pairedReceived){if(Date.now()-t>timeout)throw new Error('D0 confirm not acked');if(Date.now()-last>500){await this._sendConfirmReady();last=Date.now()}await new Promise(r=>setTimeout(r,50))}}
+  async _waitForConfirmReady(timeout){timeout=timeout||10000;var t=Date.now(),last=Date.now();while(!this.nbc.pairedReceived){if(Date.now()-t>timeout)throw new Error("D0 confirm not acked");if(Date.now()-last>500){await this._sendConfirmReady();last=Date.now()}await new Promise(r=>setTimeout(r,50))}}
   async _handleIncoming(raw){
     if(!this.nbc)return;
     var dec;try{dec=await this.nbc.decrypt(raw)}catch(e){return}
@@ -511,59 +236,27 @@ class NbcSession{
       var data=Ia(frame);
       var expected=(opts&&opts.expectedCmd)?new Set(Array.isArray(opts.expectedCmd)?opts.expectedCmd:[opts.expectedCmd]):null;
       var entry={target:frame.dst,expectedCmd:expected,resolve,reject};
-      var timer=setTimeout(()=>{var idx=this.pending.indexOf(entry);if(idx>=0)this.pending.splice(idx,1);reject(new Error('timeout 0x'+frame.dst.toString(16)+' cmd=0x'+frame.cmd.toString(16)+' arg=0x'+frame.arg.toString(16)))},timeout||10000);
+      var timer=setTimeout(()=>{var idx=this.pending.indexOf(entry);if(idx>=0)this.pending.splice(idx,1);reject(new Error("timeout 0x"+frame.dst.toString(16)+" cmd=0x"+frame.cmd.toString(16)+" arg=0x"+frame.arg.toString(16)))},timeout||10000);
       entry.timer=timer;this.pending.push(entry);
       this.nbc.encrypt(data).then(enc=>this.ble.write(enc,true)).catch(err=>{clearTimeout(timer);var idx=this.pending.indexOf(entry);if(idx>=0)this.pending.splice(idx,1);reject(err)});
     });
   }
   async readRegister(dst,reg,len,timeout){
     var f={src:X.HOST,dst:dst,cmd:1,arg:reg,data:Uint8Array.of(len&255,(len>>8)&255)};
-    var resp=await this.request(f,timeout||1500,{expectedCmd:4});
-    if(resp.arg!==reg)throw new Error('readRegister arg mismatch');
-    if(resp.data.length!==len)throw new Error('readRegister length mismatch');
+    var resp=await this.request(f,timeout||2500,{expectedCmd:4});
+    if(resp.arg!==reg)throw new Error("readRegister arg mismatch");
+    if(resp.data.length<len)throw new Error("readRegister length mismatch");
     return resp.data;
   }
-  async writeRegister(dst,reg,data,timeout){
-    var f={src:X.HOST,dst:dst,cmd:2,arg:reg,data:data};
-    var resp=await this.request(f,timeout||1500,{expectedCmd:5});
-    if(resp.cmd!==5||resp.arg!==reg)throw new Error('writeRegister unexpected ack');
-    if(resp.data.length>=2&&(resp.data[0]|(resp.data[1]<<8)))throw new Error('writeRegister rejected 0x'+(resp.data[0]|(resp.data[1]<<8)).toString(16));
-  }
-
-  async calibRead(dst, offset, len, timeout){
-    var f={src:X.HOST,dst:dst,cmd:174,arg:offset,data:Uint8Array.of(len&255,(len>>8)&255)};
-    var resp=await this.request(f,timeout||900,{expectedCmd:174});
-    if(resp.arg!==offset)throw new Error('calib read arg mismatch off=0x'+offset.toString(16));
-    return resp.data;
-  }
-  async calibWrite(dst, offset, data, timeout){
-    if(offset<0||data.length<1||offset+data.length>256)throw new Error('calib write out of range');
-    var f={src:X.HOST,dst:dst,cmd:173,arg:offset,data:data};
-    var resp=await this.request(f,timeout||1800,{expectedCmd:173});
-    if(resp.arg!==offset)throw new Error('calib write ack arg mismatch');
-  }
-  /* N-SAK Flash-Slots: cmd 241=f-read → 244, cmd 242=f-write → 245 */
-  async flashReadSlot(slot,len,timeout){
-    var f={src:X.HOST,dst:X.VCU,cmd:241,arg:slot,data:new Uint8Array(0)};
-    var resp=await this.request(f,timeout||5000,{expectedCmd:244});
-    if(resp.arg!==slot)throw new Error('f-read slot 0x'+slot.toString(16)+' rejected');
-    if(resp.data.length!==len)throw new Error('f-read length mismatch expected '+len+' got '+resp.data.length);
-    return resp.data;
-  }
-  async flashWriteSlot(slot,data,timeout){
-    var f={src:X.HOST,dst:X.VCU,cmd:242,arg:slot,data:data};
-    var resp=await this.request(f,timeout||5000,{expectedCmd:245});
-    if(resp.arg!==slot)throw new Error('f-write slot 0x'+slot.toString(16)+' rejected');
-  }
-  async close(){this.assembler.stop();this.pending.forEach(e=>{clearTimeout(e.timer);e.reject(new Error('session closed'))});this.pending=[];await this.ble.disconnect()}
+  async close(){this.assembler.stop();this.pending.forEach(e=>{clearTimeout(e.timer);e.reject(new Error("session closed"))});this.pending=[];await this.ble.disconnect()}
 }
 
-const SERVICE_UUID='6e400001-b5a3-f393-e0a9-e50e24dcca9e';
-const RX_UUID='6e400002-b5a3-f393-e0a9-e50e24dcca9e';
-const TX_UUID='6e400003-b5a3-f393-e0a9-e50e24dcca9e';
+const SERVICE_UUID="6e400001-b5a3-f393-e0a9-e50e24dcca9e";
+const RX_UUID="6e400002-b5a3-f393-e0a9-e50e24dcca9e";
+const TX_UUID="6e400003-b5a3-f393-e0a9-e50e24dcca9e";
 class BleDevice{
-  constructor(device){this.device=device;this.id=device.id;this.name=device.name||'Scooter';this._txChar=null;this._rxChar=null;this._listeners=[];this._disconnectCbs=[];this._connected=false;this._writeChain=Promise.resolve()}
-  async connect(){var server=await this.device.gatt.connect();var svc=await server.getPrimaryService(SERVICE_UUID);this._rxChar=await svc.getCharacteristic(RX_UUID);this._txChar=await svc.getCharacteristic(TX_UUID);await this._txChar.startNotifications();this._txChar.addEventListener('characteristicvaluechanged',this._onValue.bind(this));this.device.addEventListener('gattserverdisconnected',this._onDisconnect.bind(this));this._connected=true}
+  constructor(device){this.device=device;this.id=device.id;this.name=device.name||"Scooter";this._txChar=null;this._rxChar=null;this._listeners=[];this._disconnectCbs=[];this._connected=false;this._writeChain=Promise.resolve()}
+  async connect(){var server=await this.device.gatt.connect();var svc=await server.getPrimaryService(SERVICE_UUID);this._rxChar=await svc.getCharacteristic(RX_UUID);this._txChar=await svc.getCharacteristic(TX_UUID);await this._txChar.startNotifications();this._txChar.addEventListener("characteristicvaluechanged",this._onValue.bind(this));this.device.addEventListener("gattserverdisconnected",this._onDisconnect.bind(this));this._connected=true}
   _onValue(ev){var val=ev.target.value;if(val){var data=new Uint8Array(val.buffer,val.byteOffset,val.byteLength).slice();for(var cb of this._listeners)cb(data)}}
   _onDisconnect(){this._connected=false;for(var cb of this._disconnectCbs)cb()}
   onTx(cb){return this.onData(cb)}
@@ -574,617 +267,160 @@ class BleDevice{
 }
 
 /* ============================================================
-   2. N-SAK Profile + Pattern (Flash-Slots) — 1:1 aus Bundle
+   2. UID & Scooter Data Reader
    ============================================================ */
-// Slot 1 = Profilblock 16B | Slot 0 = Unlock-Pattern 20B (zero-term, max 4)
-// Buttons: 1=Mode/Up, 2=Power/Down, 3=Left-turn, 4=Right-turn
-var PATTERN_NAMES=['','Mode (▲)','Power (▼)','Blinker L (◀)','Blinker R (▶)'];
-var DEFAULT_PATTERN=[1,2,1,2];
-var profileState={tunSpeed:45,tunUnderglow:false,stdFrontBar:false,tunFrontBar:true,tunCruise:false,panicButton:true,beepOnEnterTun:true};
-var currentPattern=[];
+var session=null,nbcSession=null;
 
-function decodeProfile(e){
-  if(e.length!==16)throw Error('profile block length != 16');
-  return{stdSpeed:22,tunSpeed:e[3],stdUnderglow:false,tunUnderglow:!!e[9],stdFrontBar:!!e[10],tunFrontBar:!!e[11],stdCruise:false,tunCruise:!!e[13],panicButton:!!e[14],beepOnEnterTun:!!e[15]};
-}
-function encodeProfile(p){
-  var t=Math.max(0,Math.min(100,Math.round(p.tunSpeed)));
-  var n=new Uint8Array(16);
-  n[0]=22;n[1]=22;n[2]=0;n[3]=t;n[4]=22;n[5]=22;n[6]=0;n[7]=t;n[8]=0;
-  n[9]=+!!p.tunUnderglow;n[10]=+!!p.stdFrontBar;n[11]=+!!p.tunFrontBar;
-  n[12]=0;n[13]=+!!p.tunCruise;n[14]=+!!p.panicButton;n[15]=+!!p.beepOnEnterTun;
-  return n;
-}
-function decodePattern(bytes){var t=[];for(var n of bytes){if(n===0)break;t.push(n)}return t}
-function encodePattern(arr){if(arr.length>4)throw Error('pattern too long');var t=new Uint8Array(20);t.set(arr,0);return t}
+var connectBtn=document.getElementById("connectBtn");
+var navDot=document.getElementById("navDot");
+var navLabel=document.getElementById("navLabel");
+var unlockPage=document.getElementById("unlockPage");
+var dashboard=document.getElementById("dashboard");
+var powerHint=document.getElementById("powerHint");
 
-/* ============================================================
-   3. UI state
-   ============================================================ */
-var session=null,nbcSession=null,keepaliveInterval=null,settingsBusy=false;
-var IG={SPEED:87,SOC:85,RANGE:95,TEMP:107,MOTOR_TEMP:24,MILEAGE:98,VOLTAGE:140,CURRENT:141,MODE:90};
-function u16(b){return b[0]|b[1]<<8}
-function i16(b){var t=u16(b);return t>=32768?t-65536:t}
+var dispUidHex=document.getElementById("dispUidHex");
+var dispSn=document.getElementById("dispSn");
+var dispHw=document.getElementById("dispHw");
+var dispNode=document.getElementById("dispNode");
+var copyUidBtn=document.getElementById("copyUidBtn");
+var rereadUidBtn=document.getElementById("rereadUidBtn");
+var uidPill=document.getElementById("uidPill");
 
-var displaySpeed=0,targetSpeedAnim=0,rafId=0;
+function hex(u8){return Array.from(u8).map(b=>b.toString(16).padStart(2,"0")).join("")}
 
-var connectBtn=document.getElementById('connectBtn');
-var navDot=document.getElementById('navDot');
-var navLabel=document.getElementById('navLabel');
-var unlockPage=document.getElementById('unlockPage');
-var dashboard=document.getElementById('dashboard');
-var speedCanvas=document.getElementById('speedo');
-var ctx=speedCanvas.getContext('2d');
-var speedDisplay=document.getElementById('speedDisplay');
-var powerHint=document.getElementById('powerHint');
-var pollHint=document.getElementById('pollHint');
-
-function drawSpeedometer(speed){
-  var w=speedCanvas.width,h=speedCanvas.height,cx=w/2,cy=h/2,radius=w*0.42;
-  ctx.clearRect(0,0,w,h);
-  var startA=0.75*Math.PI, endA=2.25*Math.PI, span=endA-startA;
-  // soft outer glow disc
-  var og=ctx.createRadialGradient(cx,cy,radius*0.55,cx,cy,radius*1.15);
-  og.addColorStop(0,'rgba(192,57,43,0.07)');
-  og.addColorStop(1,'transparent');
-  ctx.fillStyle=og;ctx.beginPath();ctx.arc(cx,cy,radius*1.15,0,Math.PI*2);ctx.fill();
-  // track
-  ctx.beginPath();ctx.arc(cx,cy,radius,startA,endA);
-  ctx.strokeStyle='rgba(60,25,25,0.9)';ctx.lineWidth=14;ctx.lineCap='round';ctx.stroke();
-  // value arc
-  var clamped=Math.min(80,Math.max(0,speed));
-  var frac=clamped/80;
-  if(frac>0.001){
-    var grd=ctx.createLinearGradient(cx-radius,cy,cx+radius,cy);
-    grd.addColorStop(0,'#6b0000');grd.addColorStop(0.45,'#c0392b');grd.addColorStop(1,'#ff4a30');
-    ctx.beginPath();ctx.arc(cx,cy,radius,startA,startA+span*frac);
-    ctx.strokeStyle=grd;ctx.lineWidth=14;ctx.lineCap='round';
-    ctx.shadowColor='rgba(232,64,48,0.55)';ctx.shadowBlur=18;ctx.stroke();ctx.shadowBlur=0;
-  }
-  // ticks
-  for(var i=0;i<=80;i+=5){
-    var ang=startA+span*(i/80);
-    var major=i%20===0;
-    var inner=major?radius-28:radius-20;
-    var outer=radius-16;
-    ctx.beginPath();
-    ctx.moveTo(cx+Math.cos(ang)*inner,cy+Math.sin(ang)*inner);
-    ctx.lineTo(cx+Math.cos(ang)*outer,cy+Math.sin(ang)*outer);
-    ctx.strokeStyle=major?'rgba(232,64,48,0.85)':'rgba(100,50,50,0.55)';
-    ctx.lineWidth=major?2.2:1;ctx.stroke();
-    if(major){
-      ctx.fillStyle='rgba(200,160,160,0.7)';
-      ctx.font='600 12px system-ui,sans-serif';
-      ctx.textAlign='center';ctx.textBaseline='middle';
-      ctx.fillText(String(i),cx+Math.cos(ang)*(radius-42),cy+Math.sin(ang)*(radius-42));
-    }
-  }
-  // needle
-  var nang=startA+span*(clamped/80);
-  var len=radius-36;
-  ctx.save();
-  ctx.translate(cx,cy);
-  ctx.rotate(nang);
-  ctx.beginPath();
-  ctx.moveTo(-10,0);ctx.lineTo(len,0);
-  ctx.strokeStyle='#ff3a20';ctx.lineWidth=2.8;
-  ctx.shadowColor='#c0392b';ctx.shadowBlur=14;ctx.stroke();
-  ctx.restore();
-  // hub
-  ctx.beginPath();ctx.arc(cx,cy,9,0,Math.PI*2);
-  ctx.fillStyle='#e84030';ctx.shadowColor='#c0392b';ctx.shadowBlur=12;ctx.fill();ctx.shadowBlur=0;
-  ctx.beginPath();ctx.arc(cx,cy,4,0,Math.PI*2);ctx.fillStyle='#1a0606';ctx.fill();
-}
-
-function animateGauge(){
-  displaySpeed+=(targetSpeedAnim-displaySpeed)*0.18;
-  if(Math.abs(displaySpeed-targetSpeedAnim)<0.05)displaySpeed=targetSpeedAnim;
-  speedDisplay.textContent=String(Math.round(displaySpeed));
-  drawSpeedometer(displaySpeed);
-  if(Math.abs(displaySpeed-targetSpeedAnim)>0.05)rafId=requestAnimationFrame(animateGauge);
-  else rafId=0;
-}
-function setSpeed(v){
-  targetSpeedAnim=v;
-  if(!rafId)rafId=requestAnimationFrame(animateGauge);
-}
-
-function displayPattern(pattern){
-  currentPattern=pattern||[];
-  var el=document.getElementById('patternDisplay');
-  el.innerHTML='';
-  if(!currentPattern.length){var s=document.createElement('span');s.className='pattern-empty';s.textContent='— kein Pattern';el.appendChild(s);return}
-  currentPattern.forEach((key,idx)=>{
-    var span=document.createElement('span');span.className='pattern-chip';
-    span.innerHTML='<span class="idx">'+(idx+1)+'.</span> '+(PATTERN_NAMES[key]||key);
-    el.appendChild(span);
-  });
-}
-
-function applyProfileToUI(p){
-  profileState=p;
-  document.getElementById('tunSpeedVal').textContent=p.tunSpeed+' km/h';
-  document.getElementById('tunSpeedSlider').value=p.tunSpeed;
-  document.getElementById('tunUgVal').textContent=p.tunUnderglow?'an':'aus';
-  document.getElementById('tunUgToggle').checked=!!p.tunUnderglow;
-  document.getElementById('stdFbVal').textContent=p.stdFrontBar?'an':'aus';
-  document.getElementById('stdFbToggle').checked=!!p.stdFrontBar;
-  document.getElementById('tunFbVal').textContent=p.tunFrontBar?'an':'aus';
-  document.getElementById('tunFbToggle').checked=!!p.tunFrontBar;
-  document.getElementById('tunCruiseVal').textContent=p.tunCruise?'an':'aus';
-  document.getElementById('tunCruiseToggle').checked=!!p.tunCruise;
-  document.getElementById('panicVal').textContent=p.panicButton?'an':'aus';
-  document.getElementById('panicToggle').checked=!!p.panicButton;
-  document.getElementById('beepVal').textContent=p.beepOnEnterTun?'an':'aus';
-  document.getElementById('beepToggle').checked=!!p.beepOnEnterTun;
-}
-
-function setPill(id,msg,cls){
-  var el=document.getElementById(id);if(!el)return;
-  el.textContent=msg;el.className='status-pill'+(cls?' '+cls:'');
-}
-
-async function readSakSettings(){
+async function readUidAndInfo(){
   if(!nbcSession)return;
-  settingsBusy=true; stopKeepalive();
-  var load=document.getElementById('sakLoading');
-  load.style.display='block';
-  try{
-    // Profil Slot 1
-    var raw=await nbcSession.flashReadSlot(1,16,5000);
-    applyProfileToUI(decodeProfile(raw));
-    // Pattern Slot 0
-    var patRaw=await nbcSession.flashReadSlot(0,20,5000);
-    displayPattern(decodePattern(patRaw));
-    // Aktiver Modus (normal register 0x5A)
+  dispUidHex.textContent="Lese Reg 218 aus…";
+  uidPill.textContent="Lese…";
+  uidPill.className="status-pill loading";
+
+  var candidateNodes=[32, 22, 2];
+  var uidBytes=null, usedNode=null;
+
+  for(var node of candidateNodes){
     try{
-      var md=await nbcSession.readRegister(X.VCU,IG.MODE,1,1200);
-      document.getElementById('activeProfileDisplay').textContent=md[0]===1?'Tuning':'Standard';
-    }catch(e){document.getElementById('activeProfileDisplay').textContent='—'}
-    setPill('sakSaveStatus','✓ gelesen','ok');
-  }catch(e){
-    console.warn(e);
-    setPill('sakSaveStatus','Fehler: '+e.message,'err');
-  }finally{load.style.display='none';settingsBusy=false;startKeepalive();}
-}
-
-
-/* ============================================================
-   N-SAK Motor 1:1 — FOC regs, calib offsets, stock maps
-   ============================================================ */
-var FOC_STOCK={d0:1536,d1:2560,d2:5120,d3:1280,d4:537,d5:197,d6:235,d7:225,d8:1};
-var FOC_REGS=[{key:'d0',reg:208},{key:'d1',reg:209},{key:'d2',reg:210},{key:'d3',reg:211},{key:'d4',reg:212},{key:'d5',reg:213},{key:'d6',reg:214},{key:'d7',reg:215},{key:'d8',reg:216}];
-var ISENSE_STOCK=4091, ISENSE_RATIO=1800/4091, ISENSE_LS='nsak.isenseStock.v1';
-var Il=1303110, Bl=32768;
-var motorBusy=false;
-
-function u16le(b){return b[0]|b[1]<<8}
-function toU16le(v){v=v&65535;return Uint8Array.of(v&255,v>>8&255)}
-function toU16be(v){v=v&65535;return Uint8Array.of(v>>8&255,v&255)}
-function focState(regs){
-  var stock=FOC_REGS.every(function(r){return regs[r.reg]==null||regs[r.reg]===FOC_STOCK[r.key]});
-  return stock?'stock':'custom';
-}
-function getIsenseStock(serial){
-  try{var n=JSON.parse(localStorage.getItem(ISENSE_LS)||'{}');return n[serial]||null}catch(e){return null}
-}
-function setIsenseStock(serial,val){
-  if(!serial||val<=0)return val;
-  try{var n=JSON.parse(localStorage.getItem(ISENSE_LS)||'{}');n[serial]=Math.max(n[serial]||0,val);localStorage.setItem(ISENSE_LS,JSON.stringify(n));return n[serial]}catch(e){return val}
-}
-function mapEngageRead(raw){var r=(raw[0]|raw[1]<<8)&65535;if(r===0||r===65535)return 50;return Math.max(35,Math.min(65,Math.round(r*65536/Il)))}
-function mapEngageWrite(kmh){var r=Math.round(Math.max(35,Math.min(65,Math.round(kmh)))*Il)>>>16&65535;return toU16le(r)}
-function mapVoltRead(raw){var r=(raw[0]|raw[1]<<8)&65535;if(r===0||r===65535)return 47;return Math.max(42,Math.min(50,Math.round(r/Bl*42)))}
-function mapVoltWrite(v){v=Math.max(42,Math.min(50,Math.round(v)));return toU16le(Math.round(v/42*Bl)&65535)}
-
-async function readFoc(){
-  var regs={},ok=false;
-  for(var i=0;i<FOC_REGS.length;i++){
-    var r=FOC_REGS[i];
-    try{var d=await nbcSession.readRegister(X.MCU,r.reg,2,1500);regs[r.reg]=u16le(d);ok=true}catch(e){regs[r.reg]=null}
-  }
-  return{regs:regs,state:focState(regs),relayOk:ok};
-}
-
-async function readMotorSettings(){
-  if(!nbcSession)return;
-  settingsBusy=true; stopKeepalive();
-  var load=document.getElementById('motorLoading');
-  if(load)load.style.display='block';
-  setPill('motorSaveStatus','Lese…','loading');
-  try{
-    // MCU version / presence via reg 122
-    try{
-      var ver=await nbcSession.readRegister(X.MCU,122,4,1200);
-      var magic=ver[0]|ver[1]<<8, v=ver[2]|ver[3]<<8;
-      var vs=(v>>8&255)+'.'+(v>>4&15)+'.'+(v&15);
-      var present=(magic===20051||magic===83||magic===42323)&&v>=256;
-      document.getElementById('mcuVerDisplay').textContent=present?(vs+' · ok'):(vs+' · ?');
-    }catch(e){document.getElementById('mcuVerDisplay').textContent='keine Antwort'}
-
-    var foc=await readFoc();
-    document.getElementById('focStateDisplay').textContent=foc.relayOk?foc.state:'keine Daten';
-    var lines=FOC_REGS.map(function(r){
-      var val=foc.regs[r.reg];
-      var stock=FOC_STOCK[r.key];
-      return r.key.toUpperCase()+' @'+r.reg+': '+(val==null?'—':val)+(val===stock?' (=stock)':' (stock '+stock+')');
-    });
-    document.getElementById('focRegsDisplay').textContent=lines.join('\n');
-
-    // Pulling power from D3
-    var d3=foc.regs[211];
-    if(d3!=null){
-      var power=Math.max(0,Math.min(50,Math.round((d3/FOC_STOCK.d3-1)*100)));
-      document.getElementById('pullingPowerVal').textContent=power+' %';
-      document.getElementById('pullingPowerSlider').value=power;
-    }
-
-    // Accel boost calib off 4
-    try{
-      var ab=await nbcSession.calibRead(X.MCU,4,2,900);
-      var abv=ab[0]<<8|ab[1];
-      document.getElementById('accelBoostVal').textContent=abv;
-      document.getElementById('accelBoostSlider').value=Math.max(80,Math.min(150,abv));
-    }catch(e){}
-
-    // Top speed isense off 16
-    try{
-      var isr=await nbcSession.calibRead(X.MCU,16,2,900);
-      var isense=(isr[0]<<8|isr[1])>>1;
-      document.getElementById('isenseLiveVal').textContent=String(isense);
-      var serial=(session&&session.name)||'unknown';
-      var stock=Math.max(setIsenseStock(serial,isense),ISENSE_STOCK);
-      var floor=Math.round(stock*ISENSE_RATIO);
-      var level=stock>floor?Math.round((stock-Math.max(floor,Math.min(stock,isense)))/(stock-floor)*100):0;
-      level=Math.max(0,Math.min(100,level));
-      document.getElementById('topSpeedLevelVal').textContent=level+' %';
-      document.getElementById('topSpeedLevelSlider').value=level;
-    }catch(e){}
-
-    // Overdrive off 14
-    try{
-      var od=(await nbcSession.calibRead(X.MCU,14,1,900))[0]===165;
-      document.getElementById('overdriveVal').textContent=od?'an':'aus';
-      document.getElementById('overdriveToggle').checked=od;
-    }catch(e){}
-
-    // Park / throttle from standstill off 15
-    try{
-      var pk=(await nbcSession.calibRead(X.MCU,15,1,900))[0]===165;
-      document.getElementById('parkVal').textContent=pk?'an':'aus';
-      document.getElementById('parkToggle').checked=pk;
-    }catch(e){}
-
-    // Field weakening: enable 133, amp 134, engage 135, lowbatt 137, volt 138
-    try{
-      var fwon=(await nbcSession.calibRead(X.MCU,133,1,900))[0]===165;
-      document.getElementById('fwEnableVal').textContent=fwon?'an':'aus';
-      document.getElementById('fwEnableToggle').checked=fwon;
-    }catch(e){}
-    try{
-      var ampB=await nbcSession.calibRead(X.MCU,134,1,900);
-      var amp=ampB[0]===255?0:Math.min(ampB[0],80);
-      document.getElementById('fwAmpereVal').textContent=amp+' A';
-      document.getElementById('fwAmpereSlider').value=amp;
-    }catch(e){}
-    try{
-      var engB=await nbcSession.calibRead(X.MCU,135,2,900);
-      var eng=mapEngageRead(engB);
-      document.getElementById('fwEngageSpeedVal').textContent=eng+' km/h';
-      document.getElementById('fwEngageSpeedSlider').value=eng;
-    }catch(e){}
-    try{
-      var lb=(await nbcSession.calibRead(X.MCU,137,1,900))[0]===165;
-      document.getElementById('fwLowBattVal').textContent=lb?'an':'aus';
-      document.getElementById('fwLowBattToggle').checked=lb;
-    }catch(e){}
-    try{
-      var vb=await nbcSession.calibRead(X.MCU,138,2,900);
-      var volt=mapVoltRead(vb);
-      document.getElementById('fwLowBattVoltageVal').textContent=volt+' V';
-      document.getElementById('fwLowBattVoltageSlider').value=volt;
-    }catch(e){}
-
-    // Write gate: speed must be 0
-    try{
-      var spd=await readSpeed();
-      document.getElementById('motorWriteStatus').textContent=spd==null?'Tempo unbekannt':(spd>0?'FÄHRT — Schreiben gesperrt':('STEHT · '+spd.toFixed(1)+' km/h'));
-    }catch(e){document.getElementById('motorWriteStatus').textContent='—'}
-
-    setPill('motorSaveStatus','✓ gelesen','ok');
-  }catch(e){
-    console.warn(e);
-    setPill('motorSaveStatus','Fehler: '+e.message,'err');
-  }finally{if(load)load.style.display='none';settingsBusy=false;startKeepalive();}
-}
-
-async function ensureStopped(){
-  var spd=await readSpeed();
-  if(spd==null)throw new Error('Keine Tempo-Messung — Stillstand nicht bestätigbar');
-  if(spd>0)throw new Error('Roller anhalten, um zu tunen (aktuell '+spd.toFixed(1)+' km/h)');
-}
-
-async function applyPullingPower(pct){
-  await ensureStopped();
-  var d3=Math.min(Math.round(FOC_STOCK.d3*(1+Math.max(0,Math.min(50,pct))/100)), Math.round(FOC_STOCK.d3*1.5));
-  await nbcSession.writeRegister(X.MCU,211,toU16le(d3));
-  // also bump d0 if needed for experimental headroom
-  var d0=Math.max(FOC_STOCK.d0,d3);
-  await nbcSession.writeRegister(X.MCU,208,toU16le(d0));
-}
-
-async function applyAccelBoost(v){
-  await ensureStopped();
-  v=Math.max(0,Math.min(150,Math.round(v)));
-  await nbcSession.calibWrite(X.MCU,4,toU16be(v));
-  var back=await nbcSession.calibRead(X.MCU,4,2,900);
-  var got=back[0]<<8|back[1];
-  if(got!==v)throw new Error('Accel Boost verify failed: wrote '+v+' got '+got);
-}
-
-async function applyTopSpeedLevel(level){
-  await ensureStopped();
-  var serial=(session&&session.name)||'unknown';
-  var stock=Math.max(getIsenseStock(serial)||0,ISENSE_STOCK);
-  var floor=Math.round(stock*ISENSE_RATIO);
-  var target=Math.round(stock-(stock-floor)*(level/100));
-  target=Math.max(floor,Math.min(stock,target));
-  await nbcSession.calibWrite(X.MCU,16,toU16be(target<<1));
-  var back=await nbcSession.calibRead(X.MCU,16,2,900);
-  var got=(back[0]<<8|back[1])>>1;
-  if(got!==target)throw new Error('Top-Speed verify failed');
-}
-
-async function applyOdPark(){
-  await ensureStopped();
-  var od=document.getElementById('overdriveToggle').checked;
-  var pk=document.getElementById('parkToggle').checked;
-  await nbcSession.calibWrite(X.MCU,14,Uint8Array.of(od?165:0));
-  await nbcSession.calibWrite(X.MCU,15,Uint8Array.of(pk?165:0));
-  var od2=(await nbcSession.calibRead(X.MCU,14,1))[0]===165;
-  if(od2!==od)throw new Error('Overdrive verify failed');
-}
-
-async function applyFw(){
-  await ensureStopped();
-  var on=document.getElementById('fwEnableToggle').checked;
-  var amp=parseInt(document.getElementById('fwAmpereSlider').value);
-  var eng=parseInt(document.getElementById('fwEngageSpeedSlider').value);
-  var lb=document.getElementById('fwLowBattToggle').checked;
-  var volt=parseInt(document.getElementById('fwLowBattVoltageSlider').value);
-  await nbcSession.calibWrite(X.MCU,133,Uint8Array.of(on?165:0));
-  await nbcSession.calibWrite(X.MCU,134,Uint8Array.of(Math.max(0,Math.min(80,amp))));
-  await nbcSession.calibWrite(X.MCU,135,mapEngageWrite(eng));
-  await nbcSession.calibWrite(X.MCU,137,Uint8Array.of(lb?165:0));
-  await nbcSession.calibWrite(X.MCU,138,mapVoltWrite(volt));
-}
-
-async function restoreMotorStock(){
-  await ensureStopped();
-  setPill('motorSaveStatus','Setze Stock…','loading');
-  for(var i=0;i<FOC_REGS.length;i++){
-    var r=FOC_REGS[i];
-    await nbcSession.writeRegister(X.MCU,r.reg,toU16le(FOC_STOCK[r.key]));
-  }
-  await nbcSession.calibWrite(X.MCU,4,toU16be(140));
-  await nbcSession.calibWrite(X.MCU,14,Uint8Array.of(0));
-  await nbcSession.calibWrite(X.MCU,15,Uint8Array.of(0));
-  await nbcSession.calibWrite(X.MCU,133,Uint8Array.of(0));
-  setPill('motorSaveStatus','Stock wiederhergestellt ✓','ok');
-  await readMotorSettings();
-}
-
-async function motorAction(fn,label){
-  if(!nbcSession){setPill('motorSaveStatus','Nicht verbunden','err');return}
-  if(motorBusy)return;
-  motorBusy=true;
-  setPill('motorSaveStatus',label||'Anwenden…','loading');
-  try{
-    await fn();
-    setPill('motorSaveStatus','✓ angewandt & verifiziert','ok');
-    await readMotorSettings();
-  }catch(e){
-    setPill('motorSaveStatus','Fehler: '+e.message,'err');
-  }finally{motorBusy=false}
-}
-
-
-
-async function readSpeed(){
-  if(!nbcSession)return null;
-  try{
-    var d=await nbcSession.readRegister(X.VCU,IG.SPEED,2,500);
-    return u16(d)/10;
-  }catch(e){return null}
-}
-
-async function readLiveData(){
-  if(!nbcSession)return;
-  var soft=async function(dst,reg,len){
-    try{return await nbcSession.readRegister(dst,reg,len,600)}catch(e){return null}
-  };
-  var soc=await soft(X.VCU,IG.SOC,2);
-  if(soc){var el=document.getElementById('liveSoc');if(el)el.textContent=u16(soc)+' %'}
-  var temp=await soft(X.VCU,IG.TEMP,2);
-  if(temp){var el2=document.getElementById('liveTemp');if(el2)el2.textContent=(u16(temp)/10).toFixed(1)+' °C'}
-  // N-SAK 1:1: Power = BMS voltage(140) * current(141)
-  var voltB=await soft(X.BMS,IG.VOLTAGE,2);
-  var curB=await soft(X.BMS,IG.CURRENT,2);
-  var wel=document.getElementById('liveWatts');
-  if(wel && voltB && curB){
-    var v=u16(voltB)/100;
-    var a=i16(curB)/100;
-    wel.textContent=Math.round(v*a)+' W';
-  }
-}
-
-function stopKeepalive(){
-  if(keepaliveInterval){clearInterval(keepaliveInterval);keepaliveInterval=null}
-}
-
-function startKeepalive(){
-  stopKeepalive();
-  var liveTick=0;
-  var tick=async function(){
-    if(!nbcSession || settingsBusy) return;
-    // Speed so schnell wie möglich — kein pollBusy-Lock über Live-Reads
-    try{
-      var spd=await readSpeed();
-      if(spd!==null){
-        setSpeed(spd);
-        var ph=document.getElementById('pollHint');
-        if(ph) ph.textContent='Live · '+(spd>0.3?'Fahrt':'Stillstand');
+      uidBytes=await nbcSession.readRegister(node, 218, 12, 2500);
+      if(uidBytes&&uidBytes.length>=12){
+        usedNode=node;
+        break;
       }
-    }catch(e){}
-    liveTick++;
-    // Live-Daten seltener (SOC/Temp/Watt), damit Speed-Poll nicht blockiert
-    if(liveTick%3===0){
-      try{await readLiveData()}catch(e){}
+    }catch(e){
+      console.log("Node "+node+" failed for Reg 218: "+e.message);
     }
-  };
-  tick();
-  keepaliveInterval=setInterval(tick,350);
-}
+  }
 
-async function saveProfile(){
-  if(!nbcSession){setPill('sakSaveStatus','Nicht verbunden','err');return}
-  setPill('sakSaveStatus','Speichere…','loading');
+  if(uidBytes){
+    var u12=uidBytes.slice(0,12);
+    var uHex=hex(u12);
+    dispUidHex.textContent=uHex;
+    dispNode.textContent="Node "+usedNode+" (0x"+usedNode.toString(16)+")";
+    window.__capturedUidHex=uHex;
+    uidPill.textContent="UID gelesen ✓";
+    uidPill.className="status-pill ok";
+  }else{
+    dispUidHex.textContent="Fehler: Reg 218 nicht lesbar";
+    uidPill.textContent="Fehler";
+    uidPill.className="status-pill err";
+  }
+
+  var targetNode=usedNode||32;
   try{
-    var p={
-      tunSpeed:parseInt(document.getElementById('tunSpeedSlider').value),
-      tunUnderglow:document.getElementById('tunUgToggle').checked,
-      stdFrontBar:document.getElementById('stdFbToggle').checked,
-      tunFrontBar:document.getElementById('tunFbToggle').checked,
-      tunCruise:document.getElementById('tunCruiseToggle').checked,
-      panicButton:document.getElementById('panicToggle').checked,
-      beepOnEnterTun:document.getElementById('beepToggle').checked
-    };
-    await nbcSession.flashWriteSlot(1,encodeProfile(p));
-    // Live-Apply wie NSAK qh: VCU 71/72 + optional features
-    var i=Math.max(1,Math.min(100,Math.round(p.tunSpeed)));
-    await nbcSession.writeRegister(X.VCU,71,Uint8Array.of(Math.min(16,i),Math.min(25,i)));
-    await nbcSession.writeRegister(X.VCU,72,Uint8Array.of(0,i));
-    setPill('sakSaveStatus','Profil gespeichert ✓','ok');
-    await readSakSettings();
-  }catch(e){setPill('sakSaveStatus','Fehler: '+e.message,'err')}
-}
+    var snBytes=await nbcSession.readRegister(targetNode, 16, 14, 2000);
+    var snStr=new TextDecoder().decode(snBytes).replace(/[^\x20-\x7E]/g,"").trim();
+    dispSn.textContent=snStr+" ("+hex(snBytes)+")";
+    window.__capturedSn=snStr;
+  }catch(e){
+    try{
+      var snBytes2=await nbcSession.readRegister(22, 16, 14, 2000);
+      var snStr2=new TextDecoder().decode(snBytes2).replace(/[^\x20-\x7E]/g,"").trim();
+      dispSn.textContent=snStr2+" ("+hex(snBytes2)+")";
+      window.__capturedSn=snStr2;
+    }catch(e2){
+      dispSn.textContent="nicht lesbar";
+    }
+  }
 
-async function savePattern(){
-  if(!nbcSession){setPill('sakSaveStatus','Nicht verbunden','err');return}
-  if(currentPattern.length<1){setPill('sakSaveStatus','Mindestens 1 Taste','err');return}
-  if(currentPattern.length>4){setPill('sakSaveStatus','Max. 4 Schritte','err');return}
-  setPill('sakSaveStatus','Speichere Pattern…','loading');
   try{
-    await nbcSession.flashWriteSlot(0,encodePattern(currentPattern));
-    setPill('sakSaveStatus','Pattern gespeichert ✓','ok');
-    await readSakSettings();
-  }catch(e){setPill('sakSaveStatus','Fehler: '+e.message,'err')}
+    var hwBytes=await nbcSession.readRegister(targetNode, 23, 2, 2000);
+    dispHw.textContent="0x"+hex(hwBytes)+" ("+hwBytes[0]+", "+hwBytes[1]+")";
+  }catch(e){
+    try{
+      var hwBytes2=await nbcSession.readRegister(22, 23, 2, 2000);
+      dispHw.textContent="0x"+hex(hwBytes2)+" ("+hwBytes2[0]+", "+hwBytes2[1]+")";
+    }catch(e2){
+      dispHw.textContent="—";
+    }
+  }
 }
 
+copyUidBtn.addEventListener("click",()=>{
+  var val=window.__capturedUidHex;
+  if(!val||val.length<10){
+    alert("Noch keine gültige UID ausgelesen!");
+    return;
+  }
+  navigator.clipboard.writeText(val).then(()=>{
+    copyUidBtn.textContent="✅ UID in Zwischenablage kopiert!";
+    setTimeout(()=>{copyUidBtn.textContent="📋 UID in Zwischenablage kopieren";},2500);
+  }).catch(e=>{alert("Kopieren fehlgeschlagen: "+e);});
+});
 
+rereadUidBtn.addEventListener("click",()=>readUidAndInfo());
 
 /* Connect */
-connectBtn.addEventListener('click',async()=>{
+connectBtn.addEventListener("click",async()=>{
   if(nbcSession){
-    if(keepaliveInterval){clearInterval(keepaliveInterval);keepaliveInterval=null}
     await nbcSession.close();nbcSession=null;session=null;
-    connectBtn.textContent='Verbinden';navDot.className='nav-dot';navLabel.textContent='offline';
-    setSpeed(0);unlockPage.style.display='flex';dashboard.style.display='none';powerHint.classList.remove('active');
+    connectBtn.textContent="Verbinden";navDot.className="nav-dot";navLabel.textContent="offline";
+    unlockPage.style.display="flex";dashboard.style.display="none";powerHint.classList.remove("active");
     return;
   }
   try{
-    navLabel.textContent='Suche…';connectBtn.disabled=true;
-    var device=await navigator.bluetooth.requestDevice({filters:[{namePrefix:'1CG'},{namePrefix:'1K1'}],optionalServices:[SERVICE_UUID]});
-    navLabel.textContent='Verbinde…';
+    navLabel.textContent="Suche…";connectBtn.disabled=true;
+    var device=await navigator.bluetooth.requestDevice({
+      filters:[
+        {namePrefix:"1CG"},
+        {namePrefix:"1K1"},
+        {namePrefix:"N2G"},
+        {namePrefix:"Ninebot"},
+        {namePrefix:"Segway"}
+      ],
+      optionalServices:[SERVICE_UUID]
+    });
+    navLabel.textContent="Verbinde…";
     session=new BleDevice(device);await session.connect();
-    navLabel.textContent='Handshake…';
+    navLabel.textContent="Handshake…";
     var store={
-      load:async(id)=>{var raw=localStorage.getItem('nbc_'+id);return raw?new Uint8Array(JSON.parse(raw)):null},
-      save:async(id,data)=>{localStorage.setItem('nbc_'+id,JSON.stringify(Array.from(data)))},
-      delete:async(id)=>{localStorage.removeItem('nbc_'+id)}
+      load:async(id)=>{var raw=localStorage.getItem("nbc_"+id);return raw?new Uint8Array(JSON.parse(raw)):null},
+      save:async(id,data)=>{localStorage.setItem("nbc_"+id,JSON.stringify(Array.from(data)))},
+      delete:async(id)=>{localStorage.removeItem("nbc_"+id)}
     };
     nbcSession=new NbcSession(session,device.name,store);
-    nbcSession.onPowerHint((show)=>{if(show)powerHint.classList.add('active');else powerHint.classList.remove('active')});
+    nbcSession.onPowerHint((show)=>{if(show)powerHint.classList.add("active");else powerHint.classList.remove("active")});
     session.onDisconnect(()=>{
-      navLabel.textContent='getrennt';connectBtn.textContent='Verbinden';navDot.className='nav-dot';
-      if(keepaliveInterval){clearInterval(keepaliveInterval);keepaliveInterval=null}
-      powerHint.classList.remove('active');unlockPage.style.display='flex';dashboard.style.display='none';
+      navLabel.textContent="getrennt";connectBtn.textContent="Verbinden";navDot.className="nav-dot";
+      powerHint.classList.remove("active");unlockPage.style.display="flex";dashboard.style.display="none";
       nbcSession=null;session=null;
     });
     await nbcSession.start();
-    navDot.className='nav-dot on';
-    navLabel.textContent='verbunden · '+(device.name||'Scooter');
-    connectBtn.textContent='Trennen';connectBtn.disabled=false;powerHint.classList.remove('active');
-    unlockPage.style.display='none';dashboard.style.display='block';
-    await readSakSettings();
-    startKeepalive();
+    navDot.className="nav-dot on";
+    navLabel.textContent="verbunden · "+(device.name||"Scooter");
+    connectBtn.textContent="Trennen";connectBtn.disabled=false;powerHint.classList.remove("active");
+    unlockPage.style.display="none";dashboard.style.display="block";
+    
+    await readUidAndInfo();
   }catch(err){
     console.error(err);
-    navLabel.textContent='Fehler: '+err.message;connectBtn.disabled=false;navDot.className='nav-dot';powerHint.classList.remove('active');
+    navLabel.textContent="Fehler: "+err.message;connectBtn.disabled=false;navDot.className="nav-dot";powerHint.classList.remove("active");
     if(nbcSession){try{await nbcSession.close()}catch(e){}nbcSession=null;session=null}
-    unlockPage.style.display='flex';dashboard.style.display='none';
+    unlockPage.style.display="flex";dashboard.style.display="none";
   }
 });
-document.getElementById('unlockConnectBtn').addEventListener('click',()=>connectBtn.click());
+document.getElementById("unlockConnectBtn").addEventListener("click",()=>connectBtn.click());
 
-/* Pattern D-Pad */
-document.querySelectorAll('.dpad button[data-key]').forEach(btn=>{
-  btn.addEventListener('click',()=>{
-    if(currentPattern.length>=4)return;
-    currentPattern.push(parseInt(btn.dataset.key));
-    displayPattern(currentPattern);
-  });
-});
-document.getElementById('clearPatternBtn').addEventListener('click',()=>{currentPattern=[];displayPattern([])});
-document.getElementById('savePatternBtn').addEventListener('click',savePattern);
-document.getElementById('saveProfileBtn').addEventListener('click',saveProfile);
-document.getElementById('saveMotorBtn').addEventListener('click',saveMotor);
-
-/* Sliders */
-document.getElementById('tunSpeedSlider').addEventListener('input',function(){document.getElementById('tunSpeedVal').textContent=this.value+' km/h'});
-[['tunUgToggle','tunUgVal'],['stdFbToggle','stdFbVal'],['tunFbToggle','tunFbVal'],['tunCruiseToggle','tunCruiseVal'],['panicToggle','panicVal'],['beepToggle','beepVal'],['overdriveToggle','overdriveVal'],['parkToggle','parkVal'],['fwEnableToggle','fwEnableVal'],['fwLowBattToggle','fwLowBattVal']].forEach(([tid,vid])=>{
-  var _t=document.getElementById(tid),_v=document.getElementById(vid);if(_t&&_v)_t.addEventListener('change',function(){_v.textContent=this.checked?'an':'aus'});
-});
-
-
-
-
-
-
-
-document.querySelectorAll('.tab').forEach(tab=>{
-  tab.addEventListener('click',function(ev){
-    ev.preventDefault();
-    ev.stopPropagation();
-    var name=this.getAttribute('data-tab');
-    if(!name) return;
-    document.querySelectorAll('.tab').forEach(function(t){ t.classList.remove('active'); });
-    this.classList.add('active');
-    document.querySelectorAll('#dashboard > .panel').forEach(function(p){
-      p.classList.remove('active');
-      p.style.display='none';
-    });
-    var panel=document.getElementById('panel-'+name);
-    if(panel){
-      panel.classList.add('active');
-      panel.style.display='block';
-    } else {
-      console.warn('panel missing', name);
-    }
-    if(nbcSession && name==='sak') readSakSettings();
-    if(nbcSession && name==='motor') readMotorSettings();
-  });
-});
-
-document.getElementById('pullingPowerSlider')?.addEventListener('input',function(){document.getElementById('pullingPowerVal').textContent=this.value+' %'});
-document.getElementById('fwAmpereSlider')?.addEventListener('input',function(){document.getElementById('fwAmpereVal').textContent=this.value+' A'});
-document.getElementById('fwEngageSpeedSlider')?.addEventListener('input',function(){document.getElementById('fwEngageSpeedVal').textContent=this.value+' km/h'});
-document.getElementById('fwLowBattVoltageSlider')?.addEventListener('input',function(){document.getElementById('fwLowBattVoltageVal').textContent=this.value+' V'});
-
-drawSpeedometer(0);
-(function spawnEmbers(){var cols=['rgba(255,70,0,','rgba(220,30,0,','rgba(255,110,0,'];for(var i=0;i<22;i++){var el=document.createElement('div');el.className='ember';var sz=Math.random()*2.5+.8,col=cols[i%3],a=(Math.random()*.55+.25).toFixed(2),dur=(Math.random()*10+6).toFixed(1),delay=(Math.random()*14).toFixed(1),ex=(Math.random()*100-50).toFixed(0)+'px';el.style.cssText='width:'+sz+'px;height:'+sz+'px;background:'+col+a+');left:'+Math.random()*100+'vw;bottom:'+Math.random()*15+'vh;--ex:'+ex+';animation-duration:'+dur+'s;animation-delay:'+delay+'s';document.body.appendChild(el)}})();
-(function hellCanvas(){var c=document.getElementById('hellbg'),ctx=c.getContext('2d'),W,H,orbs=[];function resize(){W=c.width=window.innerWidth;H=c.height=window.innerHeight}resize();window.addEventListener('resize',resize);for(var i=0;i<7;i++){var fromBottom=i<4;orbs.push({x:Math.random()*W,y:fromBottom?H*.6+Math.random()*H*.4:Math.random()*H*.3,r:Math.random()*220+100,vx:(Math.random()-.5)*.25,vy:fromBottom?-(Math.random()*.12+.04):Math.random()*.08-.04,a:Math.random()*.04+.012,col:Math.random()>.4?'170,25,0':'90,0,0'})}function draw(){ctx.clearRect(0,0,W,H);orbs.forEach(function(o){var g=ctx.createRadialGradient(o.x,o.y,0,o.x,o.y,o.r);g.addColorStop(0,'rgba('+o.col+','+o.a+')');g.addColorStop(1,'transparent');ctx.fillStyle=g;ctx.beginPath();ctx.arc(o.x,o.y,o.r,0,Math.PI*2);ctx.fill();o.x+=o.vx;o.y+=o.vy;if(o.y<-o.r){o.y=H+o.r;o.x=Math.random()*W}if(o.y>H+o.r){o.y=-o.r;o.x=Math.random()*W}if(o.x<-o.r)o.x=W+o.r;if(o.x>W+o.r)o.x=-o.r});requestAnimationFrame(draw)}draw()})();
-console.log('kWSyndikat · Tuning — N-SAK flash slots + pattern fixed');
+(function spawnEmbers(){var cols=["rgba(255,70,0,","rgba(220,30,0,","rgba(255,110,0,"];for(var i=0;i<22;i++){var el=document.createElement("div");el.className="ember";var sz=Math.random()*2.5+.8,col=cols[i%3],a=(Math.random()*.55+.25).toFixed(2),dur=(Math.random()*10+6).toFixed(1),delay=(Math.random()*14).toFixed(1),ex=(Math.random()*100-50).toFixed(0)+"px";el.style.cssText="width:"+sz+"px;height:"+sz+"px;background:"+col+a+");left:"+Math.random()*100+"vw;bottom:"+Math.random()*15+"vh;--ex:"+ex+";animation-duration:"+dur+"s;animation-delay:"+delay+"s";document.body.appendChild(el)}})();
+(function hellCanvas(){var c=document.getElementById("hellbg"),ctx=c.getContext("2d"),W,H,orbs=[];function resize(){W=c.width=window.innerWidth;H=c.height=window.innerHeight}resize();window.addEventListener("resize",resize);for(var i=0;i<7;i++){var fromBottom=i<4;orbs.push({x:Math.random()*W,y:fromBottom?H*.6+Math.random()*H*.4:Math.random()*H*.3,r:Math.random()*220+100,vx:(Math.random()-.5)*.25,vy:fromBottom?-(Math.random()*.12+.04):Math.random()*.08-.04,a:Math.random()*.04+.012,col:Math.random()>.4?"170,25,0":"90,0,0"})}function draw(){ctx.clearRect(0,0,W,H);orbs.forEach(function(o){var g=ctx.createRadialGradient(o.x,o.y,0,o.x,o.y,o.r);g.addColorStop(0,"rgba("+o.col+","+o.a+")");g.addColorStop(1,"transparent");ctx.fillStyle=g;ctx.beginPath();ctx.arc(o.x,o.y,o.r,0,Math.PI*2);ctx.fill();o.x+=o.vx;o.y+=o.vy;if(o.y<-o.r){o.y=H+o.r;o.x=Math.random()*W}if(o.y>H+o.r){o.y=-o.r;o.x=Math.random()*W}if(o.x<-o.r)o.x=W+o.r;if(o.x>W+o.r)o.x=-o.r});requestAnimationFrame(draw)}draw()})();
+console.log("kWSyndikat · Ninebot UID Reader ready");
 </script>
 </body>
 </html>
