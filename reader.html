@@ -3,98 +3,101 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Ninebot G3 Register & UID Reader</title>
+  <title>Ninebot G3 NBC Authenticator & UID Reader</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace; }
     body { background: #0D1117; color: #C9D1D9; padding: 24px; display: flex; justify-content: center; }
-    .container { max-width: 650px; width: 100%; display: flex; flex-direction: column; gap: 16px; }
-    .card { background: #161B22; border: 1px solid #30363D; border-radius: 10px; padding: 18px; }
-    h1 { font-size: 18px; color: #58A6FF; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
-    p { font-size: 13px; color: #8B949E; line-height: 1.4; }
-    .btn-row { display: flex; gap: 10px; margin-top: 14px; }
+    .container { max-width: 680px; width: 100%; display: flex; flex-direction: column; gap: 16px; }
+    .card { background: #161B22; border: 1px solid #30363D; border-radius: 12px; padding: 20px; box-shadow: 0 8px 24px rgba(0,0,0,0.4); }
+    h1 { font-size: 19px; color: #58A6FF; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+    p { font-size: 13px; color: #8B949E; line-height: 1.5; }
+    .alert-banner {
+      display: none; margin-top: 14px; padding: 14px 18px; border-radius: 8px; font-weight: 600; font-size: 14px;
+      text-align: center; animation: pulse 1.5s infinite;
+    }
+    .alert-press { background: #E3B341; color: #0D1117; border: 2px solid #F0883E; display: block; }
+    .alert-success { background: #238636; color: #FFF; border: 1px solid #3FB950; display: block; }
+    @keyframes pulse { 0% { opacity: 0.85; transform: scale(0.99); } 50% { opacity: 1; transform: scale(1.01); } 100% { opacity: 0.85; transform: scale(0.99); } }
+    .btn-row { display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap; }
     button {
-      background: #238636; color: #FFF; border: none; padding: 10px 16px; border-radius: 6px;
-      font-size: 13px; font-weight: 600; cursor: pointer; transition: background 0.2s;
+      background: #238636; color: #FFF; border: none; padding: 10px 18px; border-radius: 6px;
+      font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s;
     }
     button:hover { background: #2EA043; }
     button:disabled { background: #30363D; color: #8B949E; cursor: not-allowed; }
     .btn-secondary { background: #21262D; border: 1px solid #30363D; color: #C9D1D9; }
     .btn-secondary:hover { background: #30363D; }
-    .table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 12px; }
-    .table th, .table td { padding: 8px 10px; border-bottom: 1px solid #21262D; text-align: left; }
-    .table th { color: #8B949E; }
-    .val-hex { color: #79C0FF; font-family: monospace; font-weight: 600; }
-    .val-text { color: #7EE787; }
+    .table { width: 100%; border-collapse: collapse; margin-top: 14px; font-size: 13px; }
+    .table th, .table td { padding: 10px 12px; border-bottom: 1px solid #21262D; text-align: left; }
+    .table th { color: #8B949E; font-size: 12px; text-transform: uppercase; }
+    .val-hex { color: #79C0FF; font-family: monospace; font-weight: 700; word-break: break-all; }
+    .val-text { color: #7EE787; font-weight: 600; }
     .log-box {
       background: #090D13; border: 1px solid #21262D; border-radius: 6px; padding: 12px;
-      font-size: 11px; height: 160px; overflow-y: auto; color: #8B949E; font-family: monospace;
+      font-size: 11px; height: 180px; overflow-y: auto; color: #8B949E; font-family: monospace; line-height: 1.4;
     }
     .status-pill {
-      display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 11px;
+      display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 11px;
       font-weight: 600; background: #21262D; color: #8B949E;
     }
-    .status-pill.connected { background: rgba(56, 139, 253, 0.2); color: #58A6FF; }
+    .status-pill.connected { background: rgba(56, 139, 253, 0.2); color: #58A6FF; border: 1px solid #1F6FEB; }
+    .status-pill.paired { background: rgba(46, 160, 67, 0.2); color: #3FB950; border: 1px solid #238636; }
   </style>
 </head>
 <body>
   <div class="container">
     <div class="card">
-      <h1>🛴 Ninebot G3 Register & UID Reader</h1>
-      <p>Verbinde deinen echten Ninebot G3 per Bluetooth (Chrome/Edge), um die Controller MCU-UID (Reg 218) und Chip-Daten für den Emulator auszulesen.</p>
+      <h1>🛴 Ninebot G3 NBC Auth & UID Reader</h1>
+      <p>Verbinde deinen echten Ninebot E-Scooter per Bluetooth (Chrome/Edge). Dieses Tool führt den echten NBC-Krypto-Handshake durch, fordert die Power-Button-Bestätigung an und liest danach die geschützte <strong>Controller MCU-UID (Reg 218)</strong> aus.</p>
+
+      <div id="alertBanner" class="alert-banner"></div>
 
       <div class="btn-row">
-        <button id="btnConnect">Bluetooth verbinden</button>
-        <button id="btnRead" disabled>Daten auslesen</button>
+        <button id="btnConnect">Bluetooth verbinden & authentifizieren</button>
         <button id="btnCopy" class="btn-secondary" disabled>📋 In Zwischenablage kopieren</button>
       </div>
-      <div style="margin-top: 12px;">
+      <div style="margin-top: 12px; font-size: 12px;">
         Status: <span id="statusPill" class="status-pill">Nicht verbunden</span>
       </div>
     </div>
 
     <div class="card">
-      <h2 style="font-size: 14px; color: #F0F6FC; margin-bottom: 8px;">Ausgelesene Scooter-Daten</h2>
+      <h2 style="font-size: 14px; color: #F0F6FC; margin-bottom: 8px;">Ausgelesene E-Scooter Register</h2>
       <table class="table">
         <thead>
           <tr>
             <th>Register</th>
             <th>Bedeutung</th>
             <th>Wert (Hex)</th>
-            <th>Wert (Text / Interpretation)</th>
+            <th>Wert (Interpretation)</th>
           </tr>
         </thead>
         <tbody>
           <tr>
-            <td>Reg 0x10</td>
-            <td>Seriennummer (ESC)</td>
+            <td>Reg 0x10 (16)</td>
+            <td>Seriennummer</td>
             <td class="val-hex" id="valSnHex">-</td>
             <td class="val-text" id="valSn">-</td>
           </tr>
           <tr>
-            <td>Reg 0x1A</td>
-            <td>Firmware Version</td>
-            <td class="val-hex" id="valFwHex">-</td>
-            <td class="val-text" id="valFw">-</td>
-          </tr>
-          <tr>
             <td>Reg 0x17 (23)</td>
-            <td>Hardware / Chip ID</td>
+            <td>Hardware / Chip Status</td>
             <td class="val-hex" id="valHwHex">-</td>
             <td class="val-text" id="valHw">-</td>
           </tr>
-          <tr style="background: rgba(35, 134, 54, 0.1);">
+          <tr style="background: rgba(35, 134, 54, 0.15); border-left: 3px solid #3FB950;">
             <td><strong>Reg 0xDA (218)</strong></td>
-            <td><strong>Controller MCU-UID (12B)</strong></td>
-            <td class="val-hex" id="valUidHex">-</td>
-            <td class="val-text" id="valUid">-</td>
+            <td><strong>Controller MCU-UID (12 Bytes)</strong></td>
+            <td class="val-hex" id="valUidHex" style="color:#58A6FF; font-size:14px;">-</td>
+            <td class="val-text" id="valUid" style="color:#3FB950;">-</td>
           </tr>
         </tbody>
       </table>
     </div>
 
     <div class="card">
-      <h2 style="font-size: 14px; color: #F0F6FC; margin-bottom: 8px;">Live BLE Protokoll-Log</h2>
-      <div class="log-box" id="logBox">Bereit für Bluetooth-Verbindung...</div>
+      <h2 style="font-size: 14px; color: #F0F6FC; margin-bottom: 8px;">Live Protokoll-Log</h2>
+      <div class="log-box" id="logBox">Bereit... Klicke auf "Bluetooth verbinden".</div>
     </div>
   </div>
 
@@ -103,16 +106,182 @@
     const UART_RX_UUID = "6e400002-b5a3-f393-e0a9-e50e24dcca9e";
     const UART_TX_UUID = "6e400003-b5a3-f393-e0a9-e50e24dcca9e";
 
+    const XO = Uint8Array.of(151, 207, 184, 2, 132, 65, 67, 222, 86, 0, 43, 59, 52, 120, 10, 93);
+    const NODE = { MOTOR: 1, MCU: 2, BLE: 4, BMS: 7, VCU: 22, HOST: 62 };
+    const enc = new TextEncoder();
+    const textDecoder = new TextDecoder();
+
+    function hex(u8) {
+      let s = "";
+      for (let i = 0; i < u8.length; i++) s += u8[i].toString(16).padStart(2, "0");
+      return s;
+    }
+    function concatU8(...arrs) {
+      let len = 0;
+      for (const a of arrs) len += a.length;
+      const out = new Uint8Array(len);
+      let off = 0;
+      for (const a of arrs) { out.set(a, off); off += a.length; }
+      return out;
+    }
+    function xor16(a, b) {
+      const o = new Uint8Array(16);
+      for (let i = 0; i < 16; i++) o[i] = a[i] ^ b[i];
+      return o;
+    }
+    async function sha1_16(a, b) {
+      const d = new Uint8Array(await crypto.subtle.digest("SHA-1", concatU8(a, b).buffer));
+      return d.slice(0, 16);
+    }
+    const aesKeyCache = new Map();
+    async function aesBlock(keyU8, blockU8) {
+      const h = hex(keyU8);
+      let k = aesKeyCache.get(h);
+      if (!k) {
+        k = await crypto.subtle.importKey("raw", keyU8.slice().buffer, { name: "AES-CBC" }, false, ["encrypt"]);
+        aesKeyCache.set(h, k);
+      }
+      const iv = new Uint8Array(16);
+      const out = new Uint8Array(await crypto.subtle.encrypt({ name: "AES-CBC", iv: iv.buffer }, k, blockU8.slice().buffer));
+      return out.slice(0, 16);
+    }
+
+    class HostNbc {
+      constructor(nameData, sha1) {
+        this.nameData = nameData;
+        this.bleData = new Uint8Array(16);
+        this.appData = new Uint8Array(16);
+        this.sha1 = sha1;
+        this.msgIt = 0;
+        this.peerAddr = 0;
+        this.initialKeyTail = new Uint8Array(14);
+        this.initialKeyReceived = false;
+        this.recalcReceived = false;
+        this.pairedReceived = false;
+      }
+      static async create(name) {
+        const n = enc.encode(name);
+        const nd = new Uint8Array(16);
+        nd.set(n.subarray(0, Math.min(16, n.length)));
+        return new HostNbc(nd, await sha1_16(nd, XO));
+      }
+      async cryptoFirst(e) {
+        const t = await aesBlock(this.sha1, XO);
+        const n = new Uint8Array(e.length);
+        for (let r = 0; r < e.length; r += 16) {
+          const i = Math.min(16, e.length - r);
+          for (let a = 0; a < i; a++) n[r + a] = e[r + a] ^ t[a];
+        }
+        return n;
+      }
+      async cryptoNext(e, it) {
+        const n = new Uint8Array(16);
+        n[0] = 1; n[1] = (it >>> 24) & 255; n[2] = (it >>> 16) & 255; n[3] = (it >>> 8) & 255; n[4] = it & 255;
+        n.set(this.bleData.subarray(0, 8), 5);
+        const r = new Uint8Array(e.length);
+        let i = 0;
+        for (let t = 0; t < e.length; t += 16) {
+          i += 1; n[15] = i & 255;
+          const a = await aesBlock(this.sha1, n);
+          const o = Math.min(16, e.length - t);
+          for (let x = 0; x < o; x++) r[t + x] = e[t + x] ^ a[x];
+        }
+        return r;
+      }
+      async computeMac(e, it) {
+        const n = e.length - 3;
+        const r = new Uint8Array(16);
+        r[0] = 89; r[1] = (it >>> 24) & 255; r[2] = (it >>> 16) & 255; r[3] = (it >>> 8) & 255; r[4] = it & 255;
+        r.set(this.bleData.subarray(0, 8), 5); r[15] = n & 255;
+        let i = await aesBlock(this.sha1, r);
+        const a = new Uint8Array(16);
+        a.set(e.subarray(0, 3), 0);
+        i = await aesBlock(this.sha1, xor16(a, i));
+        for (let t = 0; t < n; t += 16) {
+          const rr = Math.min(16, n - t);
+          const aa = new Uint8Array(16);
+          aa.set(e.subarray(3 + t, 3 + t + rr), 0);
+          i = await aesBlock(this.sha1, xor16(aa, i));
+        }
+        const o = new Uint8Array(16);
+        o[0] = 1; o[1] = (it >>> 24) & 255; o[2] = (it >>> 16) & 255; o[3] = (it >>> 8) & 255; o[4] = it & 255;
+        o.set(this.bleData.subarray(0, 8), 5);
+        const s = await aesBlock(this.sha1, o);
+        return Uint8Array.of(s[0] ^ i[0], s[1] ^ i[1], s[2] ^ i[2], s[3] ^ i[3]);
+      }
+      async decrypt(e) {
+        if (e.length < 9 || e[0] !== 90 || e[1] !== 165) return null;
+        const n = ((e[e.length - 2] << 8) | e[e.length - 1]) & 65535;
+        let t = this.msgIt;
+        if ((t & 32768) && !(e[e.length - 2] >> 7)) t += 65536;
+        const r = (t & 4294901760) | n;
+        const i = e.length - 9;
+        const a = e.slice(3, 3 + i);
+        const o = e.slice(0, 3);
+        const s = new Uint8Array(3 + i);
+        s.set(o, 0);
+
+        if (r === 0) {
+          const d = await this.cryptoFirst(a);
+          s.set(d, 3);
+          if (s.length >= 23 && s[2] >= 22 && s[4] === 62 && s[5] === 91 && s[6] === 1) {
+            this.bleData = s.slice(7, 23);
+            this.peerAddr = s[3];
+            if (s.length >= 37) this.initialKeyTail = s.slice(23, 37);
+            this.sha1 = await sha1_16(this.nameData, this.bleData);
+            this.initialKeyReceived = true;
+          }
+          return s;
+        }
+
+        const d = await this.cryptoNext(a, r);
+        s.set(d, 3);
+        if (s.length >= 23 && s[2] === 16 && s[3] === 62 && s[5] === 92 && s[6] === 0) this.appData = s.slice(7, 23);
+        if (s.length >= 7 && s[2] === 0 && s[4] === 62 && s[5] === 92 && s[6] === 1) {
+          this.sha1 = await sha1_16(this.appData, this.bleData);
+          this.recalcReceived = true;
+        }
+        if (s.length >= 7 && s[2] === 0 && s[4] === 62 && s[5] === 93 && s[6] === 1) this.pairedReceived = true;
+        this.msgIt = r;
+        return s;
+      }
+      async encrypt(e) {
+        if (e[0] !== 90 || e[1] !== 165) throw new Error("frame must start with 5A A5");
+        const t = e.slice(0, 3);
+        const n = e.slice(3);
+        if (this.msgIt === 0) {
+          let sum = 0;
+          for (const b of n) sum = (sum + b) & 65535;
+          const r = (sum ^ 65535) & 65535;
+          const i = await this.cryptoFirst(n);
+          const a = new Uint8Array(3 + i.length + 6);
+          a.set(t, 0); a.set(i, 3);
+          a[3 + i.length + 2] = r & 255;
+          a[3 + i.length + 3] = (r >>> 8) & 255;
+          return a;
+        }
+        this.msgIt += 1;
+        const mac = await this.computeMac(e, this.msgIt);
+        const i = await this.cryptoNext(n, this.msgIt);
+        const a = new Uint8Array(3 + i.length + 6);
+        a.set(t, 0); a.set(i, 3);
+        a.set(mac, 3 + i.length);
+        a[3 + i.length + 4] = (this.msgIt >>> 8) & 255;
+        a[3 + i.length + 5] = this.msgIt & 255;
+        return a;
+      }
+    }
+
     let rxChar = null;
     let txChar = null;
     let bleDevice = null;
-    let pendingResolvers = new Map();
+    let nbc = null;
     const capturedData = {};
 
     const logBox = document.getElementById("logBox");
     const statusPill = document.getElementById("statusPill");
+    const alertBanner = document.getElementById("alertBanner");
     const btnConnect = document.getElementById("btnConnect");
-    const btnRead = document.getElementById("btnRead");
     const btnCopy = document.getElementById("btnCopy");
 
     function log(msg) {
@@ -121,42 +290,75 @@
       logBox.scrollTop = logBox.scrollHeight;
     }
 
-    function hex(u8) {
-      return Array.from(u8).map(b => b.toString(16).padStart(2, "0")).join("");
+    let incomingResolve = null;
+    let rxRawBuffer = new Uint8Array(0);
+
+    async function onBleNotify(event) {
+      const chunk = new Uint8Array(event.target.value.buffer);
+      const temp = new Uint8Array(rxRawBuffer.length + chunk.length);
+      temp.set(rxRawBuffer, 0);
+      temp.set(chunk, rxRawBuffer.length);
+      rxRawBuffer = temp;
+
+      // Check if we have complete 5A A5 frame
+      while (rxRawBuffer.length >= 9) {
+        if (rxRawBuffer[0] !== 0x5A || rxRawBuffer[1] !== 0xA5) {
+          rxRawBuffer = rxRawBuffer.subarray(1);
+          continue;
+        }
+        const len = rxRawBuffer[2];
+        const fullLen = 3 + len + 6; // header 3, body len, footer 6
+        if (rxRawBuffer.length < fullLen) break;
+
+        const frame = rxRawBuffer.subarray(0, fullLen);
+        rxRawBuffer = rxRawBuffer.subarray(fullLen);
+
+        if (nbc) {
+          const dec = await nbc.decrypt(frame);
+          if (dec) {
+            const cmd = dec[5];
+            const arg = dec[6];
+            log(`Empfangen: CMD ${cmd} (0x${cmd.toString(16)}), ARG ${arg}, Payload: [${Array.from(dec.slice(7))}]`);
+            if (incomingResolve) {
+              const res = incomingResolve;
+              incomingResolve = null;
+              res(dec);
+            }
+          }
+        }
+      }
     }
 
-    function createNinebotReadPacket(reg, len = 2) {
-      const full = new Uint8Array(10);
-      full[0] = 0x55;
-      full[1] = 0xAA;
-      full[2] = 0x02;
-      full[3] = 0x3E;
-      full[4] = 0x20;
-      full[5] = 0x01;
-      full[6] = reg;
-      full[7] = len;
+    async function waitForDecryptedFrame(predicate, timeoutMs = 25000) {
+      return new Promise((resolve, reject) => {
+        const timer = setTimeout(() => {
+          incomingResolve = null;
+          reject(new Error("Timeout beim Warten auf Scooter-Antwort"));
+        }, timeoutMs);
 
-      let sum = 0;
-      for (let i = 2; i < 8; i++) sum = (sum + full[i]) & 0xFFFF;
-      const chk = (sum ^ 0xFFFF) & 0xFFFF;
-      full[8] = chk & 0xFF;
-      full[9] = (chk >>> 8) & 0xFF;
-      return full;
+        incomingResolve = (dec) => {
+          if (predicate(dec)) {
+            clearTimeout(timer);
+            resolve(dec);
+          }
+        };
+      });
     }
 
     btnConnect.addEventListener("click", async () => {
       try {
-        log("Suche Bluetooth-Geräte...");
+        btnConnect.disabled = true;
+        log("Starte Bluetooth-Suche...");
         bleDevice = await navigator.bluetooth.requestDevice({
           filters: [{ services: [UART_SERVICE_UUID] }],
           optionalServices: [UART_SERVICE_UUID]
         });
 
         log(`Gefunden: ${bleDevice.name}. Verbinde GATT-Server...`);
-        const server = await bleDevice.gatt.connect();
-        statusPill.textContent = "Verbunden (" + bleDevice.name + ")";
+        statusPill.textContent = "Verbinde GATT...";
         statusPill.classList.add("connected");
 
+        const server = await bleDevice.gatt.connect();
         const service = await server.getPrimaryService(UART_SERVICE_UUID);
         rxChar = await service.getCharacteristic(UART_RX_UUID);
         txChar = await service.getCharacteristic(UART_TX_UUID);
@@ -164,123 +366,96 @@
         await txChar.startNotifications();
         txChar.addEventListener("characteristicvaluechanged", onBleNotify);
 
-        log("Bluetooth-Verbindung erfolgreich!");
-        btnRead.disabled = false;
-        btnConnect.disabled = true;
-      } catch (err) {
-        log("Fehler bei Bluetooth: " + err.message);
-      }
-    });
+        log("GATT verbunden! Initialisiere NBC Krypto-Handshake...");
+        nbc = await HostNbc.create(bleDevice.name);
 
-    let rxBuffer = new Uint8Array(0);
+        // 1. Initial Key Request (cmd 91)
+        log("Sende Cmd 91 (Initial Key Request)...");
+        const reqInit = Uint8Array.of(0x5A, 0xA5, 0, NODE.HOST, NODE.BLE, 91, 0);
+        const encInit = await nbc.encrypt(reqInit);
+        await rxChar.writeValue(encInit);
 
-    function onBleNotify(event) {
-      const chunk = new Uint8Array(event.target.value.buffer);
-      const temp = new Uint8Array(rxBuffer.length + chunk.length);
-      temp.set(rxBuffer, 0);
-      temp.set(chunk, rxBuffer.length);
-      rxBuffer = temp;
+        await waitForDecryptedFrame(d => d[5] === 91 && d[6] === 1, 6000);
+        log("Cmd 91 ACK empfangen! Session Key Phase 1 aktiv.");
 
-      while (rxBuffer.length >= 7) {
-        if (rxBuffer[0] !== 0x55 || rxBuffer[1] !== 0xAA) {
-          rxBuffer = rxBuffer.subarray(1);
-          continue;
-        }
-        const len = rxBuffer[2];
-        const fullLen = 7 + len;
-        if (rxBuffer.length < fullLen) break;
+        // 2. App Key Exchange (cmd 92) -> Scooter beeps & waits for Power Button!
+        const appKey = crypto.getRandomValues(new Uint8Array(16));
+        nbc.appData.set(appKey);
+        const reqAppKey = Uint8Array.of(0x5A, 0xA5, 16, NODE.HOST, NODE.BLE, 92, 0, ...appKey);
+        const encAppKey = await nbc.encrypt(reqAppKey);
 
-        const frame = rxBuffer.subarray(0, fullLen);
-        rxBuffer = rxBuffer.subarray(fullLen);
+        alertBanner.className = "alert-banner alert-press";
+        alertBanner.innerHTML = "🚨 <strong>SCOOTER PIEPT: BITTE JETZT DEN POWER-BUTTON AM E-SCOOTER DRÜCKEN!</strong>";
+        log(">>> SCOOTER PIEPT! BITTE POWER-BUTTON AM SCOOTER DRÜCKEN! <<<");
 
-        const reg = frame[6];
-        const payload = frame.subarray(7, fullLen - 2);
+        await rxChar.writeValue(encAppKey);
 
-        log(`Empfangen: Reg 0x${reg.toString(16).toUpperCase()} -> ${hex(payload)}`);
+        // Wait for power button press (Scooter sends Cmd 92, arg 1)
+        await waitForDecryptedFrame(d => d[5] === 92 && d[6] === 1, 30000);
+        alertBanner.className = "alert-banner alert-success";
+        alertBanner.innerHTML = "✅ <strong>Power-Button bestätigt! Koppelung erfolgreich.</strong>";
+        log("Power-Button gedrückt! Session Key Phase 2 aktiv.");
 
-        if (pendingResolvers.has(reg)) {
-          const resolve = pendingResolvers.get(reg);
-          pendingResolvers.delete(reg);
-          resolve(payload);
-        }
-      }
-    }
+        // 3. Confirm Ready (cmd 93)
+        log("Sende Cmd 93 (Confirm Ready)...");
+        const confFrame = Uint8Array.of(0x5A, 0xA5, 14, NODE.HOST, NODE.BLE, 93, 0, ...nbc.initialKeyTail);
+        const encConf = await nbc.encrypt(confFrame);
+        await rxChar.writeValue(encConf);
 
-    async function queryRegister(reg, len, timeoutMs = 2500) {
-      return new Promise(async (resolve, reject) => {
-        const timer = setTimeout(() => {
-          pendingResolvers.delete(reg);
-          reject(new Error(`Timeout bei Reg 0x${reg.toString(16)}`));
-        }, timeoutMs);
+        await waitForDecryptedFrame(d => d[5] === 93 && d[6] === 1, 6000);
+        statusPill.textContent = "Vollständig gekoppelt & authentifiziert";
+        statusPill.className = "status-pill paired";
+        log(">>> ERFOLG: Scooter vollständig gekoppelt! Lese geschützte Register aus... <<<");
 
-        pendingResolvers.set(reg, (payload) => {
-          clearTimeout(timer);
-          resolve(payload);
-        });
+        // 4. Lese Register 0x10 (Seriennummer, 14 Bytes)
+        log("Lese Reg 0x10 (Seriennummer)...");
+        const readSn = Uint8Array.of(0x5A, 0xA5, 2, NODE.HOST, NODE.VCU, 1, 0x10, 14, 0);
+        await rxChar.writeValue(await nbc.encrypt(readSn));
+        const respSn = await waitForDecryptedFrame(d => d[5] === 4 && d[6] === 0x10, 4000);
+        const snBytes = respSn.slice(7, 21);
+        const snText = textDecoder.decode(snBytes).replace(/[^\x20-\x7E]/g, "").trim();
+        capturedData.serial = snText;
+        capturedData.serialHex = hex(snBytes);
+        document.getElementById("valSn").textContent = snText;
+        document.getElementById("valSnHex").textContent = hex(snBytes);
+        log(`Seriennummer: ${snText}`);
 
-        const pkt = createNinebotReadPacket(reg, len);
-        await rxChar.writeValue(pkt);
-      });
-    }
+        // 5. Lese Register 23 (Hardware / Chip ID)
+        log("Lese Reg 23 (Hardware Status)...");
+        const readHw = Uint8Array.of(0x5A, 0xA5, 2, NODE.HOST, NODE.VCU, 1, 23, 2, 0);
+        await rxChar.writeValue(await nbc.encrypt(readHw));
+        const respHw = await waitForDecryptedFrame(d => d[5] === 4 && d[6] === 23, 4000);
+        const hwBytes = respHw.slice(7, 9);
+        capturedData.hardwareIdHex = hex(hwBytes);
+        document.getElementById("valHw").textContent = `ID: ${hwBytes[0]} (0x${hex(hwBytes)})`;
+        document.getElementById("valHwHex").textContent = hex(hwBytes);
+        log(`Hardware Status: ${hex(hwBytes)}`);
 
-    btnRead.addEventListener("click", async () => {
-      btnRead.disabled = true;
-      log("Lese Register aus...");
-
-      try {
-        // 1. Seriennummer (0x10, 14 Bytes)
-        try {
-          const snBytes = await queryRegister(0x10, 14);
-          const snText = new TextDecoder().decode(snBytes).replace(/[^\x20-\x7E]/g, "").trim();
-          capturedData.serial = snText;
-          capturedData.serialHex = hex(snBytes);
-          document.getElementById("valSn").textContent = snText;
-          document.getElementById("valSnHex").textContent = hex(snBytes);
-          log(`SN: ${snText}`);
-        } catch (e) { log("SN Fehler: " + e.message); }
-
-        await new Promise(r => setTimeout(r, 200));
-
-        // 2. Firmware Version (0x1A, 2 Bytes)
-        try {
-          const fwBytes = await queryRegister(0x1A, 2);
-          const fwVer = `${fwBytes[1]}.${fwBytes[0]}`;
-          capturedData.fw = fwVer;
-          capturedData.fwHex = hex(fwBytes);
-          document.getElementById("valFw").textContent = "v" + fwVer;
-          document.getElementById("valFwHex").textContent = hex(fwBytes);
-          log(`FW: v${fwVer}`);
-        } catch (e) { log("FW Fehler: " + e.message); }
-
-        await new Promise(r => setTimeout(r, 200));
-
-        // 3. Hardware / Chip ID (0x17, 2 Bytes)
-        try {
-          const hwBytes = await queryRegister(0x17, 2);
-          capturedData.hwHex = hex(hwBytes);
-          document.getElementById("valHw").textContent = `ID: ${hwBytes[0]} (0x${hex(hwBytes)})`;
-          document.getElementById("valHwHex").textContent = hex(hwBytes);
-          log(`Hardware ID: ${hex(hwBytes)}`);
-        } catch (e) { log("Hardware Fehler: " + e.message); }
-
-        await new Promise(r => setTimeout(r, 200));
-
-        // 4. Controller MCU-UID (0xDA = 218, 12 Bytes)
-        try {
-          const uidBytes = await queryRegister(0xDA, 12);
-          const uidHex = hex(uidBytes);
-          capturedData.uidHex = uidHex;
-          document.getElementById("valUid").textContent = `12 Bytes Controller-UID`;
-          document.getElementById("valUidHex").textContent = uidHex;
-          log(`>>> Controller MCU-UID: ${uidHex} <<<`);
-        } catch (e) { log("UID Fehler (Reg 218): " + e.message); }
+        // 6. Lese Register 218 (Controller MCU-UID, 12 Bytes)
+        log(">>> Lese Reg 218 (Controller MCU-UID)... <<<");
+        const readUid = Uint8Array.of(0x5A, 0xA5, 2, NODE.HOST, NODE.VCU, 1, 218, 12, 0);
+        await rxChar.writeValue(await nbc.encrypt(readUid));
+        const respUid = await waitForDecryptedFrame(d => d[5] === 4 && d[6] === 218, 4000);
+        const uidBytes = respUid.slice(7, 19);
+        const uidHex = hex(uidBytes);
+        capturedData.controllerUidHex = uidHex;
+        document.getElementById("valUid").textContent = "12-Byte Controller UID gefunden!";
+        document.getElementById("valUidHex").textContent = uidHex;
+        log(`========================================`);
+        log(`ECHTE CONTROLLER MCU-UID: ${uidHex}`);
+        log(`========================================`);
 
         btnCopy.disabled = false;
-        log("Auslesen abgeschlossen! Klicke auf In Zwischenablage kopieren.");
+        alertBanner.innerHTML = "🎉 <strong>Fertig! UID erfolgreich ausgelesen. Klicke unten auf Kopieren.</strong>";
+
       } catch (err) {
-        log("Fehler beim Auslesen: " + err.message);
-      } finally {
-        btnRead.disabled = false;
+        log("FEHLER: " + err.message);
+        alertBanner.className = "alert-banner";
+        alertBanner.style.display = "block";
+        alertBanner.style.background = "#DA3633";
+        alertBanner.style.color = "#FFF";
+        alertBanner.innerHTML = "Fehler: " + err.message;
+        btnConnect.disabled = false;
       }
     });
 
@@ -290,9 +465,8 @@
         deviceName: bleDevice ? bleDevice.name : "Ninebot G3",
         serial: capturedData.serial || "1CGCC1810C9957",
         serialHex: capturedData.serialHex || "",
-        firmware: capturedData.fw || "",
-        hardwareIdHex: capturedData.hwHex || "0100",
-        controllerUidHex: capturedData.uidHex || ""
+        hardwareIdHex: capturedData.hardwareIdHex || "0100",
+        controllerUidHex: capturedData.controllerUidHex || ""
       }, null, 2);
 
       navigator.clipboard.writeText(summary).then(() => {
