@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ninebot G3 Register & UID Reader</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace; }
+    body { background: #0D1117; color: #C9D1D9; padding: 24px; display: flex; justify-content: center; }
+    .container { max-width: 650px; width: 100%; display: flex; flex-direction: column; gap: 16px; }
+    .card { background: #161B22; border: 1px solid #30363D; border-radius: 10px; padding: 18px; }
+    h1 { font-size: 18px; color: #58A6FF; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+    p { font-size: 13px; color: #8B949E; line-height: 1.4; }
+    .btn-row { display: flex; gap: 10px; margin-top: 14px; }
+    button {
+      background: #238636; color: #FFF; border: none; padding: 10px 16px; border-radius: 6px;
+      font-size: 13px; font-weight: 600; cursor: pointer; transition: background 0.2s;
+    }
+    button:hover { background: #2EA043; }
+    button:disabled { background: #30363D; color: #8B949E; cursor: not-allowed; }
+    .btn-secondary { background: #21262D; border: 1px solid #30363D; color: #C9D1D9; }
+    .btn-secondary:hover { background: #30363D; }
+    .table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 12px; }
+    .table th, .table td { padding: 8px 10px; border-bottom: 1px solid #21262D; text-align: left; }
+    .table th { color: #8B949E; }
+    .val-hex { color: #79C0FF; font-family: monospace; font-weight: 600; }
+    .val-text { color: #7EE787; }
+    .log-box {
+      background: #090D13; border: 1px solid #21262D; border-radius: 6px; padding: 12px;
+      font-size: 11px; height: 160px; overflow-y: auto; color: #8B949E; font-family: monospace;
+    }
+    .status-pill {
+      display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 11px;
+      font-weight: 600; background: #21262D; color: #8B949E;
+    }
+    .status-pill.connected { background: rgba(56, 139, 253, 0.2); color: #58A6FF; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <h1>🛴 Ninebot G3 Register & UID Reader</h1>
+      <p>Verbinde deinen echten Ninebot G3 per Bluetooth (Chrome/Edge), um die Controller MCU-UID (Reg 218) und Chip-Daten für den Emulator auszulesen.</p>
+
+      <div class="btn-row">
+        <button id="btnConnect">Bluetooth verbinden</button>
+        <button id="btnRead" disabled>Daten auslesen</button>
+        <button id="btnCopy" class="btn-secondary" disabled>📋 In Zwischenablage kopieren</button>
+      </div>
+      <div style="margin-top: 12px;">
+        Status: <span id="statusPill" class="status-pill">Nicht verbunden</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2 style="font-size: 14px; color: #F0F6FC; margin-bottom: 8px;">Ausgelesene Scooter-Daten</h2>
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Register</th>
+            <th>Bedeutung</th>
+            <th>Wert (Hex)</th>
+            <th>Wert (Text / Interpretation)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Reg 0x10</td>
+            <td>Seriennummer (ESC)</td>
+            <td class="val-hex" id="valSnHex">-</td>
+            <td class="val-text" id="valSn">-</td>
+          </tr>
+          <tr>
+            <td>Reg 0x1A</td>
+            <td>Firmware Version</td>
+            <td class="val-hex" id="valFwHex">-</td>
+            <td class="val-text" id="valFw">-</td>
+          </tr>
+          <tr>
+            <td>Reg 0x17 (23)</td>
+            <td>Hardware / Chip ID</td>
+            <td class="val-hex" id="valHwHex">-</td>
+            <td class="val-text" id="valHw">-</td>
+          </tr>
+          <tr style="background: rgba(35, 134, 54, 0.1);">
+            <td><strong>Reg 0xDA (218)</strong></td>
+            <td><strong>Controller MCU-UID (12B)</strong></td>
+            <td class="val-hex" id="valUidHex">-</td>
+            <td class="val-text" id="valUid">-</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <h2 style="font-size: 14px; color: #F0F6FC; margin-bottom: 8px;">Live BLE Protokoll-Log</h2>
+      <div class="log-box" id="logBox">Bereit für Bluetooth-Verbindung...</div>
+    </div>
+  </div>
+
+  <script>
+    const UART_SERVICE_UUID = "6e400001-b5a3-f393-e0a9-e50e24dcca9e";
+    const UART_RX_UUID = "6e400002-b5a3-f393-e0a9-e50e24dcca9e";
+    const UART_TX_UUID = "6e400003-b5a3-f393-e0a9-e50e24dcca9e";
+
+    let rxChar = null;
+    let txChar = null;
+    let bleDevice = null;
+    let pendingResolvers = new Map();
+    const capturedData = {};
+
+    const logBox = document.getElementById("logBox");
+    const statusPill = document.getElementById("statusPill");
+    const btnConnect = document.getElementById("btnConnect");
+    const btnRead = document.getElementById("btnRead");
+    const btnCopy = document.getElementById("btnCopy");
+
+    function log(msg) {
+      const time = new Date().toLocaleTimeString();
+      logBox.innerHTML += `<div>[${time}] ${msg}</div>`;
+      logBox.scrollTop = logBox.scrollHeight;
+    }
+
+    function hex(u8) {
+      return Array.from(u8).map(b => b.toString(16).padStart(2, "0")).join("");
+    }
+
+    function createNinebotReadPacket(reg, len = 2) {
+      const full = new Uint8Array(10);
+      full[0] = 0x55;
+      full[1] = 0xAA;
+      full[2] = 0x02;
+      full[3] = 0x3E;
+      full[4] = 0x20;
+      full[5] = 0x01;
+      full[6] = reg;
+      full[7] = len;
+
+      let sum = 0;
+      for (let i = 2; i < 8; i++) sum = (sum + full[i]) & 0xFFFF;
+      const chk = (sum ^ 0xFFFF) & 0xFFFF;
+      full[8] = chk & 0xFF;
+      full[9] = (chk >>> 8) & 0xFF;
+      return full;
+    }
+
+    btnConnect.addEventListener("click", async () => {
+      try {
+        log("Suche Bluetooth-Geräte...");
+        bleDevice = await navigator.bluetooth.requestDevice({
+          filters: [{ services: [UART_SERVICE_UUID] }],
+          optionalServices: [UART_SERVICE_UUID]
+        });
+
+        log(`Gefunden: ${bleDevice.name}. Verbinde GATT-Server...`);
+        const server = await bleDevice.gatt.connect();
+        statusPill.textContent = "Verbunden (" + bleDevice.name + ")";
+        statusPill.classList.add("connected");
+
+        const service = await server.getPrimaryService(UART_SERVICE_UUID);
+        rxChar = await service.getCharacteristic(UART_RX_UUID);
+        txChar = await service.getCharacteristic(UART_TX_UUID);
+
+        await txChar.startNotifications();
+        txChar.addEventListener("characteristicvaluechanged", onBleNotify);
+
+        log("Bluetooth-Verbindung erfolgreich!");
+        btnRead.disabled = false;
+        btnConnect.disabled = true;
+      } catch (err) {
+        log("Fehler bei Bluetooth: " + err.message);
+      }
+    });
+
+    let rxBuffer = new Uint8Array(0);
+
+    function onBleNotify(event) {
+      const chunk = new Uint8Array(event.target.value.buffer);
+      const temp = new Uint8Array(rxBuffer.length + chunk.length);
+      temp.set(rxBuffer, 0);
+      temp.set(chunk, rxBuffer.length);
+      rxBuffer = temp;
+
+      while (rxBuffer.length >= 7) {
+        if (rxBuffer[0] !== 0x55 || rxBuffer[1] !== 0xAA) {
+          rxBuffer = rxBuffer.subarray(1);
+          continue;
+        }
+        const len = rxBuffer[2];
+        const fullLen = 7 + len;
+        if (rxBuffer.length < fullLen) break;
+
+        const frame = rxBuffer.subarray(0, fullLen);
+        rxBuffer = rxBuffer.subarray(fullLen);
+
+        const reg = frame[6];
+        const payload = frame.subarray(7, fullLen - 2);
+
+        log(`Empfangen: Reg 0x${reg.toString(16).toUpperCase()} -> ${hex(payload)}`);
+
+        if (pendingResolvers.has(reg)) {
+          const resolve = pendingResolvers.get(reg);
+          pendingResolvers.delete(reg);
+          resolve(payload);
+        }
+      }
+    }
+
+    async function queryRegister(reg, len, timeoutMs = 2500) {
+      return new Promise(async (resolve, reject) => {
+        const timer = setTimeout(() => {
+          pendingResolvers.delete(reg);
+          reject(new Error(`Timeout bei Reg 0x${reg.toString(16)}`));
+        }, timeoutMs);
+
+        pendingResolvers.set(reg, (payload) => {
+          clearTimeout(timer);
+          resolve(payload);
+        });
+
+        const pkt = createNinebotReadPacket(reg, len);
+        await rxChar.writeValue(pkt);
+      });
+    }
+
+    btnRead.addEventListener("click", async () => {
+      btnRead.disabled = true;
+      log("Lese Register aus...");
+
+      try {
+        // 1. Seriennummer (0x10, 14 Bytes)
+        try {
+          const snBytes = await queryRegister(0x10, 14);
+          const snText = new TextDecoder().decode(snBytes).replace(/[^\x20-\x7E]/g, "").trim();
+          capturedData.serial = snText;
+          capturedData.serialHex = hex(snBytes);
+          document.getElementById("valSn").textContent = snText;
+          document.getElementById("valSnHex").textContent = hex(snBytes);
+          log(`SN: ${snText}`);
+        } catch (e) { log("SN Fehler: " + e.message); }
+
+        await new Promise(r => setTimeout(r, 200));
+
+        // 2. Firmware Version (0x1A, 2 Bytes)
+        try {
+          const fwBytes = await queryRegister(0x1A, 2);
+          const fwVer = `${fwBytes[1]}.${fwBytes[0]}`;
+          capturedData.fw = fwVer;
+          capturedData.fwHex = hex(fwBytes);
+          document.getElementById("valFw").textContent = "v" + fwVer;
+          document.getElementById("valFwHex").textContent = hex(fwBytes);
+          log(`FW: v${fwVer}`);
+        } catch (e) { log("FW Fehler: " + e.message); }
+
+        await new Promise(r => setTimeout(r, 200));
+
+        // 3. Hardware / Chip ID (0x17, 2 Bytes)
+        try {
+          const hwBytes = await queryRegister(0x17, 2);
+          capturedData.hwHex = hex(hwBytes);
+          document.getElementById("valHw").textContent = `ID: ${hwBytes[0]} (0x${hex(hwBytes)})`;
+          document.getElementById("valHwHex").textContent = hex(hwBytes);
+          log(`Hardware ID: ${hex(hwBytes)}`);
+        } catch (e) { log("Hardware Fehler: " + e.message); }
+
+        await new Promise(r => setTimeout(r, 200));
+
+        // 4. Controller MCU-UID (0xDA = 218, 12 Bytes)
+        try {
+          const uidBytes = await queryRegister(0xDA, 12);
+          const uidHex = hex(uidBytes);
+          capturedData.uidHex = uidHex;
+          document.getElementById("valUid").textContent = `12 Bytes Controller-UID`;
+          document.getElementById("valUidHex").textContent = uidHex;
+          log(`>>> Controller MCU-UID: ${uidHex} <<<`);
+        } catch (e) { log("UID Fehler (Reg 218): " + e.message); }
+
+        btnCopy.disabled = false;
+        log("Auslesen abgeschlossen! Klicke auf In Zwischenablage kopieren.");
+      } catch (err) {
+        log("Fehler beim Auslesen: " + err.message);
+      } finally {
+        btnRead.disabled = false;
+      }
+    });
+
+    btnCopy.addEventListener("click", () => {
+      const summary = JSON.stringify({
+        timestamp: new Date().toISOString(),
+        deviceName: bleDevice ? bleDevice.name : "Ninebot G3",
+        serial: capturedData.serial || "1CGCC1810C9957",
+        serialHex: capturedData.serialHex || "",
+        firmware: capturedData.fw || "",
+        hardwareIdHex: capturedData.hwHex || "0100",
+        controllerUidHex: capturedData.uidHex || ""
+      }, null, 2);
+
+      navigator.clipboard.writeText(summary).then(() => {
+        btnCopy.textContent = "✅ Kopiert!";
+        setTimeout(() => { btnCopy.textContent = "📋 In Zwischenablage kopieren"; }, 2500);
+      }).catch(err => {
+        alert("Fehler beim Kopieren: " + err);
+      });
+    });
+  </script>
+</body>
+</html>
